@@ -1,0 +1,72 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - heading "Smart AI Proxy" [level=1] [ref=e6]
+      - paragraph [ref=e7]: v0.1.0
+    - navigation [ref=e8]:
+      - link "📊 Dashboard" [ref=e9] [cursor=pointer]:
+        - /url: /admin/
+        - generic [ref=e10]: 📊
+        - generic [ref=e11]: Dashboard
+      - link "🔀 Routing Settings" [active] [ref=e12] [cursor=pointer]:
+        - /url: /admin/routing
+        - generic [ref=e13]: 🔀
+        - generic [ref=e14]: Routing Settings
+      - link "📋 Route Profiles" [ref=e15] [cursor=pointer]:
+        - /url: /admin/profiles
+        - generic [ref=e16]: 📋
+        - generic [ref=e17]: Route Profiles
+      - link "⚙️ Runtime" [ref=e18] [cursor=pointer]:
+        - /url: /admin/runtime
+        - generic [ref=e19]: ⚙️
+        - generic [ref=e20]: Runtime
+      - link "🚀 Startup" [ref=e21] [cursor=pointer]:
+        - /url: /admin/startup
+        - generic [ref=e22]: 🚀
+        - generic [ref=e23]: Startup
+      - link "🔗 9Router" [ref=e24] [cursor=pointer]:
+        - /url: /admin/downstream
+        - generic [ref=e25]: 🔗
+        - generic [ref=e26]: 9Router
+      - link "🔒 Privacy & Logs" [ref=e27] [cursor=pointer]:
+        - /url: /admin/privacy
+        - generic [ref=e28]: 🔒
+        - generic [ref=e29]: Privacy & Logs
+      - link "🛠️ Advanced" [ref=e30] [cursor=pointer]:
+        - /url: /admin/advanced
+        - generic [ref=e31]: 🛠️
+        - generic [ref=e32]: Advanced
+    - generic [ref=e34]:
+      - generic [ref=e35]: running
+      - generic [ref=e36]: manual
+  - main [ref=e37]:
+    - heading "Routing Settings" [level=2] [ref=e123]
+    - generic [ref=e124]:
+      - generic [ref=e126]:
+        - heading "Task-to-Route Mapping" [level=2] [ref=e127]
+        - paragraph [ref=e128]: Map detected task types to route profiles. Changes take effect on the next request.
+        - table [ref=e130]:
+          - rowgroup [ref=e131]:
+            - row "Task Category Route Profile Actions" [ref=e132]:
+              - columnheader "Task Category" [ref=e133]
+              - columnheader "Route Profile" [ref=e134]
+              - columnheader "Actions" [ref=e135]
+          - rowgroup
+      - generic [ref=e137]:
+        - heading "Routing Defaults" [level=2] [ref=e138]
+        - generic [ref=e139]:
+          - generic [ref=e140]:
+            - generic [ref=e142]: Default Route
+            - combobox [ref=e143]
+          - generic [ref=e144]:
+            - generic [ref=e146]: Low Confidence Route
+            - combobox [ref=e147]
+          - generic [ref=e148]:
+            - generic [ref=e150]: Confidence Threshold
+            - spinbutton [ref=e151]
+          - generic [ref=e152]:
+            - generic [ref=e154]: Auto Routing
+            - checkbox [ref=e155] [cursor=pointer]
+      - generic [ref=e156]:
+        - button "Save Changes" [disabled]
+        - button "Discard" [disabled]

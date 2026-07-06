@@ -1,0 +1,380 @@
+- generic [ref=f1e3]:
+  - complementary [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - heading "Smart AI Proxy" [level=1] [ref=f1e6]
+      - paragraph [ref=f1e7]: v0.1.0
+    - navigation [ref=f1e8]:
+      - link "📊 Dashboard" [ref=f1e9] [cursor=pointer]:
+        - /url: /admin/
+        - generic [ref=f1e10]: 📊
+        - generic [ref=f1e11]: Dashboard
+      - link "🔀 Routing Settings" [active] [ref=f1e12] [cursor=pointer]:
+        - /url: /admin/routing
+        - generic [ref=f1e13]: 🔀
+        - generic [ref=f1e14]: Routing Settings
+      - link "📋 Route Profiles" [ref=f1e15] [cursor=pointer]:
+        - /url: /admin/profiles
+        - generic [ref=f1e16]: 📋
+        - generic [ref=f1e17]: Route Profiles
+      - link "⚙️ Runtime" [ref=f1e18] [cursor=pointer]:
+        - /url: /admin/runtime
+        - generic [ref=f1e19]: ⚙️
+        - generic [ref=f1e20]: Runtime
+      - link "🚀 Startup" [ref=f1e21] [cursor=pointer]:
+        - /url: /admin/startup
+        - generic [ref=f1e22]: 🚀
+        - generic [ref=f1e23]: Startup
+      - link "🔗 9Router" [ref=f1e24] [cursor=pointer]:
+        - /url: /admin/downstream
+        - generic [ref=f1e25]: 🔗
+        - generic [ref=f1e26]: 9Router
+      - link "🔒 Privacy & Logs" [ref=f1e27] [cursor=pointer]:
+        - /url: /admin/privacy
+        - generic [ref=f1e28]: 🔒
+        - generic [ref=f1e29]: Privacy & Logs
+      - link "🛠️ Advanced" [ref=f1e30] [cursor=pointer]:
+        - /url: /admin/advanced
+        - generic [ref=f1e31]: 🛠️
+        - generic [ref=f1e32]: Advanced
+    - generic [ref=f1e34]:
+      - generic [ref=f1e35]: running
+      - generic [ref=f1e36]: manual
+  - main [ref=f1e37]:
+    - heading "Routing Settings" [level=2] [ref=f1e123]
+    - generic [ref=f1e124]:
+      - generic [ref=f1e126]:
+        - heading "Task-to-Route Mapping" [level=2] [ref=f1e127]
+        - paragraph [ref=f1e128]: Map detected task types to route profiles. Changes take effect on the next request.
+        - table [ref=f1e130]:
+          - rowgroup [ref=f1e131]:
+            - row "Task Category Route Profile Actions" [ref=f1e132]:
+              - columnheader "Task Category" [ref=f1e133]
+              - columnheader "Route Profile" [ref=f1e134]
+              - columnheader "Actions" [ref=f1e135]
+          - rowgroup [ref=f1e136]:
+            - row "architecture_design route.architect Reset" [ref=f1e137]:
+              - cell "architecture_design" [ref=f1e138]
+              - cell "route.architect" [ref=f1e139]:
+                - combobox [ref=f1e140]:
+                  - option "route.architect" [selected]
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default"
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e141]:
+                - button "Reset" [ref=f1e142] [cursor=pointer]
+            - row "backend_engineering route.backend Reset" [ref=f1e143]:
+              - cell "backend_engineering" [ref=f1e144]
+              - cell "route.backend" [ref=f1e145]:
+                - combobox [ref=f1e146]:
+                  - option "route.architect"
+                  - option "route.backend" [selected]
+                  - option "route.debugging"
+                  - option "route.default"
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e147]:
+                - button "Reset" [ref=f1e148] [cursor=pointer]
+            - row "debugging route.debugging Reset" [ref=f1e149]:
+              - cell "debugging" [ref=f1e150]
+              - cell "route.debugging" [ref=f1e151]:
+                - combobox [ref=f1e152]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging" [selected]
+                  - option "route.default"
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e153]:
+                - button "Reset" [ref=f1e154] [cursor=pointer]
+            - row "design_task route.design Reset" [ref=f1e155]:
+              - cell "design_task" [ref=f1e156]
+              - cell "route.design" [ref=f1e157]:
+                - combobox [ref=f1e158]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default"
+                  - option "route.design" [selected]
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e159]:
+                - button "Reset" [ref=f1e160] [cursor=pointer]
+            - row "documentation route.documentation Reset" [ref=f1e161]:
+              - cell "documentation" [ref=f1e162]
+              - cell "route.documentation" [ref=f1e163]:
+                - combobox [ref=f1e164]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default"
+                  - option "route.design"
+                  - option "route.documentation" [selected]
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e165]:
+                - button "Reset" [ref=f1e166] [cursor=pointer]
+            - row "frontend_engineering route.frontend Reset" [ref=f1e167]:
+              - cell "frontend_engineering" [ref=f1e168]
+              - cell "route.frontend" [ref=f1e169]:
+                - combobox [ref=f1e170]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default"
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend" [selected]
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e171]:
+                - button "Reset" [ref=f1e172] [cursor=pointer]
+            - row "fullstack_engineering route.fullstack Reset" [ref=f1e173]:
+              - cell "fullstack_engineering" [ref=f1e174]
+              - cell "route.fullstack" [ref=f1e175]:
+                - combobox [ref=f1e176]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default"
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack" [selected]
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e177]:
+                - button "Reset" [ref=f1e178] [cursor=pointer]
+            - row "general_chat route.default Reset" [ref=f1e179]:
+              - cell "general_chat" [ref=f1e180]
+              - cell "route.default" [ref=f1e181]:
+                - combobox [ref=f1e182]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default" [selected]
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e183]:
+                - button "Reset" [ref=f1e184] [cursor=pointer]
+            - row "lightweight_task route.low_cost Reset" [ref=f1e185]:
+              - cell "lightweight_task" [ref=f1e186]
+              - cell "route.low_cost" [ref=f1e187]:
+                - combobox [ref=f1e188]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default"
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost" [selected]
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e189]:
+                - button "Reset" [ref=f1e190] [cursor=pointer]
+            - row "long_context_analysis route.long_context Reset" [ref=f1e191]:
+              - cell "long_context_analysis" [ref=f1e192]
+              - cell "route.long_context" [ref=f1e193]:
+                - combobox [ref=f1e194]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default"
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context" [selected]
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e195]:
+                - button "Reset" [ref=f1e196] [cursor=pointer]
+            - row "refactoring route.refactoring Reset" [ref=f1e197]:
+              - cell "refactoring" [ref=f1e198]
+              - cell "route.refactoring" [ref=f1e199]:
+                - combobox [ref=f1e200]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default"
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring" [selected]
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e201]:
+                - button "Reset" [ref=f1e202] [cursor=pointer]
+            - row "security_review route.security Reset" [ref=f1e203]:
+              - cell "security_review" [ref=f1e204]
+              - cell "route.security" [ref=f1e205]:
+                - combobox [ref=f1e206]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default"
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security" [selected]
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e207]:
+                - button "Reset" [ref=f1e208] [cursor=pointer]
+            - row "test_generation route.testing Reset" [ref=f1e209]:
+              - cell "test_generation" [ref=f1e210]
+              - cell "route.testing" [ref=f1e211]:
+                - combobox [ref=f1e212]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default"
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing" [selected]
+              - cell "Reset" [ref=f1e213]:
+                - button "Reset" [ref=f1e214] [cursor=pointer]
+            - row "unknown route.default Reset" [ref=f1e215]:
+              - cell "unknown" [ref=f1e216]
+              - cell "route.default" [ref=f1e217]:
+                - combobox [ref=f1e218]:
+                  - option "route.architect"
+                  - option "route.backend"
+                  - option "route.debugging"
+                  - option "route.default" [selected]
+                  - option "route.design"
+                  - option "route.documentation"
+                  - option "route.frontend"
+                  - option "route.fullstack"
+                  - option "route.long_context"
+                  - option "route.low_cost"
+                  - option "route.reasoning"
+                  - option "route.refactoring"
+                  - option "route.security"
+                  - option "route.testing"
+              - cell "Reset" [ref=f1e219]:
+                - button "Reset" [ref=f1e220] [cursor=pointer]
+      - generic [ref=f1e222]:
+        - heading "Routing Defaults" [level=2] [ref=f1e223]
+        - generic [ref=f1e224]:
+          - generic [ref=f1e225]:
+            - generic [ref=f1e227]: Default Route
+            - combobox [ref=f1e228]:
+              - option "route.architect"
+              - option "route.backend"
+              - option "route.debugging"
+              - option "route.default" [selected]
+              - option "route.design"
+              - option "route.documentation"
+              - option "route.frontend"
+              - option "route.fullstack"
+              - option "route.long_context"
+              - option "route.low_cost"
+              - option "route.reasoning"
+              - option "route.refactoring"
+              - option "route.security"
+              - option "route.testing"
+          - generic [ref=f1e229]:
+            - generic [ref=f1e231]: Low Confidence Route
+            - combobox [ref=f1e232]:
+              - option "route.architect"
+              - option "route.backend"
+              - option "route.debugging"
+              - option "route.default" [selected]
+              - option "route.design"
+              - option "route.documentation"
+              - option "route.frontend"
+              - option "route.fullstack"
+              - option "route.long_context"
+              - option "route.low_cost"
+              - option "route.reasoning"
+              - option "route.refactoring"
+              - option "route.security"
+              - option "route.testing"
+          - generic [ref=f1e233]:
+            - generic [ref=f1e235]: Confidence Threshold
+            - spinbutton [ref=f1e236]: "0.55"
+          - generic [ref=f1e237]:
+            - generic [ref=f1e239]: Auto Routing
+            - checkbox [checked] [ref=f1e240] [cursor=pointer]
+      - generic [ref=f1e241]:
+        - button "Save Changes" [disabled]
+        - button "Discard" [disabled]

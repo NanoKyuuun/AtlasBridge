@@ -1,0 +1,30 @@
+{
+  "name": "atlasbridge",
+  "version": "0.1.0",
+  "description": "OpenAI-compatible intelligent routing proxy with local Web UI control panel",
+  "bin": {
+    "atlasbridge": "./bin/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atlasbridge/atlasbridge"
+  },
+  "keywords": [
+    "ai",
+    "proxy",
+    "openai",
+    "router",
+    "cursor",
+    "opencode",
+    "cline"
+  ],
+  "author": "AtlasBridge Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "os": [
+    "win32"
+  ],
+  "preferGlobal": true
+}

@@ -1,0 +1,116 @@
+- generic [ref=f2e3]:
+  - complementary [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - heading "Smart AI Proxy" [level=1] [ref=f2e6]
+      - paragraph [ref=f2e7]: v0.1.0
+    - navigation [ref=f2e8]:
+      - link "📊 Dashboard" [ref=f2e9] [cursor=pointer]:
+        - /url: /admin/
+        - generic [ref=f2e10]: 📊
+        - generic [ref=f2e11]: Dashboard
+      - link "🔀 Routing Settings" [ref=f2e12] [cursor=pointer]:
+        - /url: /admin/routing
+        - generic [ref=f2e13]: 🔀
+        - generic [ref=f2e14]: Routing Settings
+      - link "📋 Route Profiles" [ref=f2e15] [cursor=pointer]:
+        - /url: /admin/profiles
+        - generic [ref=f2e16]: 📋
+        - generic [ref=f2e17]: Route Profiles
+      - link "⚙️ Runtime" [ref=f2e18] [cursor=pointer]:
+        - /url: /admin/runtime
+        - generic [ref=f2e19]: ⚙️
+        - generic [ref=f2e20]: Runtime
+      - link "🚀 Startup" [ref=f2e21] [cursor=pointer]:
+        - /url: /admin/startup
+        - generic [ref=f2e22]: 🚀
+        - generic [ref=f2e23]: Startup
+      - link "🔗 9Router" [ref=f2e24] [cursor=pointer]:
+        - /url: /admin/downstream
+        - generic [ref=f2e25]: 🔗
+        - generic [ref=f2e26]: 9Router
+      - link "🔒 Privacy & Logs" [ref=f2e27] [cursor=pointer]:
+        - /url: /admin/privacy
+        - generic [ref=f2e28]: 🔒
+        - generic [ref=f2e29]: Privacy & Logs
+      - link "🛠️ Advanced" [ref=f2e30] [cursor=pointer]:
+        - /url: /admin/advanced
+        - generic [ref=f2e31]: 🛠️
+        - generic [ref=f2e32]: Advanced
+    - generic [ref=f2e34]:
+      - generic [ref=f2e35]: running
+      - generic [ref=f2e36]: manual
+  - main [ref=f2e37]:
+    - heading "Dashboard" [level=2] [ref=f2e40]
+    - generic [ref=f2e42]:
+      - generic [ref=f2e43]:
+        - generic [ref=f2e45]:
+          - heading "Proxy Status" [level=2] [ref=f2e46]
+          - generic [ref=f2e48]: running
+          - paragraph [ref=f2e49]: "Uptime: 1h44m17.6271395s"
+        - generic [ref=f2e51]:
+          - heading "API Endpoint" [level=2] [ref=f2e52]
+          - paragraph [ref=f2e53]: http://127.0.0.1:20127/v1
+          - button "Copy" [ref=f2e54] [cursor=pointer]
+        - generic [ref=f2e56]:
+          - heading "9Router Downstream" [level=2] [ref=f2e57]
+          - generic [ref=f2e58]:
+            - generic [ref=f2e59]: connected
+            - generic [ref=f2e60]: http://127.0.0.1:20128/v1
+      - generic [ref=f2e61]:
+        - generic [ref=f2e63]:
+          - heading "Configuration" [level=2] [ref=f2e64]
+          - generic [ref=f2e65]:
+            - generic [ref=f2e66]:
+              - generic [ref=f2e67]: Mode
+              - generic [ref=f2e68]: manual
+            - generic [ref=f2e69]:
+              - generic [ref=f2e70]: Privacy
+              - generic [ref=f2e71]: standard
+            - generic [ref=f2e72]:
+              - generic [ref=f2e73]: Auto Routing
+              - generic [ref=f2e74]: "ON"
+        - generic [ref=f2e76]:
+          - heading "Quick Actions" [level=2] [ref=f2e77]
+          - generic [ref=f2e78]:
+            - button "Start" [ref=f2e79] [cursor=pointer]
+            - button "Stop" [ref=f2e80] [cursor=pointer]
+            - button "Restart" [ref=f2e81] [cursor=pointer]
+      - generic [ref=f2e83]:
+        - heading "Smart Aliases" [level=2] [ref=f2e84]
+        - table [ref=f2e86]:
+          - rowgroup [ref=f2e87]:
+            - row "Alias Purpose Route" [ref=f2e88]:
+              - columnheader "Alias" [ref=f2e89]
+              - columnheader "Purpose" [ref=f2e90]
+              - columnheader "Route" [ref=f2e91]
+          - rowgroup [ref=f2e92]:
+            - row "smart-auto Auto-route based on request analysis auto" [ref=f2e93]:
+              - cell "smart-auto" [ref=f2e94]
+              - cell "Auto-route based on request analysis" [ref=f2e95]
+              - cell "auto" [ref=f2e96]:
+                - generic [ref=f2e97]: auto
+            - row "smart-debug Force debugging route route.debugging" [ref=f2e98]:
+              - cell "smart-debug" [ref=f2e99]
+              - cell "Force debugging route" [ref=f2e100]
+              - cell "route.debugging" [ref=f2e101]:
+                - generic [ref=f2e102]: route.debugging
+            - row "smart-cheap Force low-cost route route.low_cost" [ref=f2e103]:
+              - cell "smart-cheap" [ref=f2e104]
+              - cell "Force low-cost route" [ref=f2e105]
+              - cell "route.low_cost" [ref=f2e106]:
+                - generic [ref=f2e107]: route.low_cost
+            - row "smart-docs Force documentation route route.documentation" [ref=f2e108]:
+              - cell "smart-docs" [ref=f2e109]
+              - cell "Force documentation route" [ref=f2e110]
+              - cell "route.documentation" [ref=f2e111]:
+                - generic [ref=f2e112]: route.documentation
+            - row "smart-architect Force architecture route route.architect" [ref=f2e113]:
+              - cell "smart-architect" [ref=f2e114]
+              - cell "Force architecture route" [ref=f2e115]
+              - cell "route.architect" [ref=f2e116]:
+                - generic [ref=f2e117]: route.architect
+            - row "smart-code Force code/engineering route route.backend" [ref=f2e118]:
+              - cell "smart-code" [ref=f2e119]
+              - cell "Force code/engineering route" [ref=f2e120]
+              - cell "route.backend" [ref=f2e121]:
+                - generic [ref=f2e122]: route.backend

@@ -1,0 +1,8 @@
+2026/07/06 20:33:22 Smart AI Proxy v0.1.0 starting
+2026/07/06 20:33:22 Listening on http://127.0.0.1:20127
+2026/07/06 20:33:22 API endpoint: http://127.0.0.1:20127/v1
+2026/07/06 20:33:22 Admin UI:     http://127.0.0.1:20127/admin
+2026/07/06 20:33:22 Health check: http://127.0.0.1:20127/health
+2026/07/06 20:33:22 Downstream:   http://127.0.0.1:20128/v1
+2026/07/06 20:33:22 Privacy mode: standard
+2026/07/06 20:33:22 Auto routing: true

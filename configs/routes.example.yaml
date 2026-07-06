@@ -1,0 +1,15 @@
+task_routes:
+  general_chat: route.default
+  design_task: route.design
+  backend_engineering: route.backend
+  frontend_engineering: route.frontend
+  fullstack_engineering: route.fullstack
+  debugging: route.debugging
+  refactoring: route.refactoring
+  test_generation: route.testing
+  documentation: route.documentation
+  architecture_design: route.architect
+  security_review: route.security
+  long_context_analysis: route.long_context
+  lightweight_task: route.low_cost
+  unknown: route.default

@@ -1,0 +1,63 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - heading "Smart AI Proxy" [level=1] [ref=e6]
+      - paragraph [ref=e7]: v0.1.0
+    - navigation [ref=e8]:
+      - link "📊 Dashboard" [ref=e9] [cursor=pointer]:
+        - /url: /admin/
+        - generic [ref=e10]: 📊
+        - generic [ref=e11]: Dashboard
+      - link "🔀 Routing Settings" [ref=e12] [cursor=pointer]:
+        - /url: /admin/routing
+        - generic [ref=e13]: 🔀
+        - generic [ref=e14]: Routing Settings
+      - link "📋 Route Profiles" [active] [ref=e15] [cursor=pointer]:
+        - /url: /admin/profiles
+        - generic [ref=e16]: 📋
+        - generic [ref=e17]: Route Profiles
+      - link "⚙️ Runtime" [ref=e18] [cursor=pointer]:
+        - /url: /admin/runtime
+        - generic [ref=e19]: ⚙️
+        - generic [ref=e20]: Runtime
+      - link "🚀 Startup" [ref=e21] [cursor=pointer]:
+        - /url: /admin/startup
+        - generic [ref=e22]: 🚀
+        - generic [ref=e23]: Startup
+      - link "🔗 9Router" [ref=e24] [cursor=pointer]:
+        - /url: /admin/downstream
+        - generic [ref=e25]: 🔗
+        - generic [ref=e26]: 9Router
+      - link "🔒 Privacy & Logs" [ref=e27] [cursor=pointer]:
+        - /url: /admin/privacy
+        - generic [ref=e28]: 🔒
+        - generic [ref=e29]: Privacy & Logs
+      - link "🛠️ Advanced" [ref=e30] [cursor=pointer]:
+        - /url: /admin/advanced
+        - generic [ref=e31]: 🛠️
+        - generic [ref=e32]: Advanced
+    - generic [ref=e34]:
+      - generic [ref=e35]: running
+      - generic [ref=e36]: manual
+  - main [ref=e37]:
+    - heading "Route Profiles" [level=2] [ref=e157]
+    - generic [ref=e158]:
+      - generic [ref=e160]:
+        - generic [ref=e161]:
+          - heading "Route Profiles" [level=2] [ref=e162]
+          - button "Add Profile" [ref=e163] [cursor=pointer]
+        - table [ref=e165]:
+          - rowgroup [ref=e166]:
+            - row "Name Label Description Downstream Alias Priority Enabled Actions" [ref=e167]:
+              - columnheader "Name" [ref=e168]
+              - columnheader "Label" [ref=e169]
+              - columnheader "Description" [ref=e170]
+              - columnheader "Downstream Alias" [ref=e171]
+              - columnheader "Priority" [ref=e172]
+              - columnheader "Enabled" [ref=e173]
+              - columnheader "Actions" [ref=e174]
+          - rowgroup
+      - button "Save Changes" [disabled]
+      - option "Quality"
+      - option "Balanced" [selected]
+      - option "Cost"

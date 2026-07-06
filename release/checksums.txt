@@ -1,0 +1,2 @@
+9ba0da6d94cedcdf659e20d909ba685cbb9352b66bcb0606c65923e193ac61a9  smart-ai-proxy-0.1.0-windows-x64-portable.zip
+851823042b9737106385a9b4daec5b5cacc92db7013eac7773e8d193607fe6be  smart-ai-proxy.exe

@@ -1,0 +1,83 @@
+- generic [ref=f1e3]:
+  - complementary [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - heading "Smart AI Proxy" [level=1] [ref=f1e6]
+      - paragraph [ref=f1e7]: v0.1.0
+    - navigation [ref=f1e8]:
+      - link "📊 Dashboard" [ref=f1e9] [cursor=pointer]:
+        - /url: /admin/
+        - generic [ref=f1e10]: 📊
+        - generic [ref=f1e11]: Dashboard
+      - link "🔀 Routing Settings" [ref=f1e12] [cursor=pointer]:
+        - /url: /admin/routing
+        - generic [ref=f1e13]: 🔀
+        - generic [ref=f1e14]: Routing Settings
+      - link "📋 Route Profiles" [ref=f1e15] [cursor=pointer]:
+        - /url: /admin/profiles
+        - generic [ref=f1e16]: 📋
+        - generic [ref=f1e17]: Route Profiles
+      - link "⚙️ Runtime" [ref=f1e18] [cursor=pointer]:
+        - /url: /admin/runtime
+        - generic [ref=f1e19]: ⚙️
+        - generic [ref=f1e20]: Runtime
+      - link "🚀 Startup" [active] [ref=f1e21] [cursor=pointer]:
+        - /url: /admin/startup
+        - generic [ref=f1e22]: 🚀
+        - generic [ref=f1e23]: Startup
+      - link "🔗 9Router" [ref=f1e24] [cursor=pointer]:
+        - /url: /admin/downstream
+        - generic [ref=f1e25]: 🔗
+        - generic [ref=f1e26]: 9Router
+      - link "🔒 Privacy & Logs" [ref=f1e27] [cursor=pointer]:
+        - /url: /admin/privacy
+        - generic [ref=f1e28]: 🔒
+        - generic [ref=f1e29]: Privacy & Logs
+      - link "🛠️ Advanced" [ref=f1e30] [cursor=pointer]:
+        - /url: /admin/advanced
+        - generic [ref=f1e31]: 🛠️
+        - generic [ref=f1e32]: Advanced
+    - generic [ref=f1e34]:
+      - generic [ref=f1e35]: running
+      - generic [ref=f1e36]: manual
+  - main [ref=f1e37]:
+    - heading "Startup" [level=2] [ref=f1e428]
+    - generic [ref=f1e429]:
+      - generic [ref=f1e431]:
+        - heading "Startup Settings" [level=2] [ref=f1e432]
+        - paragraph [ref=f1e433]: Configure how Smart AI Proxy behaves when your device starts.
+        - generic [ref=f1e434]:
+          - generic [ref=f1e436] [cursor=pointer]:
+            - checkbox "Run at Login Automatically start Smart AI Proxy when you log in" [ref=f1e437]
+            - generic [ref=f1e438]:
+              - text: Run at Login
+              - paragraph [ref=f1e439]: Automatically start Smart AI Proxy when you log in
+          - generic [ref=f1e441] [cursor=pointer]:
+            - checkbox "Start Proxy on App Launch Automatically start the proxy engine when the app opens" [checked] [ref=f1e442]
+            - generic [ref=f1e443]:
+              - text: Start Proxy on App Launch
+              - paragraph [ref=f1e444]: Automatically start the proxy engine when the app opens
+          - generic [ref=f1e446] [cursor=pointer]:
+            - checkbox "Restart After Crash Automatically restart the proxy if it crashes" [checked] [ref=f1e447]
+            - generic [ref=f1e448]:
+              - text: Restart After Crash
+              - paragraph [ref=f1e449]: Automatically restart the proxy if it crashes
+      - generic [ref=f1e451]:
+        - heading "Runtime Mode" [level=2] [ref=f1e452]
+        - paragraph [ref=f1e453]: Choose how the proxy behaves on startup.
+        - generic [ref=f1e454]:
+          - generic [ref=f1e455] [cursor=pointer]:
+            - radio "Always On Proxy starts automatically" [ref=f1e456]
+            - generic [ref=f1e457]:
+              - text: Always On
+              - paragraph [ref=f1e458]: Proxy starts automatically
+          - generic [ref=f1e459] [cursor=pointer]:
+            - radio "Manual Start proxy manually" [checked] [ref=f1e460]
+            - generic [ref=f1e461]:
+              - text: Manual
+              - paragraph [ref=f1e462]: Start proxy manually
+          - generic [ref=f1e463] [cursor=pointer]:
+            - radio "Disabled Proxy does not accept requests" [ref=f1e464]
+            - generic [ref=f1e465]:
+              - text: Disabled
+              - paragraph [ref=f1e466]: Proxy does not accept requests
+      - button "Save Changes" [disabled]

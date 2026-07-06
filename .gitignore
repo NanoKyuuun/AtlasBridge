@@ -1,0 +1,30 @@
+# Binaries
+smart-ai-proxy
+smart-ai-proxy.exe
+
+# Go
+vendor/
+
+# Node
+web/node_modules/
+web/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config (runtime, not examples)
+config.yaml
+routes.yaml
+profiles.yaml
+logs.jsonl
+
+# Temp
+*.tmp
+*.log

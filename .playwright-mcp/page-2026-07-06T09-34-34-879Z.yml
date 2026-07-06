@@ -1,0 +1,230 @@
+- generic [ref=f1e3]:
+  - complementary [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - heading "Smart AI Proxy" [level=1] [ref=f1e6]
+      - paragraph [ref=f1e7]: v0.1.0
+    - navigation [ref=f1e8]:
+      - link "📊 Dashboard" [ref=f1e9] [cursor=pointer]:
+        - /url: /admin/
+        - generic [ref=f1e10]: 📊
+        - generic [ref=f1e11]: Dashboard
+      - link "🔀 Routing Settings" [ref=f1e12] [cursor=pointer]:
+        - /url: /admin/routing
+        - generic [ref=f1e13]: 🔀
+        - generic [ref=f1e14]: Routing Settings
+      - link "📋 Route Profiles" [active] [ref=f1e15] [cursor=pointer]:
+        - /url: /admin/profiles
+        - generic [ref=f1e16]: 📋
+        - generic [ref=f1e17]: Route Profiles
+      - link "⚙️ Runtime" [ref=f1e18] [cursor=pointer]:
+        - /url: /admin/runtime
+        - generic [ref=f1e19]: ⚙️
+        - generic [ref=f1e20]: Runtime
+      - link "🚀 Startup" [ref=f1e21] [cursor=pointer]:
+        - /url: /admin/startup
+        - generic [ref=f1e22]: 🚀
+        - generic [ref=f1e23]: Startup
+      - link "🔗 9Router" [ref=f1e24] [cursor=pointer]:
+        - /url: /admin/downstream
+        - generic [ref=f1e25]: 🔗
+        - generic [ref=f1e26]: 9Router
+      - link "🔒 Privacy & Logs" [ref=f1e27] [cursor=pointer]:
+        - /url: /admin/privacy
+        - generic [ref=f1e28]: 🔒
+        - generic [ref=f1e29]: Privacy & Logs
+      - link "🛠️ Advanced" [ref=f1e30] [cursor=pointer]:
+        - /url: /admin/advanced
+        - generic [ref=f1e31]: 🛠️
+        - generic [ref=f1e32]: Advanced
+    - generic [ref=f1e34]:
+      - generic [ref=f1e35]: running
+      - generic [ref=f1e36]: manual
+  - main [ref=f1e37]:
+    - heading "Route Profiles" [level=2] [ref=f1e242]
+    - generic [ref=f1e243]:
+      - generic [ref=f1e245]:
+        - generic [ref=f1e246]:
+          - heading "Route Profiles" [level=2] [ref=f1e247]
+          - button "Add Profile" [ref=f1e248] [cursor=pointer]
+        - table [ref=f1e250]:
+          - rowgroup [ref=f1e251]:
+            - row "Name Label Description Downstream Alias Priority Enabled Actions" [ref=f1e252]:
+              - columnheader "Name" [ref=f1e253]
+              - columnheader "Label" [ref=f1e254]
+              - columnheader "Description" [ref=f1e255]
+              - columnheader "Downstream Alias" [ref=f1e256]
+              - columnheader "Priority" [ref=f1e257]
+              - columnheader "Enabled" [ref=f1e258]
+              - columnheader "Actions" [ref=f1e259]
+          - rowgroup [ref=f1e260]:
+            - row "route.architect Architecture System design, architecture planning combo.deep_reasoning quality Edit Delete" [ref=f1e261]:
+              - cell "route.architect" [ref=f1e262]
+              - cell "Architecture" [ref=f1e263]
+              - cell "System design, architecture planning" [ref=f1e264]
+              - cell "combo.deep_reasoning" [ref=f1e265]
+              - cell "quality" [ref=f1e266]:
+                - generic [ref=f1e267]: quality
+              - cell [ref=f1e268]:
+                - checkbox [checked] [ref=f1e269] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e270]:
+                - button "Edit" [ref=f1e271] [cursor=pointer]
+                - button "Delete" [ref=f1e272] [cursor=pointer]
+            - row "route.backend Backend API, database, service, architecture, server logic combo.backend balanced Edit Delete" [ref=f1e273]:
+              - cell "route.backend" [ref=f1e274]
+              - cell "Backend" [ref=f1e275]
+              - cell "API, database, service, architecture, server logic" [ref=f1e276]
+              - cell "combo.backend" [ref=f1e277]
+              - cell "balanced" [ref=f1e278]:
+                - generic [ref=f1e279]: balanced
+              - cell [ref=f1e280]:
+                - checkbox [checked] [ref=f1e281] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e282]:
+                - button "Edit" [ref=f1e283] [cursor=pointer]
+                - button "Delete" [ref=f1e284] [cursor=pointer]
+            - row "route.debugging Debugging Error analysis, debugging, root cause combo.debugging quality Edit Delete" [ref=f1e285]:
+              - cell "route.debugging" [ref=f1e286]
+              - cell "Debugging" [ref=f1e287]
+              - cell "Error analysis, debugging, root cause" [ref=f1e288]
+              - cell "combo.debugging" [ref=f1e289]
+              - cell "quality" [ref=f1e290]:
+                - generic [ref=f1e291]: quality
+              - cell [ref=f1e292]:
+                - checkbox [checked] [ref=f1e293] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e294]:
+                - button "Edit" [ref=f1e295] [cursor=pointer]
+                - button "Delete" [ref=f1e296] [cursor=pointer]
+            - row "route.default Default Default fallback route combo.default balanced Edit" [ref=f1e297]:
+              - cell "route.default" [ref=f1e298]
+              - cell "Default" [ref=f1e299]
+              - cell "Default fallback route" [ref=f1e300]
+              - cell "combo.default" [ref=f1e301]
+              - cell "balanced" [ref=f1e302]:
+                - generic [ref=f1e303]: balanced
+              - cell [ref=f1e304]:
+                - checkbox [checked] [disabled] [ref=f1e305]
+              - cell "Edit" [ref=f1e306]:
+                - button "Edit" [ref=f1e307] [cursor=pointer]
+            - row "route.design Design UI, UX, design system, layout, visual thinking combo.design quality Edit Delete" [ref=f1e308]:
+              - cell "route.design" [ref=f1e309]
+              - cell "Design" [ref=f1e310]
+              - cell "UI, UX, design system, layout, visual thinking" [ref=f1e311]
+              - cell "combo.design" [ref=f1e312]
+              - cell "quality" [ref=f1e313]:
+                - generic [ref=f1e314]: quality
+              - cell [ref=f1e315]:
+                - checkbox [checked] [ref=f1e316] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e317]:
+                - button "Edit" [ref=f1e318] [cursor=pointer]
+                - button "Delete" [ref=f1e319] [cursor=pointer]
+            - row "route.documentation Documentation README, docstrings, technical documentation combo.documentation balanced Edit Delete" [ref=f1e320]:
+              - cell "route.documentation" [ref=f1e321]
+              - cell "Documentation" [ref=f1e322]
+              - cell "README, docstrings, technical documentation" [ref=f1e323]
+              - cell "combo.documentation" [ref=f1e324]
+              - cell "balanced" [ref=f1e325]:
+                - generic [ref=f1e326]: balanced
+              - cell [ref=f1e327]:
+                - checkbox [checked] [ref=f1e328] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e329]:
+                - button "Edit" [ref=f1e330] [cursor=pointer]
+                - button "Delete" [ref=f1e331] [cursor=pointer]
+            - row "route.frontend Frontend Vue, React, UI component, client-side implementation combo.frontend balanced Edit Delete" [ref=f1e332]:
+              - cell "route.frontend" [ref=f1e333]
+              - cell "Frontend" [ref=f1e334]
+              - cell "Vue, React, UI component, client-side implementation" [ref=f1e335]
+              - cell "combo.frontend" [ref=f1e336]
+              - cell "balanced" [ref=f1e337]:
+                - generic [ref=f1e338]: balanced
+              - cell [ref=f1e339]:
+                - checkbox [checked] [ref=f1e340] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e341]:
+                - button "Edit" [ref=f1e342] [cursor=pointer]
+                - button "Delete" [ref=f1e343] [cursor=pointer]
+            - row "route.fullstack Fullstack Tasks spanning frontend and backend combo.fullstack balanced Edit Delete" [ref=f1e344]:
+              - cell "route.fullstack" [ref=f1e345]
+              - cell "Fullstack" [ref=f1e346]
+              - cell "Tasks spanning frontend and backend" [ref=f1e347]
+              - cell "combo.fullstack" [ref=f1e348]
+              - cell "balanced" [ref=f1e349]:
+                - generic [ref=f1e350]: balanced
+              - cell [ref=f1e351]:
+                - checkbox [checked] [ref=f1e352] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e353]:
+                - button "Edit" [ref=f1e354] [cursor=pointer]
+                - button "Delete" [ref=f1e355] [cursor=pointer]
+            - row "route.long_context Long Context Long context analysis, multi-file review combo.long_context balanced Edit Delete" [ref=f1e356]:
+              - cell "route.long_context" [ref=f1e357]
+              - cell "Long Context" [ref=f1e358]
+              - cell "Long context analysis, multi-file review" [ref=f1e359]
+              - cell "combo.long_context" [ref=f1e360]
+              - cell "balanced" [ref=f1e361]:
+                - generic [ref=f1e362]: balanced
+              - cell [ref=f1e363]:
+                - checkbox [checked] [ref=f1e364] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e365]:
+                - button "Edit" [ref=f1e366] [cursor=pointer]
+                - button "Delete" [ref=f1e367] [cursor=pointer]
+            - row "route.low_cost Low Cost Lightweight tasks, cost-optimized combo.low_cost cost Edit Delete" [ref=f1e368]:
+              - cell "route.low_cost" [ref=f1e369]
+              - cell "Low Cost" [ref=f1e370]
+              - cell "Lightweight tasks, cost-optimized" [ref=f1e371]
+              - cell "combo.low_cost" [ref=f1e372]
+              - cell "cost" [ref=f1e373]:
+                - generic [ref=f1e374]: cost
+              - cell [ref=f1e375]:
+                - checkbox [checked] [ref=f1e376] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e377]:
+                - button "Edit" [ref=f1e378] [cursor=pointer]
+                - button "Delete" [ref=f1e379] [cursor=pointer]
+            - row "route.reasoning Reasoning Complex reasoning, analysis combo.deep_reasoning quality Edit Delete" [ref=f1e380]:
+              - cell "route.reasoning" [ref=f1e381]
+              - cell "Reasoning" [ref=f1e382]
+              - cell "Complex reasoning, analysis" [ref=f1e383]
+              - cell "combo.deep_reasoning" [ref=f1e384]
+              - cell "quality" [ref=f1e385]:
+                - generic [ref=f1e386]: quality
+              - cell [ref=f1e387]:
+                - checkbox [checked] [ref=f1e388] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e389]:
+                - button "Edit" [ref=f1e390] [cursor=pointer]
+                - button "Delete" [ref=f1e391] [cursor=pointer]
+            - row "route.refactoring Refactoring Code cleanup, restructuring, maintainability combo.refactor quality Edit Delete" [ref=f1e392]:
+              - cell "route.refactoring" [ref=f1e393]
+              - cell "Refactoring" [ref=f1e394]
+              - cell "Code cleanup, restructuring, maintainability" [ref=f1e395]
+              - cell "combo.refactor" [ref=f1e396]
+              - cell "quality" [ref=f1e397]:
+                - generic [ref=f1e398]: quality
+              - cell [ref=f1e399]:
+                - checkbox [checked] [ref=f1e400] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e401]:
+                - button "Edit" [ref=f1e402] [cursor=pointer]
+                - button "Delete" [ref=f1e403] [cursor=pointer]
+            - row "route.security Security Security review, risk analysis combo.security_review quality Edit Delete" [ref=f1e404]:
+              - cell "route.security" [ref=f1e405]
+              - cell "Security" [ref=f1e406]
+              - cell "Security review, risk analysis" [ref=f1e407]
+              - cell "combo.security_review" [ref=f1e408]
+              - cell "quality" [ref=f1e409]:
+                - generic [ref=f1e410]: quality
+              - cell [ref=f1e411]:
+                - checkbox [checked] [ref=f1e412] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e413]:
+                - button "Edit" [ref=f1e414] [cursor=pointer]
+                - button "Delete" [ref=f1e415] [cursor=pointer]
+            - row "route.testing Testing Unit tests, integration tests, test scenarios combo.test_generation balanced Edit Delete" [ref=f1e416]:
+              - cell "route.testing" [ref=f1e417]
+              - cell "Testing" [ref=f1e418]
+              - cell "Unit tests, integration tests, test scenarios" [ref=f1e419]
+              - cell "combo.test_generation" [ref=f1e420]
+              - cell "balanced" [ref=f1e421]:
+                - generic [ref=f1e422]: balanced
+              - cell [ref=f1e423]:
+                - checkbox [checked] [ref=f1e424] [cursor=pointer]
+              - cell "Edit Delete" [ref=f1e425]:
+                - button "Edit" [ref=f1e426] [cursor=pointer]
+                - button "Delete" [ref=f1e427] [cursor=pointer]
+      - button "Save Changes" [disabled]
+      - option "Quality"
+      - option "Balanced" [selected]
+      - option "Cost"

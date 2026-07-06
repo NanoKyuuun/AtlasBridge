@@ -1,0 +1,438 @@
+{
+  "version": "0.1",
+  "description": "Initial evaluation dataset for Smart AI Proxy classifier and routing behavior. All prompts are synthetic and safe.",
+  "categories": [
+    {
+      "task_type": "design_task",
+      "expected_route": "route.design",
+      "examples": [
+        {
+          "id": "design-001",
+          "name": "UI component design",
+          "prompt": "Design a responsive navigation bar component with mobile hamburger menu, dark mode toggle, and user avatar dropdown. Should follow modern design system principles.",
+          "expected_task_type": "design_task",
+          "expected_route": "route.design"
+        },
+        {
+          "id": "design-002",
+          "name": "Dashboard layout",
+          "prompt": "Create a dashboard layout with sidebar navigation, top status bar, and card-based content area. Use a clean, modern design with consistent spacing and typography.",
+          "expected_task_type": "design_task",
+          "expected_route": "route.design"
+        },
+        {
+          "id": "design-003",
+          "name": "Color system",
+          "prompt": "Design a color system for a SaaS application with primary, secondary, accent, and semantic colors. Include light and dark mode variants.",
+          "expected_task_type": "design_task",
+          "expected_route": "route.design"
+        }
+      ]
+    },
+    {
+      "task_type": "backend_engineering",
+      "expected_route": "route.backend",
+      "examples": [
+        {
+          "id": "backend-001",
+          "name": "REST API endpoint",
+          "prompt": "Implement a REST API endpoint for user authentication with JWT token generation, password hashing using bcrypt, and refresh token rotation.",
+          "expected_task_type": "backend_engineering",
+          "expected_route": "route.backend"
+        },
+        {
+          "id": "backend-002",
+          "name": "Database migration",
+          "prompt": "Write a database migration script to add a new `user_preferences` table with foreign key to the users table and proper indexes.",
+          "expected_task_type": "backend_engineering",
+          "expected_route": "route.backend"
+        },
+        {
+          "id": "backend-003",
+          "name": "Server middleware",
+          "prompt": "Implement a rate limiting middleware for the API server that tracks requests per IP and returns 429 when limits are exceeded.",
+          "expected_task_type": "backend_engineering",
+          "expected_route": "route.backend"
+        }
+      ]
+    },
+    {
+      "task_type": "frontend_engineering",
+      "expected_route": "route.frontend",
+      "examples": [
+        {
+          "id": "frontend-001",
+          "name": "React component",
+          "prompt": "Build a searchable dropdown component in React with debounce, keyboard navigation, and virtualized list for large datasets.",
+          "expected_task_type": "frontend_engineering",
+          "expected_route": "route.frontend"
+        },
+        {
+          "id": "frontend-002",
+          "name": "CSS grid layout",
+          "prompt": "Implement a responsive CSS grid layout for a photo gallery that adapts from 1 column on mobile to 4 columns on desktop.",
+          "expected_task_type": "frontend_engineering",
+          "expected_route": "route.frontend"
+        },
+        {
+          "id": "frontend-003",
+          "name": "State management",
+          "prompt": "Create a React context provider for managing shopping cart state with add, remove, update quantity, and clear operations.",
+          "expected_task_type": "frontend_engineering",
+          "expected_route": "route.frontend"
+        }
+      ]
+    },
+    {
+      "task_type": "fullstack_engineering",
+      "expected_route": "route.fullstack",
+      "examples": [
+        {
+          "id": "fullstack-001",
+          "name": "Feature with API and UI",
+          "prompt": "Build a task management feature with a Go backend API for CRUD operations and a Vue frontend component for the task board with drag and drop.",
+          "expected_task_type": "fullstack_engineering",
+          "expected_route": "route.fullstack"
+        },
+        {
+          "id": "fullstack-002",
+          "name": "Authentication flow",
+          "prompt": "Implement a complete authentication flow including the backend JWT validation middleware, frontend login form, and protected route handling.",
+          "expected_task_type": "fullstack_engineering",
+          "expected_route": "route.fullstack"
+        },
+        {
+          "id": "fullstack-003",
+          "name": "Real-time feature",
+          "prompt": "Create a real-time chat feature with WebSocket backend handler in Go and a Vue frontend component that displays messages and handles reconnection.",
+          "expected_task_type": "fullstack_engineering",
+          "expected_route": "route.fullstack"
+        }
+      ]
+    },
+    {
+      "task_type": "code_generation",
+      "expected_route": "route.backend",
+      "examples": [
+        {
+          "id": "codegen-001",
+          "name": "Generate utility function",
+          "prompt": "Write a Go function that takes a URL string and returns the parsed components including scheme, host, path, and query parameters.",
+          "expected_task_type": "backend_engineering",
+          "expected_route": "route.backend"
+        },
+        {
+          "id": "codegen-002",
+          "name": "Generate TypeScript types",
+          "prompt": "Generate TypeScript interface definitions for an OpenAI-compatible chat completion request and response.",
+          "expected_task_type": "frontend_engineering",
+          "expected_route": "route.frontend"
+        },
+        {
+          "id": "codegen-003",
+          "name": "Generate data model",
+          "prompt": "Create a Go struct for a user profile with fields for name, email, avatar URL, preferences, and timestamps with proper JSON tags.",
+          "expected_task_type": "backend_engineering",
+          "expected_route": "route.backend"
+        }
+      ]
+    },
+    {
+      "task_type": "debugging",
+      "expected_route": "route.debugging",
+      "examples": [
+        {
+          "id": "debug-001",
+          "name": "Fix null pointer",
+          "prompt": "I'm getting a nil pointer dereference error in my Go handler when the request body is empty. Here's the stack trace:\n\npanic: runtime error: invalid memory address or nil pointer dereference\n\tgoroutine 1 [running]:\n\tmain.handleRequest(0x1234, 0x5678)\n\t\t/main.go:42 +0x123\n\nHow do I fix this?",
+          "expected_task_type": "debugging",
+          "expected_route": "route.debugging"
+        },
+        {
+          "id": "debug-002",
+          "name": "Fix authentication error",
+          "prompt": "My API endpoint returns 401 Unauthorized even though I'm passing the correct Bearer token. The token was generated by JWT and I verified it's not expired.",
+          "expected_task_type": "debugging",
+          "expected_route": "route.debugging"
+        },
+        {
+          "id": "debug-003",
+          "name": "Debug CSS issue",
+          "prompt": "The dropdown menu is appearing behind the modal overlay. I've tried z-index but it's not working. The CSS shows position: absolute on both elements.",
+          "expected_task_type": "debugging",
+          "expected_route": "route.debugging"
+        }
+      ]
+    },
+    {
+      "task_type": "refactoring",
+      "expected_route": "route.refactoring",
+      "examples": [
+        {
+          "id": "refactor-001",
+          "name": "Extract function",
+          "prompt": "This handler function is 200 lines long with multiple responsibilities. Please refactor it by extracting the validation, processing, and response logic into separate functions.",
+          "expected_task_type": "refactoring",
+          "expected_route": "route.refactoring"
+        },
+        {
+          "id": "refactor-002",
+          "name": "Clean up imports",
+          "prompt": "The Go file has unused imports and the import grouping is inconsistent. Please clean up the imports following Go conventions.",
+          "expected_task_type": "refactoring",
+          "expected_route": "route.refactoring"
+        },
+        {
+          "id": "refactor-003",
+          "name": "Optimize database queries",
+          "prompt": "The N+1 query problem is causing slow performance. Please refactor the code to use batch queries or joins instead of looping through records.",
+          "expected_task_type": "refactoring",
+          "expected_route": "route.refactoring"
+        }
+      ]
+    },
+    {
+      "task_type": "test_generation",
+      "expected_route": "route.testing",
+      "examples": [
+        {
+          "id": "test-001",
+          "name": "Unit tests for handler",
+          "prompt": "Write unit tests for the user registration handler including test cases for successful registration, duplicate email, invalid input, and missing required fields.",
+          "expected_task_type": "test_generation",
+          "expected_route": "route.testing"
+        },
+        {
+          "id": "test-002",
+          "name": "Integration test",
+          "prompt": "Create an integration test that verifies the complete authentication flow from login to token refresh to accessing a protected endpoint.",
+          "expected_task_type": "test_generation",
+          "expected_route": "route.testing"
+        },
+        {
+          "id": "test-003",
+          "name": "Test edge cases",
+          "prompt": "Add test cases for the URL parser function covering edge cases like empty strings, malformed URLs, URLs with special characters, and very long URLs.",
+          "expected_task_type": "test_generation",
+          "expected_route": "route.testing"
+        }
+      ]
+    },
+    {
+      "task_type": "documentation",
+      "expected_route": "route.documentation",
+      "examples": [
+        {
+          "id": "docs-001",
+          "name": "API documentation",
+          "prompt": "Write comprehensive API documentation for the user endpoints including request/response examples, error codes, and authentication requirements.",
+          "expected_task_type": "documentation",
+          "expected_route": "route.documentation"
+        },
+        {
+          "id": "docs-002",
+          "name": "README file",
+          "prompt": "Create a README.md file for this project with sections for overview, installation, configuration, usage examples, and contributing guidelines.",
+          "expected_task_type": "documentation",
+          "expected_route": "route.documentation"
+        },
+        {
+          "id": "docs-003",
+          "name": "Code comments",
+          "prompt": "Add docstrings and comments to the routing engine explaining the classification logic, confidence scoring, and fallback behavior.",
+          "expected_task_type": "documentation",
+          "expected_route": "route.documentation"
+        }
+      ]
+    },
+    {
+      "task_type": "code_review",
+      "expected_route": "route.default",
+      "examples": [
+        {
+          "id": "review-001",
+          "name": "Review security practices",
+          "prompt": "Review this authentication middleware for security vulnerabilities including SQL injection, XSS, and improper token validation.",
+          "expected_task_type": "security_review",
+          "expected_route": "route.security"
+        },
+        {
+          "id": "review-002",
+          "name": "Review code quality",
+          "prompt": "Please review this Go code for potential issues including error handling, race conditions, and adherence to Go best practices.",
+          "expected_task_type": "general_chat",
+          "expected_route": "route.default"
+        },
+        {
+          "id": "review-003",
+          "name": "Review performance",
+          "prompt": "Review this database query code for performance issues and suggest optimizations for handling large datasets.",
+          "expected_task_type": "general_chat",
+          "expected_route": "route.default"
+        }
+      ]
+    },
+    {
+      "task_type": "architecture_design",
+      "expected_route": "route.architect",
+      "examples": [
+        {
+          "id": "arch-001",
+          "name": "System architecture",
+          "prompt": "Design the architecture for a microservices-based e-commerce platform with separate services for user management, product catalog, order processing, and payment.",
+          "expected_task_type": "architecture_design",
+          "expected_route": "route.architect"
+        },
+        {
+          "id": "arch-002",
+          "name": "API design",
+          "prompt": "Design a RESTful API architecture for a task management application with proper resource naming, versioning, pagination, and HATEOAS principles.",
+          "expected_task_type": "architecture_design",
+          "expected_route": "route.architect"
+        },
+        {
+          "id": "arch-003",
+          "name": "Scalability planning",
+          "prompt": "Plan the scaling strategy for a real-time chat application that needs to handle 100k concurrent connections with message persistence.",
+          "expected_task_type": "architecture_design",
+          "expected_route": "route.architect"
+        }
+      ]
+    },
+    {
+      "task_type": "security_review",
+      "expected_route": "route.security",
+      "examples": [
+        {
+          "id": "security-001",
+          "name": "Vulnerability assessment",
+          "prompt": "Perform a security review of this authentication system looking for vulnerabilities like insecure password storage, missing CSRF protection, and session fixation.",
+          "expected_task_type": "security_review",
+          "expected_route": "route.security"
+        },
+        {
+          "id": "security-002",
+          "name": "API security audit",
+          "prompt": "Audit this REST API for security issues including rate limiting, input validation, authentication bypass, and data exposure risks.",
+          "expected_task_type": "security_review",
+          "expected_route": "route.security"
+        },
+        {
+          "id": "security-003",
+          "name": "Encryption review",
+          "prompt": "Review the data encryption implementation checking for proper key management, secure algorithms, and protection of sensitive data at rest and in transit.",
+          "expected_task_type": "security_review",
+          "expected_route": "route.security"
+        }
+      ]
+    },
+    {
+      "task_type": "long_context_analysis",
+      "expected_route": "route.long_context",
+      "examples": [
+        {
+          "id": "longctx-001",
+          "name": "Multi-file analysis",
+          "prompt": "Please analyze the following codebase across 15 files and identify architectural patterns, dependencies, and potential improvements.",
+          "expected_task_type": "long_context_analysis",
+          "expected_route": "route.long_context"
+        },
+        {
+          "id": "longctx-002",
+          "name": "Large document review",
+          "prompt": "Review this 50-page technical specification document and provide a summary of key decisions, risks, and implementation considerations.",
+          "expected_task_type": "long_context_analysis",
+          "expected_route": "route.long_context"
+        },
+        {
+          "id": "longctx-003",
+          "name": "Codebase refactoring plan",
+          "prompt": "Analyze this entire Go project with 30+ source files and create a comprehensive refactoring plan addressing code duplication, error handling patterns, and module organization.",
+          "expected_task_type": "long_context_analysis",
+          "expected_route": "route.long_context"
+        }
+      ]
+    },
+    {
+      "task_type": "lightweight_task",
+      "expected_route": "route.low_cost",
+      "examples": [
+        {
+          "id": "light-001",
+          "name": "Simple rename",
+          "prompt": "Rename the variable `userData` to `userProfile` across all files in the project.",
+          "expected_task_type": "lightweight_task",
+          "expected_route": "route.low_cost"
+        },
+        {
+          "id": "light-002",
+          "name": "Add constant",
+          "prompt": "Add a constant for the maximum upload size of 10MB to the config file.",
+          "expected_task_type": "lightweight_task",
+          "expected_route": "route.low_cost"
+        },
+        {
+          "id": "light-003",
+          "name": "Simple format change",
+          "prompt": "Update the date format in the logs from YYYY-MM-DD to DD/MM/YYYY.",
+          "expected_task_type": "lightweight_task",
+          "expected_route": "route.low_cost"
+        }
+      ]
+    },
+    {
+      "task_type": "general_chat",
+      "expected_route": "route.default",
+      "examples": [
+        {
+          "id": "chat-001",
+          "name": "General question",
+          "prompt": "What is the difference between REST and GraphQL APIs?",
+          "expected_task_type": "general_chat",
+          "expected_route": "route.default"
+        },
+        {
+          "id": "chat-002",
+          "name": "Concept explanation",
+          "prompt": "Can you explain what dependency injection is and why it's useful?",
+          "expected_task_type": "general_chat",
+          "expected_route": "route.default"
+        },
+        {
+          "id": "chat-003",
+          "name": "Best practices question",
+          "prompt": "What are some best practices for writing clean code in Go?",
+          "expected_task_type": "general_chat",
+          "expected_route": "route.default"
+        }
+      ]
+    },
+    {
+      "task_type": "unknown",
+      "expected_route": "route.default",
+      "examples": [
+        {
+          "id": "unknown-001",
+          "name": "Ambiguous request",
+          "prompt": "Help me with my project.",
+          "expected_task_type": "unknown",
+          "expected_route": "route.default"
+        },
+        {
+          "id": "unknown-002",
+          "name": "Very short prompt",
+          "prompt": "Fix it.",
+          "expected_task_type": "unknown",
+          "expected_route": "route.default"
+        },
+        {
+          "id": "unknown-003",
+          "name": "Non-technical",
+          "prompt": "Can you recommend a good book about software engineering?",
+          "expected_task_type": "unknown",
+          "expected_route": "route.default"
+        }
+      ]
+    }
+  ]
+}

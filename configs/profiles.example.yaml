@@ -1,0 +1,98 @@
+route_profiles:
+  route.default:
+    label: Default
+    description: Default fallback route
+    downstream_alias: combo.default
+    priority: balanced
+    enabled: true
+
+  route.design:
+    label: Design
+    description: UI, UX, design system, layout, visual thinking
+    downstream_alias: combo.design
+    priority: quality
+    enabled: true
+
+  route.backend:
+    label: Backend
+    description: API, database, service, architecture, server logic
+    downstream_alias: combo.backend
+    priority: balanced
+    enabled: true
+
+  route.frontend:
+    label: Frontend
+    description: Vue, React, UI component, client-side implementation
+    downstream_alias: combo.frontend
+    priority: balanced
+    enabled: true
+
+  route.fullstack:
+    label: Fullstack
+    description: Tasks spanning frontend and backend
+    downstream_alias: combo.fullstack
+    priority: balanced
+    enabled: true
+
+  route.debugging:
+    label: Debugging
+    description: Error analysis, debugging, root cause
+    downstream_alias: combo.debugging
+    priority: quality
+    enabled: true
+
+  route.refactoring:
+    label: Refactoring
+    description: Code cleanup, restructuring, maintainability
+    downstream_alias: combo.refactor
+    priority: quality
+    enabled: true
+
+  route.testing:
+    label: Testing
+    description: Unit tests, integration tests, test scenarios
+    downstream_alias: combo.test_generation
+    priority: balanced
+    enabled: true
+
+  route.documentation:
+    label: Documentation
+    description: README, docstrings, technical documentation
+    downstream_alias: combo.documentation
+    priority: balanced
+    enabled: true
+
+  route.architect:
+    label: Architecture
+    description: System design, architecture planning
+    downstream_alias: combo.deep_reasoning
+    priority: quality
+    enabled: true
+
+  route.reasoning:
+    label: Reasoning
+    description: Complex reasoning, analysis
+    downstream_alias: combo.deep_reasoning
+    priority: quality
+    enabled: true
+
+  route.security:
+    label: Security
+    description: Security review, risk analysis
+    downstream_alias: combo.security_review
+    priority: quality
+    enabled: true
+
+  route.low_cost:
+    label: Low Cost
+    description: Lightweight tasks, cost-optimized
+    downstream_alias: combo.low_cost
+    priority: cost
+    enabled: true
+
+  route.long_context:
+    label: Long Context
+    description: Long context analysis, multi-file review
+    downstream_alias: combo.long_context
+    priority: balanced
+    enabled: true
