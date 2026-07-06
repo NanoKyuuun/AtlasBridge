@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/analyzer"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/classifier"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/config"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/forwarder"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/observability"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/routing"
+	"github.com/atlasbridge/atlasbridge/internal/analyzer"
+	"github.com/atlasbridge/atlasbridge/internal/classifier"
+	"github.com/atlasbridge/atlasbridge/internal/config"
+	"github.com/atlasbridge/atlasbridge/internal/forwarder"
+	"github.com/atlasbridge/atlasbridge/internal/observability"
+	"github.com/atlasbridge/atlasbridge/internal/routing"
 )
 
 type AdminDeps struct {

@@ -1,7 +1,7 @@
 package classifier
 
 import (
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/analyzer"
+	"github.com/atlasbridge/atlasbridge/internal/analyzer"
 )
 
 type Classification struct {

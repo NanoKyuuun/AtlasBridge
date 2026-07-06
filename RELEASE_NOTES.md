@@ -25,6 +25,6 @@ All notable changes to this release will be documented in this file.
 
 ### Quick Start
 1. Extract portable ZIP
-2. Run `smart-ai-proxy.exe`
+2. Run `atlasbridge.exe`
 3. Open http://127.0.0.1:20127/admin
 4. Configure routing preferences

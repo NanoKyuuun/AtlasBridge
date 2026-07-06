@@ -1,4 +1,4 @@
-module github.com/smart-ai-proxy/smart-ai-proxy
+module github.com/atlasbridge/atlasbridge
 
 go 1.25.5
 

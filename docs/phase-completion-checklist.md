@@ -1,13 +1,14 @@
-# Smart AI Proxy
+# AtlasBridge
 # Phase Completion Checklist v0.1
 
 **Document Type:** Phase Completion Checklist  
-**Project Name:** Smart AI Proxy  
+**Project Name:** AtlasBridge  
+**Full Name:** AtlasBridge AI Proxy  
 **Status:** Draft v0.1  
 **Based On:** PRD v1.1, Technical Plan v0.1, Implementation Plan v0.2  
 **Primary Runtime:** Local developer machine  
 **Primary Downstream:** 9Router  
-**Default Smart AI Proxy Port:** `20127`  
+**Default AtlasBridge Port:** `20127`  
 **Default 9Router Port:** `20128`  
 **Backend/Core:** Go / Golang  
 **HTTP Layer:** `net/http` + `chi`  
@@ -19,7 +20,7 @@
 
 ## 1. Purpose
 
-Dokumen ini digunakan untuk memastikan setiap fase implementasi Smart AI Proxy benar-benar selesai sebelum tim melanjutkan ke fase berikutnya.
+Dokumen ini digunakan untuk memastikan setiap fase implementasi AtlasBridge benar-benar selesai sebelum tim melanjutkan ke fase berikutnya.
 
 Checklist ini berfungsi sebagai:
 
@@ -27,9 +28,9 @@ Checklist ini berfungsi sebagai:
 - kontrol agar scope tidak melebar,
 - alat tracking progress engineering,
 - dasar sign-off product, engineering, QA, DevOps, dan documentation,
-- pengingat batas tanggung jawab antara Smart AI Proxy dan 9Router.
+- pengingat batas tanggung jawab antara AtlasBridge dan 9Router.
 
-Smart AI Proxy hanya bertanggung jawab sebagai intelligent decision layer:
+AtlasBridge hanya bertanggung jawab sebagai intelligent decision layer:
 
 ```text
 Receive OpenAI-compatible request
@@ -68,7 +69,7 @@ Sebelum sebuah fase dinyatakan selesai, seluruh aturan global berikut harus dipe
 - [x] Streaming behavior tetap berjalan jika fase menyentuh proxy path.
 - [x] Error handling jelas dan tidak membuat user bingung.
 - [x] Feature tidak mengambil alih fungsi provider-level milik 9Router.
-- [x] Default port Smart AI Proxy tetap `20127` kecuali user mengubah config.
+- [x] Default port AtlasBridge tetap `20127` kecuali user mengubah config.
 - [x] Default downstream 9Router tetap `http://127.0.0.1:20128/v1`.
 - [x] Web UI dan API tetap local-first.
 - [x] Default bind address tetap `127.0.0.1`.
@@ -101,6 +102,22 @@ Sebelum sebuah fase dinyatakan selesai, seluruh aturan global berikut harus dipe
 - [ ] Troubleshooting diperbarui jika ada error baru.
 - [x] Release notes internal diperbarui.
 - [x] User-facing behavior terdokumentasi.
+
+---
+
+## 2.5 AtlasBridge Rebrand Checklist
+
+- [x] Product name updated to AtlasBridge.
+- [x] Full name documented as AtlasBridge AI Proxy.
+- [x] Dashboard title updated to AtlasBridge Dashboard.
+- [x] Tray app name updated to AtlasBridge.
+- [x] CLI command updated to atlasbridge.
+- [x] Binary name updated to atlasbridge.
+- [x] NPM package name updated to atlasbridge.
+- [x] Config folder updated to AtlasBridge.
+- [x] Icon assets prepared in docs/assets and runtime paths.
+- [x] Old smart-* aliases retained.
+- [x] New atlas-* aliases added.
 
 ---
 
@@ -143,14 +160,14 @@ Menyiapkan struktur project, skeleton aplikasi, keputusan teknis final, config d
 - [x] `config.example.yaml` tersedia.
 - [x] `routes.example.yaml` tersedia.
 - [x] `profiles.example.yaml` tersedia.
-- [x] Default Smart AI Proxy port `20127` ditetapkan.
+- [x] Default AtlasBridge port `20127` ditetapkan.
 - [x] Default 9Router port `20128` ditetapkan.
 - [x] Development scripts tersedia.
 - [x] Initial README tersedia.
 
 ## 4.3 Repository Checklist
 
-- [x] Folder `cmd/smart-ai-proxy/` dibuat.
+- [x] Folder `cmd/atlasbridge/` dibuat.
 - [x] Folder `internal/app/` dibuat.
 - [x] Folder `internal/server/` dibuat.
 - [x] Folder `internal/proxy/` dibuat.
@@ -225,7 +242,7 @@ Phase 0 selesai jika:
 
 ## 5.1 Phase Goal
 
-Membuat Smart AI Proxy dapat menerima request OpenAI-compatible dan meneruskannya ke 9Router dengan response streaming dan non-streaming.
+Membuat AtlasBridge dapat menerima request OpenAI-compatible dan meneruskannya ke 9Router dengan response streaming dan non-streaming.
 
 ## 5.2 Required Deliverables
 
@@ -284,8 +301,8 @@ Membuat Smart AI Proxy dapat menerima request OpenAI-compatible dan meneruskanny
 - [x] Downstream timeout menghasilkan error yang jelas.
 - [x] Invalid OpenAI-compatible request menghasilkan error yang jelas.
 - [x] Server tidak panic saat downstream gagal.
-- [x] Smart AI Proxy tidak mencoba provider fallback sendiri.
-- [x] Smart AI Proxy tidak melakukan load balancing provider.
+- [x] AtlasBridge tidak mencoba provider fallback sendiri.
+- [x] AtlasBridge tidak melakukan load balancing provider.
 
 ## 5.7 Testing Checklist
 
@@ -307,7 +324,7 @@ Phase 1 selesai jika:
 - [x] Non-streaming berjalan.
 - [x] Metadata log tersedia.
 - [x] Secret tidak bocor di log.
-- [x] Tidak ada provider-level routing di Smart AI Proxy.
+- [x] Tidak ada provider-level routing di AtlasBridge.
 
 ## 5.9 Phase Sign-off
 
@@ -450,7 +467,7 @@ Phase 2 selesai jika:
 
 ## 7.1 Phase Goal
 
-Membuat user dapat mengatur Smart AI Proxy melalui Web UI lokal tanpa perlu edit config manual.
+Membuat user dapat mengatur AtlasBridge melalui Web UI lokal tanpa perlu edit config manual.
 
 ## 7.2 Required Deliverables
 
@@ -627,7 +644,7 @@ Phase 3 selesai jika:
 
 ## 8.1 Phase Goal
 
-Membuat Smart AI Proxy terasa seperti aplikasi lokal background dengan icon di system tray seperti 9Router.
+Membuat AtlasBridge terasa seperti aplikasi lokal background dengan icon di system tray seperti 9Router.
 
 ## 8.2 Required Deliverables
 
@@ -652,7 +669,7 @@ Membuat Smart AI Proxy terasa seperti aplikasi lokal background dengan icon di s
 
 ## 8.3 Tray Menu Checklist
 
-- [x] Menu menampilkan nama Smart AI Proxy.
+- [x] Menu menampilkan nama AtlasBridge.
 - [x] Menu menampilkan status Running/Stopped/Error.
 - [x] Menu menampilkan endpoint `127.0.0.1:20127`.
 - [x] Menu memiliki Open Dashboard.
@@ -743,7 +760,7 @@ Phase 4 selesai jika:
 
 ## 9.1 Phase Goal
 
-Membuat Smart AI Proxy mudah di-build, diinstall, dijalankan, dan didistribusikan kepada developer.
+Membuat AtlasBridge mudah di-build, diinstall, dijalankan, dan didistribusikan kepada developer.
 
 ## 9.2 Required Deliverables
 
@@ -774,11 +791,11 @@ Membuat Smart AI Proxy mudah di-build, diinstall, dijalankan, dan didistribusika
 ## 9.4 npm Wrapper Checklist
 
 - [x] Package name ditetapkan.
-- [x] CLI command `smart-ai-proxy` tersedia.
-- [x] Command `smart-ai-proxy start` tersedia.
-- [x] Command `smart-ai-proxy status` tersedia.
-- [x] Command `smart-ai-proxy open` tersedia.
-- [x] Command `smart-ai-proxy tray` tersedia.
+- [x] CLI command `atlasbridge` tersedia.
+- [x] Command `atlasbridge start` tersedia.
+- [x] Command `atlasbridge status` tersedia.
+- [x] Command `atlasbridge open` tersedia.
+- [x] Command `atlasbridge tray` tersedia.
 - [x] OS/arch detection tersedia atau MVP dibatasi Windows.
 - [x] Binary path handling tersedia.
 - [x] Install failure message jelas.
@@ -990,7 +1007,7 @@ Merilis versi MVP yang dapat digunakan developer secara realistis dengan batasan
 - [x] Config persists after restart.
 - [x] Safe passthrough works if classifier fails.
 - [x] 9Router failure shows clear message.
-- [x] No provider-level routing is implemented inside Smart AI Proxy.
+- [x] No provider-level routing is implemented inside AtlasBridge.
 - [x] Documentation is sufficient for first-time setup.
 
 ## 11.3 Release Artifact Checklist
@@ -1393,4 +1410,4 @@ Checklist ini harus dipakai sebagai dokumen hidup. Setiap kali PRD, Technical Pl
 
 Prinsip paling penting:
 
-> Smart AI Proxy memilih route terbaik dan menyediakan control panel untuk user. 9Router tetap mengeksekusi provider-level routing dengan andal.
+> AtlasBridge memilih route terbaik dan menyediakan control panel untuk user. 9Router tetap mengeksekusi provider-level routing dengan andal.

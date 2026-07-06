@@ -15,15 +15,15 @@
         </ul>
 
         <div v-if="step === 1" class="space-y-4">
-          <h3 class="text-lg font-semibold">Welcome to AtlasBridge</h3>
+          <h3 class="text-lg font-semibold">Welcome to AtlasBridge AI Proxy</h3>
           <p class="text-sm text-base-content/70">
-            This wizard will help you configure AtlasBridge for the first
-            time. You can change these settings later from the Web UI.
+            This wizard will help you configure AtlasBridge AI Proxy for the
+            first time. You can change these settings later from the Web UI.
           </p>
           <div class="alert alert-info">
             <span
-              >AtlasBridge acts as an intelligent routing layer between your
-              AI coding assistant and 9Router.</span
+              >AtlasBridge AI Proxy acts as an intelligent routing layer
+              between your AI coding assistant and 9Router.</span
             >
           </div>
           <button class="btn btn-primary" @click="step = 2">Get Started</button>
@@ -32,7 +32,7 @@
         <div v-if="step === 2" class="space-y-4">
           <h3 class="text-lg font-semibold">API Endpoint</h3>
           <p class="text-sm text-base-content/70">
-            Configure where AtlasBridge listens for requests.
+            Configure where AtlasBridge AI Proxy listens for requests.
           </p>
           <div class="form-control">
             <label class="label"><span class="label-text">Host</span></label>
@@ -95,7 +95,7 @@
         <div v-if="step === 4" class="space-y-4">
           <h3 class="text-lg font-semibold">Routing Mode</h3>
           <p class="text-sm text-base-content/70">
-            Choose how AtlasBridge routes requests.
+            Choose how AtlasBridge AI Proxy routes requests.
           </p>
           <div class="space-y-2">
             <label
@@ -146,7 +146,7 @@
         <div v-if="step === 5" class="space-y-4">
           <h3 class="text-lg font-semibold">Setup Complete</h3>
           <p class="text-sm text-base-content/70">
-            AtlasBridge is configured and ready to use.
+            AtlasBridge AI Proxy is configured and ready to use.
           </p>
           <div class="alert alert-success">
             <div>
@@ -161,8 +161,10 @@
           </div>
           <div class="alert alert-info">
             <span
-              >Use model <code class="font-mono">smart-auto</code> for automatic
-              routing, or pick a specific alias like
+              >Use model <code class="font-mono">atlas-auto</code> or
+              <code class="font-mono">smart-auto</code> for automatic routing,
+              or pick a specific alias like
+              <code class="font-mono">atlas-debug</code> /
               <code class="font-mono">smart-debug</code>.</span
             >
           </div>
@@ -206,7 +208,11 @@ const config = reactive({
     explicit_override_enabled: true,
     confidence_threshold: 0.55,
   },
-  app: { name: "AtlasBridge", mode: "always_on", first_run_completed: true },
+  app: {
+    name: "AtlasBridge AI Proxy",
+    mode: "always_on",
+    first_run_completed: true,
+  },
 });
 
 async function finish() {

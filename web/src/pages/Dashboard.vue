@@ -118,7 +118,7 @@
 
     <div class="card bg-base-100 shadow-md">
       <div class="card-body">
-        <h2 class="card-title text-sm">Smart Aliases</h2>
+        <h2 class="card-title text-sm">Model Aliases</h2>
         <div class="overflow-x-auto">
           <table class="table table-sm">
             <thead>
@@ -227,6 +227,41 @@ const downstreamBadge = computed(() => {
 });
 
 const smartAliases = [
+  {
+    id: "atlas-auto",
+    description: "Auto-route based on request analysis",
+    route: "auto",
+  },
+  {
+    id: "atlas-debug",
+    description: "Force debugging route",
+    route: "route.debugging",
+  },
+  {
+    id: "atlas-cheap",
+    description: "Force low-cost route",
+    route: "route.low_cost",
+  },
+  {
+    id: "atlas-docs",
+    description: "Force documentation route",
+    route: "route.documentation",
+  },
+  {
+    id: "atlas-architect",
+    description: "Force architecture route",
+    route: "route.architect",
+  },
+  {
+    id: "atlas-fast",
+    description: "Force low-latency optimized route",
+    route: "route.low_cost",
+  },
+  {
+    id: "atlas-long-context",
+    description: "Force long context analysis route",
+    route: "route.long_context",
+  },
   {
     id: "smart-auto",
     description: "Auto-route based on request analysis",
@@ -338,8 +373,20 @@ const comboPresets = [
   "combo.low_cost",
   "COding",
   "opencode",
+  "atlas-auto",
+  "atlas-debug",
+  "atlas-cheap",
+  "atlas-docs",
+  "atlas-architect",
+  "atlas-fast",
+  "atlas-long-context",
   "smart-auto",
   "smart-debug",
+  "smart-cheap",
+  "smart-docs",
+  "smart-architect",
+  "smart-fast",
+  "smart-long-context",
   "smart-code",
 ];
 

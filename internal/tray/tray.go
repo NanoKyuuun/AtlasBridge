@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	"github.com/getlantern/systray"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/config"
-	appruntime "github.com/smart-ai-proxy/smart-ai-proxy/internal/runtime"
+	"github.com/atlasbridge/atlasbridge/internal/config"
+	appruntime "github.com/atlasbridge/atlasbridge/internal/runtime"
 )
 
 type Tray struct {

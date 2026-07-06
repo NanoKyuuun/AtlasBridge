@@ -1,10 +1,10 @@
-# Blueprint Project: Smart AI Proxy
+# Blueprint Project: AtlasBridge
 
 ## 1. Executive Summary
 
-Smart AI Proxy adalah OpenAI-compatible proxy server yang berada di antara AI coding assistant seperti OpenCode, Cursor, Cline, Continue, atau aplikasi lain yang kompatibel dengan OpenAI API, dan 9Router sebagai downstream router.
+AtlasBridge adalah OpenAI-compatible proxy server yang berada di antara AI coding assistant seperti OpenCode, Cursor, Cline, Continue, atau aplikasi lain yang kompatibel dengan OpenAI API, dan 9Router sebagai downstream router.
 
-Tujuan utama Smart AI Proxy adalah menganalisis isi request, mengklasifikasikan jenis pekerjaan, lalu memilih AI combo atau routing tujuan yang paling sesuai sebelum request diteruskan ke 9Router. Smart AI Proxy tidak menggantikan peran 9Router. Seluruh fungsi seperti failover, load balancing, rotasi akun, fallback model, dan rate limit handling tetap menjadi tanggung jawab 9Router.
+Tujuan utama AtlasBridge adalah menganalisis isi request, mengklasifikasikan jenis pekerjaan, lalu memilih AI combo atau routing tujuan yang paling sesuai sebelum request diteruskan ke 9Router. AtlasBridge tidak menggantikan peran 9Router. Seluruh fungsi seperti failover, load balancing, rotasi akun, fallback model, dan rate limit handling tetap menjadi tanggung jawab 9Router.
 
 Dengan pendekatan ini, developer tidak perlu terus-menerus mengganti model AI secara manual. Sistem dapat memilih model atau kombinasi model yang paling relevan berdasarkan konteks pekerjaan, seperti coding, debugging, refactoring, reasoning, documentation, testing, code review, planning, atau task ringan.
 
@@ -12,11 +12,11 @@ Dengan pendekatan ini, developer tidak perlu terus-menerus mengganti model AI se
 
 ## 2. Project Vision
 
-Visi Smart AI Proxy adalah menjadi intelligent routing layer untuk ekosistem AI coding assistant yang mampu menghubungkan developer dengan model AI terbaik untuk setiap jenis pekerjaan secara otomatis, efisien, dan tetap kompatibel dengan standar OpenAI API.
+Visi AtlasBridge adalah menjadi intelligent routing layer untuk ekosistem AI coding assistant yang mampu menghubungkan developer dengan model AI terbaik untuk setiap jenis pekerjaan secara otomatis, efisien, dan tetap kompatibel dengan standar OpenAI API.
 
-Smart AI Proxy dirancang untuk menjadi lapisan pengambil keputusan, bukan lapisan eksekusi model. Sistem ini harus ringan, fleksibel, mudah diintegrasikan, dan dapat digunakan bersama berbagai router, terutama 9Router.
+AtlasBridge dirancang untuk menjadi lapisan pengambil keputusan, bukan lapisan eksekusi model. Sistem ini harus ringan, fleksibel, mudah diintegrasikan, dan dapat digunakan bersama berbagai router, terutama 9Router.
 
-Dalam jangka panjang, Smart AI Proxy dapat berkembang menjadi AI orchestration layer yang mampu memahami konteks proyek, kebiasaan developer, performa model, biaya penggunaan, kualitas respons, serta strategi routing berbasis evaluasi historis.
+Dalam jangka panjang, AtlasBridge dapat berkembang menjadi AI orchestration layer yang mampu memahami konteks proyek, kebiasaan developer, performa model, biaya penggunaan, kualitas respons, serta strategi routing berbasis evaluasi historis.
 
 ---
 
@@ -26,7 +26,7 @@ Developer modern sering menggunakan banyak model AI untuk kebutuhan coding, reas
 
 Masalahnya, pemilihan model biasanya masih dilakukan secara manual. Developer harus mengetahui kekuatan masing-masing model, mengganti konfigurasi secara berkala, dan menyesuaikan model dengan jenis pekerjaan. Proses ini tidak efisien, rawan salah pilih model, dan mengganggu workflow.
 
-Smart AI Proxy menyelesaikan masalah ini dengan menyediakan intelligent routing layer yang otomatis menganalisis request dan memilih jalur model paling relevan sebelum diteruskan ke 9Router.
+AtlasBridge menyelesaikan masalah ini dengan menyediakan intelligent routing layer yang otomatis menganalisis request dan memilih jalur model paling relevan sebelum diteruskan ke 9Router.
 
 ---
 
@@ -60,11 +60,11 @@ OpenCode, Cursor, Cline, Continue, dan tool sejenis menggunakan format OpenAI-co
 
 ## 5. Proposed Solution
 
-Smart AI Proxy menjadi proxy OpenAI-compatible yang menerima request dari AI coding assistant, menganalisis request tersebut, menentukan klasifikasi task, memilih routing target atau AI combo, lalu meneruskan request ke 9Router.
+AtlasBridge menjadi proxy OpenAI-compatible yang menerima request dari AI coding assistant, menganalisis request tersebut, menentukan klasifikasi task, memilih routing target atau AI combo, lalu meneruskan request ke 9Router.
 
-Smart AI Proxy tidak memanggil provider AI secara langsung. Semua request tetap diteruskan ke 9Router. Dengan demikian, Smart AI Proxy tetap memiliki tanggung jawab yang jelas dan tidak mengambil alih fungsi downstream router.
+AtlasBridge tidak memanggil provider AI secara langsung. Semua request tetap diteruskan ke 9Router. Dengan demikian, AtlasBridge tetap memiliki tanggung jawab yang jelas dan tidak mengambil alih fungsi downstream router.
 
-Tanggung jawab utama Smart AI Proxy:
+Tanggung jawab utama AtlasBridge:
 
 - Menerima request OpenAI-compatible.
 - Mengekstrak metadata request.
@@ -99,7 +99,7 @@ AI Coding Assistant
         ↓
 OpenAI-Compatible Request
         ↓
-Smart AI Proxy
+AtlasBridge
         ↓
 Request Analyzer
         ↓
@@ -118,9 +118,9 @@ Multiple AI Providers
 
 ### 6.2 Responsibility Boundary
 
-Smart AI Proxy berada pada lapisan decision-making. 9Router berada pada lapisan execution-routing.
+AtlasBridge berada pada lapisan decision-making. 9Router berada pada lapisan execution-routing.
 
-Smart AI Proxy menjawab pertanyaan:
+AtlasBridge menjawab pertanyaan:
 
 > “Jenis pekerjaan apa ini, dan model atau combo apa yang paling cocok?”
 
@@ -186,7 +186,7 @@ Mencatat informasi non-sensitif seperti task type, selected route, latency, erro
 
 ### 7.1 OpenAI Compatibility
 
-Smart AI Proxy harus mempertahankan kompatibilitas dengan OpenAI API agar dapat digunakan oleh OpenCode, Cursor, Cline, Continue, dan aplikasi lain tanpa perubahan besar.
+AtlasBridge harus mempertahankan kompatibilitas dengan OpenAI API agar dapat digunakan oleh OpenCode, Cursor, Cline, Continue, dan aplikasi lain tanpa perubahan besar.
 
 Compatibility harus mencakup:
 
@@ -239,11 +239,11 @@ Contoh AI Combo:
 - `combo.low_cost`
 - `combo.security_review`
 
-Smart AI Proxy memilih combo. 9Router kemudian menjalankan detail provider, fallback, failover, dan routing aktual.
+AtlasBridge memilih combo. 9Router kemudian menjalankan detail provider, fallback, failover, dan routing aktual.
 
 ### 7.5 Model Alias
 
-Model alias adalah nama model virtual yang dapat dimengerti oleh Smart AI Proxy dan/atau 9Router.
+Model alias adalah nama model virtual yang dapat dimengerti oleh AtlasBridge dan/atau 9Router.
 
 Contoh:
 
@@ -254,7 +254,7 @@ Contoh:
 - `smart-cheap`
 - `smart-long-context`
 
-Client dapat menggunakan satu model seperti `smart-auto`, lalu Smart AI Proxy menentukan route aktual.
+Client dapat menggunakan satu model seperti `smart-auto`, lalu AtlasBridge menentukan route aktual.
 
 ### 7.6 Policy-Driven Routing
 
@@ -278,18 +278,18 @@ Policy perlu mendukung:
 
 ### 8.1 Basic User Flow
 
-1. Developer mengatur AI coding assistant agar menggunakan endpoint Smart AI Proxy.
+1. Developer mengatur AI coding assistant agar menggunakan endpoint AtlasBridge.
 2. Developer memilih model virtual, misalnya `smart-auto`.
 3. Developer mengirim prompt dari OpenCode, Cursor, Cline, Continue, atau tool lainnya.
-4. Smart AI Proxy menerima request.
-5. Smart AI Proxy menganalisis isi request.
-6. Smart AI Proxy mengklasifikasikan jenis task.
-7. Smart AI Proxy memilih AI combo atau routing profile.
-8. Smart AI Proxy meneruskan request ke 9Router.
+4. AtlasBridge menerima request.
+5. AtlasBridge menganalisis isi request.
+6. AtlasBridge mengklasifikasikan jenis task.
+7. AtlasBridge memilih AI combo atau routing profile.
+8. AtlasBridge meneruskan request ke 9Router.
 9. 9Router menangani failover, load balancing, fallback, provider, dan rate limit.
 10. Provider AI menghasilkan response.
-11. Response dikembalikan melalui 9Router ke Smart AI Proxy.
-12. Smart AI Proxy meneruskan response ke client tanpa mengubah format utama.
+11. Response dikembalikan melalui 9Router ke AtlasBridge.
+12. AtlasBridge meneruskan response ke client tanpa mengubah format utama.
 
 ### 8.2 Example Flow: Debugging
 
@@ -297,14 +297,14 @@ Developer mengirim prompt:
 
 > “Tolong cari penyebab error pada fungsi ini dan perbaiki.”
 
-Smart AI Proxy mendeteksi:
+AtlasBridge mendeteksi:
 
 - Intent: debugging.
 - Context: source code.
 - Complexity: medium.
 - Recommended route: debugging combo.
 
-Smart AI Proxy meneruskan request ke 9Router dengan routing target:
+AtlasBridge meneruskan request ke 9Router dengan routing target:
 
 - `combo.debugging`
 
@@ -316,13 +316,13 @@ Developer mengirim prompt:
 
 > “Buatkan komentar singkat untuk fungsi ini.”
 
-Smart AI Proxy mendeteksi:
+AtlasBridge mendeteksi:
 
 - Intent: documentation.
 - Complexity: low.
 - Recommended route: low-cost documentation combo.
 
-Smart AI Proxy meneruskan request ke 9Router dengan routing target:
+AtlasBridge meneruskan request ke 9Router dengan routing target:
 
 - `combo.documentation_fast` atau `combo.low_cost`
 
@@ -332,14 +332,14 @@ Developer mengirim prompt:
 
 > “Rancang arsitektur backend untuk sistem multi-tenant dengan audit log dan role-based access.”
 
-Smart AI Proxy mendeteksi:
+AtlasBridge mendeteksi:
 
 - Intent: architecture planning.
 - Complexity: high.
 - Needs reasoning: high.
 - Recommended route: deep reasoning combo.
 
-Smart AI Proxy meneruskan request ke 9Router dengan routing target:
+AtlasBridge meneruskan request ke 9Router dengan routing target:
 
 - `combo.deep_reasoning` atau `combo.architect`
 
@@ -349,7 +349,7 @@ Smart AI Proxy meneruskan request ke 9Router dengan routing target:
 
 ### 9.1 OpenAI-Compatible API Proxy
 
-Smart AI Proxy harus dapat menerima request dari client yang menggunakan OpenAI-compatible API.
+AtlasBridge harus dapat menerima request dari client yang menggunakan OpenAI-compatible API.
 
 Fitur utama:
 
@@ -442,7 +442,7 @@ Contoh konfigurasi:
 
 ### 9.7 Logging and Observability
 
-Smart AI Proxy perlu mencatat informasi teknis untuk evaluasi.
+AtlasBridge perlu mencatat informasi teknis untuk evaluasi.
 
 Contoh data observability:
 
@@ -461,7 +461,7 @@ Data sensitif seperti source code, secrets, API key, dan prompt penuh sebaiknya 
 
 ### 9.8 Safe Passthrough Mode
 
-Jika Smart AI Proxy gagal menganalisis request, sistem harus tetap dapat meneruskan request ke 9Router menggunakan default route.
+Jika AtlasBridge gagal menganalisis request, sistem harus tetap dapat meneruskan request ke 9Router menggunakan default route.
 
 Prinsip penting:
 
@@ -473,7 +473,7 @@ Prinsip penting:
 
 ### 10.1 Performance
 
-Smart AI Proxy harus menambahkan latency seminimal mungkin. Karena proxy ini berada di jalur utama request AI, proses klasifikasi harus cepat dan efisien.
+AtlasBridge harus menambahkan latency seminimal mungkin. Karena proxy ini berada di jalur utama request AI, proses klasifikasi harus cepat dan efisien.
 
 Target ideal:
 
@@ -495,11 +495,11 @@ Reliability requirement:
 - Health check endpoint.
 - Retry terbatas hanya jika sesuai boundary tanggung jawab.
 
-Catatan penting: retry terhadap provider tidak menjadi tanggung jawab utama Smart AI Proxy karena itu masuk wilayah 9Router.
+Catatan penting: retry terhadap provider tidak menjadi tanggung jawab utama AtlasBridge karena itu masuk wilayah 9Router.
 
 ### 10.3 Compatibility
 
-Smart AI Proxy harus menjaga kompatibilitas tinggi dengan OpenAI-compatible clients.
+AtlasBridge harus menjaga kompatibilitas tinggi dengan OpenAI-compatible clients.
 
 Compatibility requirement:
 
@@ -512,7 +512,7 @@ Compatibility requirement:
 
 ### 10.4 Security
 
-Smart AI Proxy harus dirancang dengan prinsip secure-by-default.
+AtlasBridge harus dirancang dengan prinsip secure-by-default.
 
 Requirement:
 
@@ -526,7 +526,7 @@ Requirement:
 
 ### 10.5 Privacy
 
-Karena request dapat berisi source code, data bisnis, credential, atau informasi sensitif, Smart AI Proxy perlu membatasi penyimpanan data.
+Karena request dapat berisi source code, data bisnis, credential, atau informasi sensitif, AtlasBridge perlu membatasi penyimpanan data.
 
 Privacy principle:
 
@@ -568,7 +568,7 @@ Maintainability requirement:
 
 ### 11.1 Learning-Based Routing
 
-Pada tahap lanjutan, Smart AI Proxy dapat belajar dari hasil historis untuk meningkatkan keputusan routing.
+Pada tahap lanjutan, AtlasBridge dapat belajar dari hasil historis untuk meningkatkan keputusan routing.
 
 Contoh data:
 
@@ -582,7 +582,7 @@ Contoh data:
 
 ### 11.2 Project-Aware Routing
 
-Smart AI Proxy dapat memahami konteks proyek tertentu.
+AtlasBridge dapat memahami konteks proyek tertentu.
 
 Contoh:
 
@@ -609,7 +609,7 @@ Contoh:
 
 ### 11.4 Multi-Agent Preprocessing
 
-Pada versi lanjutan, Smart AI Proxy dapat melakukan preprocessing ringan sebelum request dikirim ke 9Router.
+Pada versi lanjutan, AtlasBridge dapat melakukan preprocessing ringan sebelum request dikirim ke 9Router.
 
 Namun fitur ini harus hati-hati agar tidak mengambil alih fungsi utama client atau 9Router.
 
@@ -658,7 +658,7 @@ Contoh:
 
 ### 11.8 Team and Enterprise Mode
 
-Untuk tim atau organisasi, Smart AI Proxy dapat dikembangkan dengan fitur:
+Untuk tim atau organisasi, AtlasBridge dapat dikembangkan dengan fitur:
 
 - Shared policy.
 - Role-based access.
@@ -712,7 +712,7 @@ Untuk tim atau organisasi, Smart AI Proxy dapat dikembangkan dengan fitur:
 
 ### 13.1 Salah Klasifikasi Task
 
-Smart AI Proxy dapat salah mengklasifikasikan request, sehingga memilih model atau combo yang kurang tepat.
+AtlasBridge dapat salah mengklasifikasikan request, sehingga memilih model atau combo yang kurang tepat.
 
 Mitigasi:
 
@@ -724,7 +724,7 @@ Mitigasi:
 
 ### 13.2 Latency Tambahan
 
-Karena Smart AI Proxy berada di jalur request, proses analisis dapat menambah latency.
+Karena AtlasBridge berada di jalur request, proses analisis dapat menambah latency.
 
 Mitigasi:
 
@@ -746,12 +746,12 @@ Mitigasi:
 
 ### 13.4 Boundary Creep dengan 9Router
 
-Ada risiko Smart AI Proxy berkembang terlalu jauh dan mulai mengambil alih fungsi 9Router.
+Ada risiko AtlasBridge berkembang terlalu jauh dan mulai mengambil alih fungsi 9Router.
 
 Mitigasi:
 
 - Tetapkan responsibility boundary secara eksplisit.
-- Hindari implementasi provider failover di Smart AI Proxy.
+- Hindari implementasi provider failover di AtlasBridge.
 - Hindari provider credential management.
 - Hindari fallback model internal yang bertabrakan dengan 9Router.
 
@@ -784,9 +784,9 @@ Mitigasi:
 ## 14. Assumptions
 
 - Client menggunakan OpenAI-compatible API.
-- 9Router dapat menerima request OpenAI-compatible dari Smart AI Proxy.
+- 9Router dapat menerima request OpenAI-compatible dari AtlasBridge.
 - 9Router tetap menjadi layer utama untuk provider routing dan reliability.
-- Smart AI Proxy tidak perlu menyimpan prompt penuh untuk menjalankan fungsi dasarnya.
+- AtlasBridge tidak perlu menyimpan prompt penuh untuk menjalankan fungsi dasarnya.
 - Model atau combo dapat direpresentasikan melalui model alias, header, atau konfigurasi yang disepakati.
 - Developer bersedia menggunakan model virtual seperti `smart-auto`.
 - Task classification awal dapat dilakukan menggunakan rule-based atau heuristic-based system.
@@ -799,7 +799,7 @@ Mitigasi:
 
 ### 15.1 Tidak Menggantikan 9Router
 
-Smart AI Proxy tidak boleh mengambil alih fungsi:
+AtlasBridge tidak boleh mengambil alih fungsi:
 
 - Failover provider.
 - Load balancing.
@@ -831,7 +831,7 @@ Karena model AI dan provider sering berubah, routing policy tidak boleh terkunci
 
 ### 15.7 Harus Mendukung Streaming
 
-Banyak AI coding assistant membutuhkan streaming response. Smart AI Proxy harus meneruskan streaming dengan benar dan tidak merusak format chunk.
+Banyak AI coding assistant membutuhkan streaming response. AtlasBridge harus meneruskan streaming dengan benar dan tidak merusak format chunk.
 
 ---
 
@@ -857,7 +857,7 @@ Solusi yang dibutuhkan:
 
 ### 16.2 Routing Without Breaking API Compatibility
 
-Smart AI Proxy harus menambahkan intelligence tanpa merusak request atau response OpenAI-compatible.
+AtlasBridge harus menambahkan intelligence tanpa merusak request atau response OpenAI-compatible.
 
 Tantangan:
 
@@ -880,7 +880,7 @@ Contoh yang benar:
 - `combo.deep_reasoning`
 - `combo.low_cost`
 
-Contoh yang perlu dihindari di Smart AI Proxy:
+Contoh yang perlu dihindari di AtlasBridge:
 
 - Menentukan akun provider spesifik.
 - Melakukan rotasi provider.
@@ -899,7 +899,7 @@ Tantangan:
 
 ### 16.5 Observability Without Privacy Violation
 
-Smart AI Proxy membutuhkan telemetry untuk meningkatkan routing, tetapi tidak boleh membocorkan data sensitif.
+AtlasBridge membutuhkan telemetry untuk meningkatkan routing, tetapi tidak boleh membocorkan data sensitif.
 
 Tantangan:
 
@@ -935,7 +935,7 @@ Tantangan:
 
 ### 16.8 Maintaining Clear System Boundaries
 
-Smart AI Proxy harus tetap menjadi intelligent decision layer. Jika terlalu banyak fitur ditambahkan, sistem dapat menjadi tumpang tindih dengan 9Router.
+AtlasBridge harus tetap menjadi intelligent decision layer. Jika terlalu banyak fitur ditambahkan, sistem dapat menjadi tumpang tindih dengan 9Router.
 
 Tantangan:
 
@@ -948,11 +948,11 @@ Tantangan:
 
 ## Final Positioning
 
-Smart AI Proxy adalah intelligent routing proxy untuk AI coding workflow. Sistem ini bukan pengganti 9Router, melainkan lapisan tambahan di atas 9Router yang bertugas memahami request dan memilih routing intent terbaik.
+AtlasBridge adalah intelligent routing proxy untuk AI coding workflow. Sistem ini bukan pengganti 9Router, melainkan lapisan tambahan di atas 9Router yang bertugas memahami request dan memilih routing intent terbaik.
 
-Dengan desain ini, developer cukup menggunakan satu endpoint dan satu model virtual seperti `smart-auto`, sementara Smart AI Proxy menentukan jenis pekerjaan dan meneruskan request ke routing combo yang paling sesuai.
+Dengan desain ini, developer cukup menggunakan satu endpoint dan satu model virtual seperti `smart-auto`, sementara AtlasBridge menentukan jenis pekerjaan dan meneruskan request ke routing combo yang paling sesuai.
 
-Nilai utama Smart AI Proxy adalah:
+Nilai utama AtlasBridge adalah:
 
 - Mengurangi manual model switching.
 - Meningkatkan kecocokan model dengan task.

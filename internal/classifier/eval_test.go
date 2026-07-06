@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/analyzer"
+	"github.com/atlasbridge/atlasbridge/internal/analyzer"
 )
 
 type EvalExample struct {

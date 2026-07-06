@@ -1,11 +1,11 @@
 #!/bin/bash
-# Smart AI Proxy - Lint and Format Script
+# AtlasBridge - Lint and Format Script
 
 set -e
 
 FAILED=0
 
-echo "=== Smart AI Proxy Lint ==="
+echo "=== AtlasBridge Lint ==="
 
 echo "[1/4] go vet..."
 if ! go vet ./...; then

@@ -3,7 +3,7 @@ package classifier
 import (
 	"testing"
 
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/analyzer"
+	"github.com/atlasbridge/atlasbridge/internal/analyzer"
 )
 
 func makeAnalysis(keywords []string, domains []string, opts ...func(*analyzer.Analysis)) *analyzer.Analysis {

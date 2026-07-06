@@ -4,14 +4,21 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/analyzer"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/classifier"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/config"
+	"github.com/atlasbridge/atlasbridge/internal/analyzer"
+	"github.com/atlasbridge/atlasbridge/internal/classifier"
+	"github.com/atlasbridge/atlasbridge/internal/config"
 )
 
 type SmartAlias string
 
 const (
+	AliasAtlasAuto        SmartAlias = "atlas-auto"
+	AliasAtlasDebug       SmartAlias = "atlas-debug"
+	AliasAtlasCheap       SmartAlias = "atlas-cheap"
+	AliasAtlasDocs        SmartAlias = "atlas-docs"
+	AliasAtlasArchitect   SmartAlias = "atlas-architect"
+	AliasAtlasFast        SmartAlias = "atlas-fast"
+	AliasAtlasLongContext SmartAlias = "atlas-long-context"
 	AliasSmartAuto        SmartAlias = "smart-auto"
 	AliasSmartDebug       SmartAlias = "smart-debug"
 	AliasSmartCheap       SmartAlias = "smart-cheap"
@@ -23,6 +30,13 @@ const (
 )
 
 var smartAliasToRoute = map[SmartAlias]string{
+	AliasAtlasAuto:        "", // empty = auto-route by classification
+	AliasAtlasDebug:       "route.debugging",
+	AliasAtlasCheap:       "route.low_cost",
+	AliasAtlasDocs:        "route.documentation",
+	AliasAtlasArchitect:   "route.architect",
+	AliasAtlasFast:        "", // resolved from config SmartFastRoute
+	AliasAtlasLongContext: "route.long_context",
 	AliasSmartAuto:        "", // empty = auto-route by classification
 	AliasSmartDebug:       "route.debugging",
 	AliasSmartCheap:       "route.low_cost",
@@ -34,6 +48,13 @@ var smartAliasToRoute = map[SmartAlias]string{
 }
 
 var smartAliasDescriptions = map[SmartAlias]string{
+	AliasAtlasAuto:        "Auto-route based on request analysis",
+	AliasAtlasDebug:       "Force debugging route",
+	AliasAtlasCheap:       "Force low-cost route",
+	AliasAtlasDocs:        "Force documentation route",
+	AliasAtlasArchitect:   "Force architecture route",
+	AliasAtlasFast:        "Force fast route (configurable)",
+	AliasAtlasLongContext: "Force long-context analysis route",
 	AliasSmartAuto:        "Auto-route based on request analysis",
 	AliasSmartDebug:       "Force debugging route",
 	AliasSmartCheap:       "Force low-cost route",
@@ -143,7 +164,7 @@ func resolveSmartAlias(
 ) *RoutingDecision {
 	routeKey := smartAliasToRoute[alias]
 
-	if alias == AliasSmartFast && routeKey == "" {
+	if (alias == AliasAtlasFast || alias == AliasSmartFast) && routeKey == "" {
 		if routingCfg.SmartFastRoute != "" {
 			routeKey = routingCfg.SmartFastRoute
 		} else {
@@ -168,8 +189,8 @@ func resolveSmartAlias(
 	}
 
 	confidence := 0.9
-	reason := fmt.Sprintf("smart alias %q forced route %s", alias, routeKey)
-	if alias == AliasSmartAuto && classification != nil {
+	reason := fmt.Sprintf("model alias %q forced route %s", alias, routeKey)
+	if (alias == AliasAtlasAuto || alias == AliasSmartAuto) && classification != nil {
 		confidence = classification.Confidence
 		reason = classification.RoutingReason
 	}
@@ -192,15 +213,15 @@ func resolveSmartAlias(
 
 func taskTypeForAlias(alias SmartAlias, classification *classifier.Classification) string {
 	switch alias {
-	case AliasSmartDebug:
+	case AliasAtlasDebug, AliasSmartDebug:
 		return "debugging"
-	case AliasSmartCheap, AliasSmartFast:
+	case AliasAtlasCheap, AliasAtlasFast, AliasSmartCheap, AliasSmartFast:
 		return "lightweight_task"
-	case AliasSmartDocs:
+	case AliasAtlasDocs, AliasSmartDocs:
 		return "documentation"
-	case AliasSmartArchitect:
+	case AliasAtlasArchitect, AliasSmartArchitect:
 		return "architecture_design"
-	case AliasSmartLongContext:
+	case AliasAtlasLongContext, AliasSmartLongContext:
 		return "long_context_analysis"
 	case AliasSmartCode:
 		if classification != nil {

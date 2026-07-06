@@ -16,13 +16,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/analyzer"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/classifier"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/config"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/forwarder"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/observability"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/routing"
-	runtimemod "github.com/smart-ai-proxy/smart-ai-proxy/internal/runtime"
+	"github.com/atlasbridge/atlasbridge/internal/analyzer"
+	"github.com/atlasbridge/atlasbridge/internal/classifier"
+	"github.com/atlasbridge/atlasbridge/internal/config"
+	"github.com/atlasbridge/atlasbridge/internal/forwarder"
+	"github.com/atlasbridge/atlasbridge/internal/observability"
+	"github.com/atlasbridge/atlasbridge/internal/routing"
+	runtimemod "github.com/atlasbridge/atlasbridge/internal/runtime"
 )
 
 const Version = "0.1.0"
@@ -428,11 +428,11 @@ func adminPlaceholder(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smart AI Proxy Admin</title>
+<title>AtlasBridge Admin</title>
 <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:600px;margin:40px auto;padding:0 20px;color:#333}
 h1{color:#1a1a2e}p{color:#666}</style></head>
 <body>
-<h1>Smart AI Proxy Admin</h1>
+<h1>AtlasBridge Dashboard</h1>
 <p>Web UI will be available in Phase 3.</p>
 <p>Health: <a href="/health">/health</a></p>
 <p>Status: <a href="/admin/api/status">/admin/api/status</a></p>

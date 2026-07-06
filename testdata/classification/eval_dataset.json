@@ -1,6 +1,6 @@
 {
   "version": "0.1",
-  "description": "Initial evaluation dataset for Smart AI Proxy classifier and routing behavior. All prompts are synthetic and safe.",
+  "description": "Initial evaluation dataset for AtlasBridge classifier and routing behavior. All prompts are synthetic and safe.",
   "categories": [
     {
       "task_type": "design_task",

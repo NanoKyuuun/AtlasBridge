@@ -1,13 +1,13 @@
-# Smart AI Proxy - Build Script for Windows
+# AtlasBridge - Build Script for Windows
 # Produces portable release with version info
 
 $ErrorActionPreference = "Stop"
 
 $VERSION = "0.1.0"
 $ARTIFACT_DIR = "release"
-$BINARY_NAME = "smart-ai-proxy.exe"
+$BINARY_NAME = "atlasbridge.exe"
 
-Write-Host "=== Building Smart AI Proxy v$VERSION ==="
+Write-Host "=== Building AtlasBridge v$VERSION ==="
 Write-Host ""
 
 # Create release directory
@@ -32,8 +32,8 @@ Write-Host "      Frontend built successfully"
 
 # Step 2: Build Go backend with version info
 Write-Host "[2/4] Building Go backend..."
-$ldflags = "-X github.com/smart-ai-proxy/smart-ai-proxy/internal/server.Version=$VERSION"
-go build -ldflags $ldflags -o "$ARTIFACT_DIR/$BINARY_NAME" ./cmd/smart-ai-proxy
+$ldflags = "-X github.com/atlasbridge/atlasbridge/internal/server.Version=$VERSION"
+go build -ldflags $ldflags -o "$ARTIFACT_DIR/$BINARY_NAME" ./cmd/atlasbridge
 if ($LASTEXITCODE -ne 0) {
     throw "Go build failed!"
 }
@@ -41,7 +41,7 @@ Write-Host "      Binary built: $ARTIFACT_DIR/$BINARY_NAME"
 
 # Step 3: Create portable zip
 Write-Host "[3/4] Creating portable distribution..."
-$zipName = "smart-ai-proxy-$VERSION-windows-x64-portable.zip"
+$zipName = "atlasbridge-$VERSION-windows-x64-portable.zip"
 $content = @(
     "$BINARY_NAME",
     "README.md",

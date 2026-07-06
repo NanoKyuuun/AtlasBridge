@@ -1,12 +1,13 @@
-# Smart AI Proxy
+# AtlasBridge
 # Technical Plan v0.1
 
 **Document Type:** Technical Plan  
-**Project Name:** Smart AI Proxy  
+**Project Name:** AtlasBridge  
+**Full Name:** AtlasBridge AI Proxy  
 **Status:** Draft v0.1  
 **Primary Runtime:** Local developer machine  
 **Primary Downstream:** 9Router  
-**Default Smart AI Proxy Port:** `20127`  
+**Default AtlasBridge Port:** `20127`  
 **Default 9Router Port:** `20128`  
 **Frontend:** Vue 3 + TypeScript + Vite + Tailwind CSS + DaisyUI  
 **Backend/Core:** Go / Golang  
@@ -16,11 +17,11 @@
 
 ## 1. Executive Technical Summary
 
-Smart AI Proxy akan dibangun sebagai aplikasi lokal untuk developer yang berjalan di background, menyediakan endpoint OpenAI-compatible, melakukan analisis request, mengklasifikasikan task, memilih route profile, lalu meneruskan request ke 9Router.
+AtlasBridge akan dibangun sebagai aplikasi lokal untuk developer yang berjalan di background, menyediakan endpoint OpenAI-compatible, melakukan analisis request, mengklasifikasikan task, memilih route profile, lalu meneruskan request ke 9Router.
 
-Smart AI Proxy tidak menggantikan 9Router. 9Router tetap bertanggung jawab terhadap failover, load balancing, rotasi akun, fallback model, rate limit handling, provider abstraction, dan provider credential handling.
+AtlasBridge tidak menggantikan 9Router. 9Router tetap bertanggung jawab terhadap failover, load balancing, rotasi akun, fallback model, rate limit handling, provider abstraction, dan provider credential handling.
 
-Smart AI Proxy bertanggung jawab terhadap:
+AtlasBridge bertanggung jawab terhadap:
 
 - OpenAI-compatible proxy layer.
 - Request analysis.
@@ -57,7 +58,7 @@ Packaging           : Single local app with embedded Web UI
 
 ## 2.1 Language Decision
 
-Smart AI Proxy menggunakan **Go** sebagai bahasa utama.
+AtlasBridge menggunakan **Go** sebagai bahasa utama.
 
 Alasan:
 
@@ -106,8 +107,8 @@ Alasan:
 Default port:
 
 ```text
-Smart AI Proxy API  : http://127.0.0.1:20127/v1
-Smart AI Proxy UI   : http://127.0.0.1:20127/admin
+AtlasBridge API  : http://127.0.0.1:20127/v1
+AtlasBridge UI   : http://127.0.0.1:20127/admin
 Smart Health Check  : http://127.0.0.1:20127/health
 9Router API         : http://127.0.0.1:20128/v1
 9Router Dashboard   : http://127.0.0.1:20128/dashboard
@@ -118,11 +119,11 @@ Alasan memilih `20127`:
 - Tidak memakai port umum developer seperti `3000`, `5173`, `8000`, `8080`, dan `8888`.
 - Mudah diingat karena tepat sebelum 9Router `20128`.
 - Tetap port non-privileged, sehingga tidak butuh permission khusus seperti port di bawah `1024`.
-- Memisahkan Smart AI Proxy dari 9Router dengan jelas.
+- Memisahkan AtlasBridge dari 9Router dengan jelas.
 
 ## 2.5 UI and API Same Port Decision
 
-Smart AI Proxy menggunakan satu port untuk API dan Web UI.
+AtlasBridge menggunakan satu port untuk API dan Web UI.
 
 ```text
 /v1/*       → OpenAI-compatible API
@@ -141,7 +142,7 @@ Alasan:
 
 ## 2.6 Tray Icon Decision
 
-Smart AI Proxy harus memiliki **system tray icon** saat aktif.
+AtlasBridge harus memiliki **system tray icon** saat aktif.
 
 Behavior:
 
@@ -158,7 +159,7 @@ Klik kanan menampilkan quick menu
 Tray menu minimum:
 
 ```text
-Smart AI Proxy
+AtlasBridge
 Status: Running / Stopped
 Open Dashboard
 Start Proxy
@@ -172,7 +173,7 @@ Quit
 
 Catatan penting:
 
-Untuk mendukung tray icon, Smart AI Proxy sebaiknya berjalan sebagai **user-level background application**, bukan Windows Service murni. Service murni biasanya tidak cocok untuk UI/tray interaction. Untuk MVP personal developer, user-level background app lebih sesuai.
+Untuk mendukung tray icon, AtlasBridge sebaiknya berjalan sebagai **user-level background application**, bukan Windows Service murni. Service murni biasanya tidak cocok untuk UI/tray interaction. Untuk MVP personal developer, user-level background app lebih sesuai.
 
 ---
 
@@ -185,7 +186,7 @@ OpenCode / Cursor / Cline / Continue
         ↓
 OpenAI-Compatible Request
         ↓
-Smart AI Proxy : 127.0.0.1:20127
+AtlasBridge : 127.0.0.1:20127
         ↓
 Request Analyzer
         ↓
@@ -209,7 +210,7 @@ User
  ↓
 System Tray Icon
  ↓
-Smart AI Proxy Runtime Controller
+AtlasBridge Runtime Controller
  ├── Start Proxy
  ├── Stop Proxy
  ├── Restart Proxy
@@ -231,7 +232,7 @@ Config Manager / Runtime Controller
 ## 3.3 Component Diagram
 
 ```text
-Smart AI Proxy
+AtlasBridge
 ├── App Bootstrap
 ├── Runtime Manager
 ├── Tray Controller
@@ -262,14 +263,14 @@ Smart AI Proxy
     ├── config.yaml
     ├── routes.yaml
     ├── profiles.yaml
-    └── optional smart-ai-proxy.db
+    └── optional atlasbridge.db
 ```
 
 ---
 
 ## 4. Runtime Modes
 
-Smart AI Proxy harus mendukung tiga runtime mode.
+AtlasBridge harus mendukung tiga runtime mode.
 
 ## 4.1 Always On Mode
 
@@ -299,7 +300,7 @@ Behavior:
 
 Use case:
 
-Developer yang hanya sesekali memakai Smart AI Proxy.
+Developer yang hanya sesekali memakai AtlasBridge.
 
 ## 4.3 Disabled Mode
 
@@ -324,16 +325,16 @@ User ingin mematikan sementara proxy tanpa uninstall.
 
 | Component | Default Port | URL |
 |---|---:|---|
-| Smart AI Proxy API | `20127` | `http://127.0.0.1:20127/v1` |
-| Smart AI Proxy Web UI | `20127` | `http://127.0.0.1:20127/admin` |
-| Smart AI Proxy Admin API | `20127` | `http://127.0.0.1:20127/admin/api` |
-| Smart AI Proxy Health | `20127` | `http://127.0.0.1:20127/health` |
+| AtlasBridge API | `20127` | `http://127.0.0.1:20127/v1` |
+| AtlasBridge Web UI | `20127` | `http://127.0.0.1:20127/admin` |
+| AtlasBridge Admin API | `20127` | `http://127.0.0.1:20127/admin/api` |
+| AtlasBridge Health | `20127` | `http://127.0.0.1:20127/health` |
 | 9Router API | `20128` | `http://127.0.0.1:20128/v1` |
 | 9Router Dashboard | `20128` | `http://127.0.0.1:20128/dashboard` |
 
 ## 5.2 Avoided Ports
 
-Smart AI Proxy tidak menggunakan port berikut sebagai default:
+AtlasBridge tidak menggunakan port berikut sebagai default:
 
 ```text
 3000   → common Node/Next/React dev server
@@ -465,7 +466,7 @@ Rules:
 
 ## 7.1 Route Profile Concept
 
-Smart AI Proxy memilih **route profile**, bukan provider final.
+AtlasBridge memilih **route profile**, bukan provider final.
 
 Contoh:
 
@@ -517,7 +518,7 @@ Debugging   → Reasoning/debug route via 9Router
 Docs        → Low-cost writing route via 9Router
 ```
 
-Namun di Smart AI Proxy, konfigurasi sebaiknya tetap memakai abstraksi:
+Namun di AtlasBridge, konfigurasi sebaiknya tetap memakai abstraksi:
 
 ```text
 Design      → route.design
@@ -594,19 +595,19 @@ Lokasi rekomendasi:
 Windows:
 
 ```text
-%APPDATA%/SmartAIProxy/
+%APPDATA%/AtlasBridge/
 ```
 
 macOS:
 
 ```text
-~/Library/Application Support/SmartAIProxy/
+~/Library/Application Support/AtlasBridge/
 ```
 
 Linux:
 
 ```text
-~/.config/smart-ai-proxy/
+~/.config/AtlasBridge/
 ```
 
 ## 8.2 Main Config Model
@@ -615,7 +616,7 @@ Konsep konfigurasi:
 
 ```yaml
 app:
-  name: Smart AI Proxy
+  name: AtlasBridge
   mode: always_on
   first_run_completed: false
 
@@ -867,7 +868,7 @@ dropdown
 
 ## 10.1 Tray Requirements
 
-Tray icon muncul saat Smart AI Proxy app aktif.
+Tray icon muncul saat AtlasBridge app aktif.
 
 Status icon:
 
@@ -885,7 +886,7 @@ Status icon:
 Minimum menu:
 
 ```text
-Smart AI Proxy
+AtlasBridge
 Status: Running
 Endpoint: 127.0.0.1:20127
 Open Dashboard
@@ -1031,7 +1032,7 @@ If auto-start fails:
 
 ## 12.1 Localhost-Only by Default
 
-Smart AI Proxy binds to:
+AtlasBridge binds to:
 
 ```text
 127.0.0.1
@@ -1238,20 +1239,20 @@ Linux x64
 Binary names:
 
 ```text
-smart-ai-proxy.exe
-smart-ai-proxy
+atlasbridge.exe
+atlasbridge
 ```
 
 Config folder:
 
 ```text
-SmartAIProxy
+AtlasBridge
 ```
 
 Tray name:
 
 ```text
-Smart AI Proxy
+AtlasBridge
 ```
 
 ## 15.4 Installer
@@ -1298,7 +1299,7 @@ Vite dev UI   : 5173
 Production mode uses one port:
 
 ```text
-Smart AI Proxy : 20127
+AtlasBridge : 20127
 ```
 
 ## 16.3 Local Dev Flow
@@ -1326,9 +1327,9 @@ Open http://127.0.0.1:20127/admin
 ## 17. Suggested Repository Structure
 
 ```text
-smart-ai-proxy/
+atlasbridge/
 ├── cmd/
-│   └── smart-ai-proxy/
+│   └── atlasbridge/
 │       └── main.go
 ├── internal/
 │   ├── app/
@@ -1453,7 +1454,7 @@ MVP includes:
 3. Streaming passthrough.
 4. Non-streaming passthrough.
 5. 9Router default downstream at `127.0.0.1:20128/v1`.
-6. Smart AI Proxy default port `20127`.
+6. AtlasBridge default port `20127`.
 7. Rule-based task classifier.
 8. Task-to-route mapping.
 9. Route profile selector.
@@ -1508,7 +1509,7 @@ Deliverables:
 
 Goal:
 
-Make Smart AI Proxy work as OpenAI-compatible proxy.
+Make AtlasBridge work as OpenAI-compatible proxy.
 
 Deliverables:
 
@@ -1612,7 +1613,7 @@ Deliverables:
 | Classifier inaccurate | Wrong route selected | Manual override, confidence threshold, safe fallback |
 | Web UI exposed to network | Security risk | Bind localhost by default |
 | Prompt logged accidentally | Privacy risk | Metadata-only logs, redaction tests |
-| Boundary creep with 9Router | Architecture overlap | Keep provider execution out of Smart AI Proxy |
+| Boundary creep with 9Router | Architecture overlap | Keep provider execution out of AtlasBridge |
 | Config invalid | App unstable | Validation, last-known-good config |
 
 ---
@@ -1684,7 +1685,7 @@ Required docs:
 Final architecture recommendation:
 
 ```text
-Build Smart AI Proxy as a Go-based local background application with:
+Build AtlasBridge as a Go-based local background application with:
 - OpenAI-compatible proxy endpoint,
 - default port 20127,
 - downstream 9Router at 20128,
@@ -1700,7 +1701,7 @@ Build Smart AI Proxy as a Go-based local background application with:
 This gives the product the same local-app feel as 9Router while keeping the architecture clean:
 
 ```text
-Smart AI Proxy chooses the route.
+AtlasBridge chooses the route.
 9Router executes provider routing.
 ```
 
@@ -1716,4 +1717,3 @@ Key external facts used for this technical plan:
 - DaisyUI is a Tailwind CSS component library that provides semantic component class names.
 - systray is a cross-platform Go library for notification area icons and menus.
 - Wails provides system tray APIs for cross-platform Go desktop applications.
-

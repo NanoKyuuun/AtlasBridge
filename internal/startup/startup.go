@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/config"
+	"github.com/atlasbridge/atlasbridge/internal/config"
 	"golang.org/x/sys/windows/registry"
 )
 

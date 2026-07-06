@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	adminui "github.com/smart-ai-proxy/smart-ai-proxy/web"
+	adminui "github.com/atlasbridge/atlasbridge/web"
 )
 
 var adminDistFS = adminui.DistFS()

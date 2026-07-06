@@ -1,8 +1,9 @@
 # Product Requirements Document (PRD)
-# Smart AI Proxy
+# AtlasBridge
 
 **Document Type:** Product Requirements Document  
-**Project Name:** Smart AI Proxy  
+**Project Name:** AtlasBridge  
+**Full Name:** AtlasBridge AI Proxy  
 **Status:** Draft v1.1  
 **Primary Role:** OpenAI-Compatible Intelligent Routing Proxy with Local Web Control Panel  
 **Primary Downstream:** 9Router  
@@ -14,9 +15,9 @@
 
 ## 1. Executive Summary
 
-Smart AI Proxy adalah OpenAI-compatible proxy server yang berada di antara AI coding assistant dan 9Router. Produk ini bertugas melakukan analisis request, klasifikasi task, pemilihan routing intent, serta meneruskan request ke 9Router menggunakan route profile atau AI combo yang paling sesuai.
+AtlasBridge adalah OpenAI-compatible proxy server yang berada di antara AI coding assistant dan 9Router. Produk ini bertugas melakukan analisis request, klasifikasi task, pemilihan routing intent, serta meneruskan request ke 9Router menggunakan route profile atau AI combo yang paling sesuai.
 
-Pada revisi v1.1, Smart AI Proxy juga diposisikan sebagai **local AI routing control center**. Artinya, user tidak hanya menggunakan proxy secara teknis, tetapi juga dapat mengatur perilaku routing melalui **Web UI lokal**. User dapat menentukan kategori pekerjaan tertentu harus diarahkan ke route tertentu, misalnya:
+Pada revisi v1.1, AtlasBridge juga diposisikan sebagai **local AI routing control center**. Artinya, user tidak hanya menggunakan proxy secara teknis, tetapi juga dapat mengatur perilaku routing melalui **Web UI lokal**. User dapat menentukan kategori pekerjaan tertentu harus diarahkan ke route tertentu, misalnya:
 
 | Task Category | Example Route Profile |
 |---|---|
@@ -28,21 +29,21 @@ Pada revisi v1.1, Smart AI Proxy juga diposisikan sebagai **local AI routing con
 | Architecture Planning | `route.architect` |
 | Low Cost Task | `route.low_cost` |
 
-Smart AI Proxy tidak bertanggung jawab terhadap provider-level execution seperti failover, load balancing, rotasi akun, fallback model, rate limit handling, atau manajemen akun provider. Seluruh tanggung jawab tersebut tetap berada pada 9Router.
+AtlasBridge tidak bertanggung jawab terhadap provider-level execution seperti failover, load balancing, rotasi akun, fallback model, rate limit handling, atau manajemen akun provider. Seluruh tanggung jawab tersebut tetap berada pada 9Router.
 
-Produk ini dirancang untuk menyelesaikan masalah manual model switching pada workflow developer. Dengan Smart AI Proxy, pengguna cukup mengarahkan OpenCode, Cursor, Cline, Continue, atau aplikasi OpenAI-compatible lain ke satu endpoint proxy dan menggunakan model virtual seperti `smart-auto`. Proxy kemudian menentukan route terbaik berdasarkan jenis pekerjaan dan preferensi konfigurasi user.
+Produk ini dirancang untuk menyelesaikan masalah manual model switching pada workflow developer. Dengan AtlasBridge, pengguna cukup mengarahkan OpenCode, Cursor, Cline, Continue, atau aplikasi OpenAI-compatible lain ke satu endpoint proxy dan menggunakan model virtual seperti `smart-auto`. Proxy kemudian menentukan route terbaik berdasarkan jenis pekerjaan dan preferensi konfigurasi user.
 
 ---
 
 ## 2. Product Vision
 
-Smart AI Proxy bertujuan menjadi intelligent decision layer untuk workflow AI coding modern. Produk ini memungkinkan developer menggunakan banyak model AI gratis maupun berbayar secara lebih efisien tanpa harus mengganti model secara manual.
+AtlasBridge bertujuan menjadi intelligent decision layer untuk workflow AI coding modern. Produk ini memungkinkan developer menggunakan banyak model AI gratis maupun berbayar secara lebih efisien tanpa harus mengganti model secara manual.
 
 Visi produk ini adalah:
 
 > Menyediakan lapisan routing cerdas yang kompatibel dengan OpenAI API, mampu memahami jenis pekerjaan developer, menyediakan Web UI untuk pengaturan routing, memilih route profile terbaik, dan tetap memanfaatkan 9Router sebagai routing infrastructure utama.
 
-Dalam jangka panjang, Smart AI Proxy dapat berkembang menjadi local AI orchestration control plane yang mampu mempertimbangkan kualitas model, latency, biaya, konteks proyek, preferensi user, telemetry historis, feedback pengguna, dan policy tim.
+Dalam jangka panjang, AtlasBridge dapat berkembang menjadi local AI orchestration control plane yang mampu mempertimbangkan kualitas model, latency, biaya, konteks proyek, preferensi user, telemetry historis, feedback pengguna, dan policy tim.
 
 ---
 
@@ -54,7 +55,7 @@ Namun, pemilihan model masih sering dilakukan secara manual. Developer perlu mem
 
 9Router sudah menangani routing teknis di sisi provider, seperti failover, fallback, load balancing, rotasi akun, dan rate limit handling. Namun 9Router tidak diposisikan sebagai task-aware intelligent classifier ataupun user-facing configuration UI.
 
-Oleh karena itu, Smart AI Proxy dibutuhkan sebagai lapisan tambahan yang fokus pada:
+Oleh karena itu, AtlasBridge dibutuhkan sebagai lapisan tambahan yang fokus pada:
 
 - Pemahaman request.
 - Klasifikasi task.
@@ -127,7 +128,7 @@ Masalah utama yang ingin diselesaikan:
 
 ## 6. Non-Goals
 
-Smart AI Proxy tidak dirancang untuk menggantikan 9Router.
+AtlasBridge tidak dirancang untuk menggantikan 9Router.
 
 Produk ini tidak akan menangani:
 
@@ -145,7 +146,7 @@ Produk ini tidak akan menangani:
 - Menyimpan prompt penuh secara default.
 - Menjadi IDE atau AI coding assistant sendiri.
 - Membuka Web UI ke public network secara default.
-- Mengelola akun provider langsung dari Smart AI Proxy.
+- Mengelola akun provider langsung dari AtlasBridge.
 
 ---
 
@@ -194,7 +195,7 @@ Tim kecil yang ingin menstandarkan penggunaan AI model untuk workflow developmen
 
 ### 7.4 Technical Admin / DevOps
 
-Pengelola infrastructure yang menjalankan Smart AI Proxy dan 9Router.
+Pengelola infrastructure yang menjalankan AtlasBridge dan 9Router.
 
 **Needs:**
 
@@ -213,27 +214,27 @@ Pengelola infrastructure yang menjalankan Smart AI Proxy dan 9Router.
 
 ### 8.1 First-Time Setup Journey
 
-1. User menjalankan atau mengaktifkan Smart AI Proxy.
-2. User membuka Web UI lokal Smart AI Proxy.
+1. User menjalankan atau mengaktifkan AtlasBridge.
+2. User membuka Web UI lokal AtlasBridge.
 3. User mengatur downstream 9Router endpoint.
 4. User mengatur proxy host dan port.
 5. User mengatur API key atau authentication mode untuk proxy.
 6. User memilih default route profile.
 7. User mengatur task-to-route mapping, misalnya Design ke `route.design`, Backend ke `route.backend`, dan Documentation ke `route.documentation`.
 8. User memilih startup mode: Always On, Manual, atau Disabled.
-9. User mengatur AI coding assistant agar menggunakan endpoint Smart AI Proxy.
+9. User mengatur AI coding assistant agar menggunakan endpoint AtlasBridge.
 10. User memilih model virtual, misalnya `smart-auto`.
 11. User mulai mengirim request dari OpenCode, Cursor, Cline, Continue, atau tool lain.
-12. Smart AI Proxy menganalisis request dan meneruskan ke 9Router dengan routing intent yang sesuai.
+12. AtlasBridge menganalisis request dan meneruskan ke 9Router dengan routing intent yang sesuai.
 
 ### 8.2 Daily Developer Journey
 
 1. Developer membuka laptop atau komputer.
-2. Jika auto-start aktif, Smart AI Proxy berjalan otomatis di background.
+2. Jika auto-start aktif, AtlasBridge berjalan otomatis di background.
 3. Developer membuka AI coding assistant.
 4. Developer meminta bantuan coding, debugging, refactoring, testing, desain, atau dokumentasi.
 5. Developer tetap memakai model virtual yang sama.
-6. Smart AI Proxy memilih route profile berdasarkan task dan setting user.
+6. AtlasBridge memilih route profile berdasarkan task dan setting user.
 7. 9Router menangani provider-level routing.
 8. Developer menerima response seperti menggunakan OpenAI-compatible API biasa.
 
@@ -241,7 +242,7 @@ Pengelola infrastructure yang menjalankan Smart AI Proxy dan 9Router.
 
 1. Developer merasa task tertentu membutuhkan route spesifik.
 2. Developer menggunakan model alias khusus atau mengubah setting melalui Web UI.
-3. Smart AI Proxy melewati auto classification atau memberi prioritas pada override.
+3. AtlasBridge melewati auto classification atau memberi prioritas pada override.
 4. Request diteruskan ke 9Router sesuai override.
 
 ### 8.4 Runtime Control Journey
@@ -249,7 +250,7 @@ Pengelola infrastructure yang menjalankan Smart AI Proxy dan 9Router.
 1. User membuka Web UI.
 2. User melihat status proxy: Running, Stopped, Error, atau Disabled.
 3. User memilih Start, Stop, atau Restart.
-4. Smart AI Proxy menjalankan tindakan runtime yang dipilih.
+4. AtlasBridge menjalankan tindakan runtime yang dipilih.
 5. UI menampilkan status terbaru dan endpoint aktif.
 
 ### 8.5 Startup Mode Journey
@@ -314,7 +315,7 @@ Task type minimum:
 
 ### 9.3 AI Combo
 
-AI Combo adalah abstraksi tujuan routing. Smart AI Proxy memilih combo, sementara 9Router tetap menangani model/provider aktual.
+AI Combo adalah abstraksi tujuan routing. AtlasBridge memilih combo, sementara 9Router tetap menangani model/provider aktual.
 
 Contoh AI Combo:
 
@@ -355,7 +356,7 @@ Contoh route profile:
 | `route.long_context` | Untuk konteks panjang |
 | `route.security` | Untuk security review |
 
-Smart AI Proxy memilih route profile. 9Router tetap menerjemahkan route profile tersebut menjadi provider/model aktual sesuai konfigurasi downstream.
+AtlasBridge memilih route profile. 9Router tetap menerjemahkan route profile tersebut menjadi provider/model aktual sesuai konfigurasi downstream.
 
 ### 9.5 Task-to-Route Mapping
 
@@ -383,7 +384,7 @@ Policy harus dapat dikonfigurasi tanpa mengubah kode inti.
 
 ### 9.7 Web Control Panel
 
-Web Control Panel adalah UI lokal untuk mengatur Smart AI Proxy.
+Web Control Panel adalah UI lokal untuk mengatur AtlasBridge.
 
 Fungsi utama:
 
@@ -398,7 +399,7 @@ Fungsi utama:
 
 ### 9.8 Startup Mode
 
-Startup mode menentukan apakah Smart AI Proxy otomatis berjalan setelah laptop atau komputer restart.
+Startup mode menentukan apakah AtlasBridge otomatis berjalan setelah laptop atau komputer restart.
 
 Mode utama:
 
@@ -410,7 +411,7 @@ Mode utama:
 
 ### 9.9 Safe Passthrough
 
-Safe passthrough adalah mode ketika Smart AI Proxy tidak dapat menentukan route dengan confidence yang cukup. Dalam kondisi ini, request tetap diteruskan ke 9Router menggunakan default route.
+Safe passthrough adalah mode ketika AtlasBridge tidak dapat menentukan route dengan confidence yang cukup. Dalam kondisi ini, request tetap diteruskan ke 9Router menggunakan default route.
 
 ---
 
@@ -418,7 +419,7 @@ Safe passthrough adalah mode ketika Smart AI Proxy tidak dapat menentukan route 
 
 ### 10.1 MVP Scope
 
-MVP Smart AI Proxy harus mencakup:
+MVP AtlasBridge harus mencakup:
 
 1. OpenAI-compatible chat completion proxy.
 2. Streaming response passthrough.
@@ -571,7 +572,7 @@ MVP tidak mencakup:
 
 | ID | Requirement | Priority | Description | Acceptance Criteria |
 |---|---|---|---|---|
-| FR-046 | Provide local Web UI | Must Have | Smart AI Proxy harus menyediakan Web UI lokal. | User dapat membuka halaman settings melalui browser lokal. |
+| FR-046 | Provide local Web UI | Must Have | AtlasBridge harus menyediakan Web UI lokal. | User dapat membuka halaman settings melalui browser lokal. |
 | FR-047 | Show dashboard status | Must Have | UI harus menampilkan status proxy, endpoint, mode, dan downstream 9Router. | User dapat melihat apakah proxy running dan tersambung ke 9Router. |
 | FR-048 | Provide routing settings page | Must Have | UI harus menyediakan halaman task-to-route mapping. | User dapat mengubah mapping kategori task ke route profile. |
 | FR-049 | Provide route profile page | Should Have | UI menyediakan pengelolaan route profile. | User dapat melihat, membuat, mengedit, dan menonaktifkan route profile. |
@@ -696,7 +697,7 @@ MVP tidak mencakup:
 | Documentation | Fast writing route through 9Router | `route.documentation` |
 | Lightweight Task | Cheap/free model route through 9Router | `route.low_cost` |
 
-Catatan penting: Smart AI Proxy tidak memilih provider akhir secara langsung. Smart AI Proxy hanya meneruskan route profile atau routing intent ke 9Router. Konfigurasi provider/model aktual tetap diatur oleh 9Router.
+Catatan penting: AtlasBridge tidak memilih provider akhir secara langsung. AtlasBridge hanya meneruskan route profile atau routing intent ke 9Router. Konfigurasi provider/model aktual tetap diatur oleh 9Router.
 
 ### 13.3 Routing Decision Precedence
 
@@ -726,11 +727,11 @@ Urutan prioritas routing:
 
 ## 14. Configuration Requirements
 
-Smart AI Proxy harus mendukung konfigurasi yang fleksibel dan dapat diubah melalui Web UI.
+AtlasBridge harus mendukung konfigurasi yang fleksibel dan dapat diubah melalui Web UI.
 
 ### 14.1 Required Configuration
 
-- Smart AI Proxy listen host/port.
+- AtlasBridge listen host/port.
 - 9Router downstream endpoint.
 - Authentication mode.
 - Default route.
@@ -775,7 +776,7 @@ Smart AI Proxy harus mendukung konfigurasi yang fleksibel dan dapat diubah melal
 
 ### 15.1 Client Compatibility
 
-Smart AI Proxy harus kompatibel dengan client yang menggunakan OpenAI-compatible API, terutama:
+AtlasBridge harus kompatibel dengan client yang menggunakan OpenAI-compatible API, terutama:
 
 - OpenCode.
 - Cursor.
@@ -800,7 +801,7 @@ Compatibility yang perlu dijaga:
 
 ### 15.3 Model Field Behavior
 
-Smart AI Proxy harus dapat menerima model field seperti:
+AtlasBridge harus dapat menerima model field seperti:
 
 - Model nyata yang ingin dipassthrough.
 - Model virtual seperti `smart-auto`.
@@ -812,7 +813,7 @@ Smart AI Proxy harus dapat menerima model field seperti:
 
 ## 16. UX Requirements
 
-Smart AI Proxy memiliki dua area UX utama:
+AtlasBridge memiliki dua area UX utama:
 
 1. Developer experience saat digunakan dari AI coding assistant.
 2. Web UI experience saat user mengatur proxy.
@@ -1060,7 +1061,7 @@ MVP dianggap siap dirilis jika memenuhi kriteria berikut:
 
 Acceptance criteria:
 
-- User dapat mengatur client ke endpoint Smart AI Proxy.
+- User dapat mengatur client ke endpoint AtlasBridge.
 - User dapat memilih model `smart-auto`.
 - Proxy memilih route berdasarkan request.
 - Response tetap muncul normal di client.
@@ -1129,7 +1130,7 @@ Acceptance criteria:
 ### 20.7 Auto-Start on Boot
 
 **As a** developer,  
-**I want** Smart AI Proxy otomatis hidup saat laptop restart,  
+**I want** AtlasBridge otomatis hidup saat laptop restart,  
 **so that** saya tidak perlu menyalakan proxy manual setiap kali mulai bekerja.
 
 Acceptance criteria:
@@ -1154,7 +1155,7 @@ Acceptance criteria:
 ### 20.9 Disabled Mode
 
 **As a** user,  
-**I want** dapat mematikan Smart AI Proxy sementara,  
+**I want** dapat mematikan AtlasBridge sementara,  
 **so that** tidak ada request yang lewat proxy saat saya tidak membutuhkannya.
 
 Acceptance criteria:
@@ -1181,7 +1182,7 @@ Acceptance criteria:
 
 ### 21.1 Basic Passthrough Test
 
-**Scenario:** Client mengirim request biasa ke Smart AI Proxy.  
+**Scenario:** Client mengirim request biasa ke AtlasBridge.  
 **Expected Result:** Request diteruskan ke 9Router dan response dikembalikan ke client dalam format OpenAI-compatible.
 
 ### 21.2 Streaming Test
@@ -1334,22 +1335,22 @@ Acceptance criteria:
 ## 24. Assumptions
 
 - Client target menggunakan OpenAI-compatible API.
-- 9Router dapat menerima request dari Smart AI Proxy.
+- 9Router dapat menerima request dari AtlasBridge.
 - 9Router tetap menjadi downstream utama untuk provider routing.
-- Smart AI Proxy tidak perlu memanggil provider AI langsung.
+- AtlasBridge tidak perlu memanggil provider AI langsung.
 - User bersedia menggunakan model virtual seperti `smart-auto`.
 - Task classification MVP cukup menggunakan rule-based atau heuristic-based classifier.
 - Prompt penuh tidak diperlukan untuk telemetry default.
 - Routing combo dapat direpresentasikan melalui model alias, header, atau metadata lain yang kompatibel dengan 9Router.
 - User membutuhkan Web UI agar konfigurasi lebih mudah dibanding edit file manual.
-- User akan menjalankan Smart AI Proxy secara lokal pada laptop/komputer development.
+- User akan menjalankan AtlasBridge secara lokal pada laptop/komputer development.
 - Auto-start behavior akan berbeda per sistem operasi dan perlu abstraction layer.
 
 ---
 
 ## 25. Constraints
 
-- Smart AI Proxy tidak boleh menggantikan fungsi 9Router.
+- AtlasBridge tidak boleh menggantikan fungsi 9Router.
 - Harus kompatibel dengan OpenAI API.
 - Harus mendukung streaming.
 - Harus menambahkan latency seminimal mungkin.
@@ -1464,7 +1465,7 @@ Focus:
 
 ## 28. Open Questions
 
-1. Bagaimana format terbaik agar Smart AI Proxy mengirim route intent ke 9Router: model alias, header, atau metadata khusus?
+1. Bagaimana format terbaik agar AtlasBridge mengirim route intent ke 9Router: model alias, header, atau metadata khusus?
 2. Apakah 9Router akan mengenali `route.*` dan `combo.*` secara langsung atau perlu mapping menjadi model alias?
 3. Apakah manual override lebih baik melalui model field, header, request metadata, atau Web UI lock mode?
 4. Apakah Web UI wajib masuk MVP penuh, atau MVP cukup minimal settings page terlebih dahulu?
@@ -1473,9 +1474,9 @@ Focus:
 7. Bagaimana standard compatibility test untuk OpenCode, Cursor, Cline, dan Continue?
 8. Apakah setiap user/team membutuhkan policy berbeda sejak MVP?
 9. Sistem operasi mana yang diprioritaskan untuk auto-start: Windows, macOS, Linux, atau semua sejak awal?
-10. Apakah Smart AI Proxy akan didistribusikan sebagai CLI, desktop app, background service, Docker container, atau kombinasi?
+10. Apakah AtlasBridge akan didistribusikan sebagai CLI, desktop app, background service, Docker container, atau kombinasi?
 11. Apakah Web UI perlu authentication sejak MVP meskipun berjalan di localhost?
-12. Bagaimana UX terbaik untuk menjelaskan boundary antara Smart AI Proxy dan 9Router kepada user?
+12. Bagaimana UX terbaik untuk menjelaskan boundary antara AtlasBridge dan 9Router kepada user?
 
 ---
 
@@ -1499,15 +1500,15 @@ Sebuah fitur dianggap selesai jika:
 
 ## 30. Final Product Positioning
 
-Smart AI Proxy adalah product-level intelligent routing layer untuk AI coding workflow. Produk ini membantu developer menggunakan banyak model AI secara otomatis dan efisien tanpa mengganti model secara manual.
+AtlasBridge adalah product-level intelligent routing layer untuk AI coding workflow. Produk ini membantu developer menggunakan banyak model AI secara otomatis dan efisien tanpa mengganti model secara manual.
 
-Pada revisi v1.1, Smart AI Proxy juga diposisikan sebagai **local Web UI-based control center** untuk mengatur routing AI berdasarkan kategori pekerjaan. User dapat menentukan sendiri task seperti design, backend, frontend, debugging, documentation, architecture, dan low-cost task harus diarahkan ke route profile tertentu.
+Pada revisi v1.1, AtlasBridge juga diposisikan sebagai **local Web UI-based control center** untuk mengatur routing AI berdasarkan kategori pekerjaan. User dapat menentukan sendiri task seperti design, backend, frontend, debugging, documentation, architecture, dan low-cost task harus diarahkan ke route profile tertentu.
 
-Smart AI Proxy mengambil keputusan berdasarkan request intent, task classification, dan konfigurasi user. 9Router tetap menjadi downstream infrastructure yang menangani provider-level reliability, failover, load balancing, rotasi akun, fallback model, dan rate limit handling.
+AtlasBridge mengambil keputusan berdasarkan request intent, task classification, dan konfigurasi user. 9Router tetap menjadi downstream infrastructure yang menangani provider-level reliability, failover, load balancing, rotasi akun, fallback model, dan rate limit handling.
 
 Positioning utama:
 
-> Smart AI Proxy memilih route terbaik dan menyediakan control panel untuk user. 9Router mengeksekusi routing provider dengan andal.
+> AtlasBridge memilih route terbaik dan menyediakan control panel untuk user. 9Router mengeksekusi routing provider dengan andal.
 
 Nilai utama produk:
 

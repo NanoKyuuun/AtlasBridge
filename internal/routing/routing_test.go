@@ -3,9 +3,9 @@ package routing
 import (
 	"testing"
 
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/analyzer"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/classifier"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/config"
+	"github.com/atlasbridge/atlasbridge/internal/analyzer"
+	"github.com/atlasbridge/atlasbridge/internal/classifier"
+	"github.com/atlasbridge/atlasbridge/internal/config"
 )
 
 func defaultRoutingCfg() *config.RoutingConfig {

@@ -1,10 +1,10 @@
 @echo off
-REM Smart AI Proxy - Lint and Format Script for Windows
+REM AtlasBridge - Lint and Format Script for Windows
 
 setlocal
 set FAILED=0
 
-echo === Smart AI Proxy Lint ===
+echo === AtlasBridge Lint ===
 
 echo [1/4] go vet...
 go vet ./...

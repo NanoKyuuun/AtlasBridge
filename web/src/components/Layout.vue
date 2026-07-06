@@ -2,8 +2,17 @@
   <div class="min-h-screen bg-base-200 flex">
     <aside class="w-64 bg-base-100 shadow-md flex flex-col">
       <div class="p-4 border-b border-base-200">
-        <h1 class="text-lg font-bold">AtlasBridge</h1>
-        <p class="text-xs text-base-content/50 mt-1">v{{ version }}</p>
+        <div class="flex items-center gap-3">
+          <img
+            src="/atlasbridge-logo-mark-256.png"
+            alt="AtlasBridge logo"
+            class="h-10 w-10 rounded-xl bg-base-200 p-1"
+          />
+          <div>
+            <h1 class="text-lg font-bold">AtlasBridge</h1>
+            <p class="text-xs text-base-content/50">AI Proxy | v{{ version }}</p>
+          </div>
+        </div>
       </div>
       <nav class="flex-1 p-2">
         <router-link
@@ -94,8 +103,9 @@ const statusBadgeClass = computed(() => {
 });
 
 const currentPageTitle = computed(() => {
+  if (route.path === "/") return "AtlasBridge Dashboard";
   const item = navItems.find((i) => i.path === route.path);
-  return item?.label || "Dashboard";
+  return item?.label || "AtlasBridge";
 });
 
 function isActive(path: string) {

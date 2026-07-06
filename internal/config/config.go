@@ -80,7 +80,7 @@ type LoggingConfig struct {
 func DefaultConfig() *Config {
 	return &Config{
 		App: AppConfig{
-			Name:              "AtlasBridge",
+			Name:              "AtlasBridge AI Proxy",
 			Mode:              "manual",
 			FirstRunCompleted: false,
 		},
@@ -133,7 +133,7 @@ func ConfigDir() string {
 		return filepath.Join(home, "Library", "Application Support", "AtlasBridge")
 	default:
 		home, _ := os.UserHomeDir()
-		return filepath.Join(home, ".config", "atlasbridge")
+		return filepath.Join(home, ".config", "AtlasBridge")
 	}
 }
 

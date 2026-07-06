@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/config"
+	"github.com/atlasbridge/atlasbridge/internal/config"
 )
 
 func newTestServer(t *testing.T) *httptest.Server {

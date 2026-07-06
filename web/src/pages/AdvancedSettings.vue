@@ -211,7 +211,7 @@ async function exportConfig() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "smart-ai-proxy-config.json";
+    a.download = "atlasbridge-config.json";
     a.click();
     URL.revokeObjectURL(url);
   } catch (e: any) {

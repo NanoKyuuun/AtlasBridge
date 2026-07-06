@@ -1,4 +1,4 @@
-# Smart AI Proxy Troubleshooting Guide
+# AtlasBridge Troubleshooting Guide
 
 ## Common Issues
 
@@ -6,7 +6,7 @@
 **Symptom**: `port conflict on 127.0.0.1:20127`
 
 **Solution**:
-1. Stop any other Smart AI Proxy instances
+1. Stop any other AtlasBridge instances
 2. Or change port in config.yaml: `server.port: 20128`
 
 ### 9Router Not Reachable
@@ -50,11 +50,11 @@
 
 ## Getting Help
 
-- GitHub Issues: https://github.com/smart-ai-proxy/smart-ai-proxy/issues
-- Check logs at: `%APPDATA%/SmartAIProxy/logs/`
+- GitHub Issues: https://github.com/atlasbridge/atlasbridge/issues
+- Check logs at: `%APPDATA%/AtlasBridge/logs/`
 
 ## Log Location
-- Windows: `%APPDATA%/SmartAIProxy/logs/`
+- Windows: `%APPDATA%/AtlasBridge/logs/`
 
 ## Config Location
-- Windows: `%APPDATA%/SmartAIProxy/config.yaml`
+- Windows: `%APPDATA%/AtlasBridge/config.yaml`

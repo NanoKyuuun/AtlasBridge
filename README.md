@@ -1,5 +1,7 @@
 # AtlasBridge
 
+AtlasBridge AI Proxy
+
 OpenAI-compatible intelligent routing proxy with local Web UI control panel.
 
 ## Overview
@@ -44,7 +46,7 @@ AtlasBridge is a **decision layer only**. It never touches provider failover, lo
 ### 1. Run Go backend
 
 ```bash
-go run ./cmd/smart-ai-proxy
+go run ./cmd/atlasbridge
 ```
 
 ### 2. Run frontend dev server
@@ -61,7 +63,7 @@ Frontend dev server runs on `http://localhost:5173` and proxies API calls to Go 
 
 ```bash
 curl http://127.0.0.1:20127/health
-# {"status":"ok","service":"smart-ai-proxy"}
+# {"status":"ok","service":"atlasbridge"}
 ```
 
 ## Build
@@ -69,7 +71,7 @@ curl http://127.0.0.1:20127/health
 ### Go backend only
 
 ```bash
-go build -o smart-ai-proxy.exe ./cmd/smart-ai-proxy
+go build -o atlasbridge.exe ./cmd/atlasbridge
 ```
 
 ### Frontend
@@ -83,8 +85,8 @@ npm run build
 ## Project Structure
 
 ```
-smart-ai-proxy/
-├── cmd/smart-ai-proxy/      # Application entry point
+atlasbridge/
+├── cmd/atlasbridge/      # Application entry point
 ├── internal/
 │   ├── app/                 # Application bootstrap
 │   ├── server/              # HTTP server with chi router
@@ -113,9 +115,9 @@ smart-ai-proxy/
 
 Config is stored locally per platform:
 
-- **Windows**: `%APPDATA%/SmartAIProxy/`
-- **macOS**: `~/Library/Application Support/SmartAIProxy/`
-- **Linux**: `~/.config/smart-ai-proxy/`
+- **Windows**: `%APPDATA%/AtlasBridge/`
+- **macOS**: `~/Library/Application Support/AtlasBridge/`
+- **Linux**: `~/.config/AtlasBridge/`
 
 See `configs/` for example configuration files.
 

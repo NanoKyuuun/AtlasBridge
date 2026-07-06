@@ -7,13 +7,13 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/config"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/forwarder"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/observability"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/runtime"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/server"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/startup"
-	"github.com/smart-ai-proxy/smart-ai-proxy/internal/tray"
+	"github.com/atlasbridge/atlasbridge/internal/config"
+	"github.com/atlasbridge/atlasbridge/internal/forwarder"
+	"github.com/atlasbridge/atlasbridge/internal/observability"
+	"github.com/atlasbridge/atlasbridge/internal/runtime"
+	"github.com/atlasbridge/atlasbridge/internal/server"
+	"github.com/atlasbridge/atlasbridge/internal/startup"
+	"github.com/atlasbridge/atlasbridge/internal/tray"
 )
 
 type App struct {
@@ -87,7 +87,7 @@ func (a *App) Run() error {
 	}
 
 	addr := fmt.Sprintf("%s:%d", a.cfg.Server.Host, a.cfg.Server.Port)
-	log.Printf("Smart AI Proxy v%s starting", server.Version)
+	log.Printf("AtlasBridge v%s starting", server.Version)
 	log.Printf("Listening on http://%s", addr)
 	log.Printf("API endpoint: http://%s%s", addr, a.cfg.Server.APIBasePath)
 	log.Printf("Admin UI:     http://%s%s", addr, a.cfg.Server.AdminPath)
@@ -109,7 +109,7 @@ func (a *App) WaitQuit() {
 }
 
 func (a *App) Shutdown() {
-	log.Println("Smart AI Proxy shutting down...")
+	log.Println("AtlasBridge shutting down...")
 	a.state.SetStatus(runtime.StatusStopped)
 	if a.tray != nil {
 		a.tray.Update()
@@ -118,5 +118,5 @@ func (a *App) Shutdown() {
 		log.Printf("shutdown error: %v", err)
 	}
 	startup.ReleaseLock()
-	log.Println("Smart AI Proxy stopped.")
+	log.Println("AtlasBridge stopped.")
 }

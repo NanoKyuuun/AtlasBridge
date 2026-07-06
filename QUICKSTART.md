@@ -24,8 +24,8 @@ atlasbridge start
 
 ## Configuration
 
-- Config file: `%APPDATA%/SmartAIProxy/config.yaml`
-- Logs: `%APPDATA%/SmartAIProxy/logs/`
+- Config file: `%APPDATA%/AtlasBridge/config.yaml`
+- Logs: `%APPDATA%/AtlasBridge/logs/`
 - Default API endpoint: `http://127.0.0.1:20127/v1`
 - Default admin: `http://127.0.0.1:20127/admin`
 
@@ -48,5 +48,5 @@ atlasbridge start
 
 ## Support
 
-- GitHub: https://github.com/smart-ai-proxy/smart-ai-proxy
-- Issues: https://github.com/smart-ai-proxy/smart-ai-proxy/issues
+- GitHub: https://github.com/atlasbridge/atlasbridge
+- Issues: https://github.com/atlasbridge/atlasbridge/issues

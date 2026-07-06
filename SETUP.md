@@ -1,4 +1,4 @@
-# Smart AI Proxy Setup Guide
+# AtlasBridge Setup Guide
 
 ## Prerequisites
 
@@ -9,23 +9,23 @@
 ## Installation Options
 
 ### Option 1: Portable (Recommended)
-1. Download `smart-ai-proxy-v0.1.0-windows-x64-portable.zip`
+1. Download `atlasbridge-v0.1.0-windows-x64-portable.zip`
 2. Extract to any folder
-3. Run `smart-ai-proxy.exe`
+3. Run `atlasbridge.exe`
 
 ### Option 2: npm Wrapper
 ```bash
-npm install -g smart-ai-proxy
-smart-ai-proxy start
+npm install -g atlasbridge
+atlasbridge start
 ```
 
 ## First-Time Setup
 
 1. **Ensure 9Router is running** on port 20128
 
-2. **Start Smart AI Proxy**:
-   - Portable: Run `smart-ai-proxy.exe`
-   - npm: `smart-ai-proxy start`
+2. **Start AtlasBridge**:
+   - Portable: Run `atlasbridge.exe`
+   - npm: `atlasbridge start`
 
 3. **Tray icon appears** in system tray
 
@@ -57,7 +57,7 @@ smart-ai-proxy start
 
 ## Configuration
 
-Config file location: `%APPDATA%/SmartAIProxy/config.yaml`
+Config file location: `%APPDATA%/AtlasBridge/config.yaml`
 
 Key settings:
 - `server.port`: API port (default: 20127)
@@ -72,5 +72,5 @@ Simply delete the extracted folder
 
 ### npm
 ```bash
-npm uninstall -g smart-ai-proxy
+npm uninstall -g atlasbridge
 ```

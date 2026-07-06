@@ -14,7 +14,7 @@ function getConfigDir() {
     if (process.platform === 'win32') {
         return path.join(process.env.APPDATA || '', APP_NAME);
     }
-    return path.join(os.homedir(), '.config', APP_NAME.toLowerCase());
+    return path.join(os.homedir(), '.config', APP_NAME);
 }
 
 function getBinaryPath() {

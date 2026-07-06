@@ -1,6 +1,14 @@
 # Binaries
 smart-ai-proxy
-smart-ai-proxy.exe
+*.exe
+
+# Generated release and tooling artifacts
+.playwright-mcp/
+release/
+*.zip
+*.tsbuildinfo
+patch.diff
+stderr.txt
 
 # Go
 vendor/

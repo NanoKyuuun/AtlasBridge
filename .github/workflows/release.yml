@@ -32,19 +32,19 @@ jobs:
         env:
           VERSION: ${{ github.ref_name }}
         run: |
-          $ldflags = "-X github.com/smart-ai-proxy/smart-ai-proxy/internal/server.Version=$VERSION"
-          go build -ldflags $ldflags -o smart-ai-proxy.exe ./cmd/smart-ai-proxy
+          $ldflags = "-X github.com/atlasbridge/atlasbridge/internal/server.Version=$VERSION"
+          go build -ldflags $ldflags -o atlasbridge.exe ./cmd/atlasbridge
 
       - name: Create release archive
         run: |
           $version = $env:GITHUB_REF_NAME -replace 'v',''
-          $zipName = "smart-ai-proxy-$version-windows-x64-portable.zip"
-          Compress-Archive -Path smart-ai-proxy.exe,README.md,QUICKSTART.md -DestinationPath $zipName
+          $zipName = "atlasbridge-$version-windows-x64-portable.zip"
+          Compress-Archive -Path atlasbridge.exe,README.md,QUICKSTART.md -DestinationPath $zipName
 
       - name: Generate checksums
         run: |
-          $sha256 = (Get-FileHash smart-ai-proxy.exe -Algorithm SHA256).Hash.ToLower()
-          "sha256  $sha256  smart-ai-proxy.exe" | Out-File -FilePath checksums.txt -Encoding UTF8
+          $sha256 = (Get-FileHash atlasbridge.exe -Algorithm SHA256).Hash.ToLower()
+          "sha256  $sha256  atlasbridge.exe" | Out-File -FilePath checksums.txt -Encoding UTF8
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2

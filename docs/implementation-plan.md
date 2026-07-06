@@ -1,13 +1,14 @@
-# Smart AI Proxy
+# AtlasBridge
 # Implementation Plan v0.2
 
 **Document Type:** Implementation Plan  
-**Project Name:** Smart AI Proxy  
+**Project Name:** AtlasBridge  
+**Full Name:** AtlasBridge AI Proxy  
 **Status:** Draft v0.2  
 **Based On:** PRD v1.1 and Technical Plan v0.1  
 **Primary Runtime:** Local developer machine  
 **Primary Downstream:** 9Router  
-**Default Smart AI Proxy Port:** `20127`  
+**Default AtlasBridge Port:** `20127`  
 **Default 9Router Port:** `20128`  
 **Backend/Core:** Go / Golang  
 **HTTP Layer:** `net/http` + `chi`  
@@ -21,11 +22,11 @@
 
 ## 1. Executive Summary
 
-Implementation Plan ini menjelaskan langkah implementasi Smart AI Proxy secara terstruktur dari foundation sampai rilis MVP dan post-MVP.
+Implementation Plan ini menjelaskan langkah implementasi AtlasBridge secara terstruktur dari foundation sampai rilis MVP dan post-MVP.
 
-Smart AI Proxy akan dibangun sebagai aplikasi lokal untuk developer yang berjalan di background. Aplikasi ini menyediakan endpoint OpenAI-compatible di `http://127.0.0.1:20127/v1`, menyediakan Web UI lokal di `http://127.0.0.1:20127/admin`, memiliki tray icon seperti 9Router saat aktif, mampu auto-start saat laptop/komputer restart, dan meneruskan request ke 9Router default di `http://127.0.0.1:20128/v1`.
+AtlasBridge akan dibangun sebagai aplikasi lokal untuk developer yang berjalan di background. Aplikasi ini menyediakan endpoint OpenAI-compatible di `http://127.0.0.1:20127/v1`, menyediakan Web UI lokal di `http://127.0.0.1:20127/admin`, memiliki tray icon seperti 9Router saat aktif, mampu auto-start saat laptop/komputer restart, dan meneruskan request ke 9Router default di `http://127.0.0.1:20128/v1`.
 
-Smart AI Proxy hanya bertanggung jawab sebagai decision layer:
+AtlasBridge hanya bertanggung jawab sebagai decision layer:
 
 - menerima request OpenAI-compatible,
 - menganalisis request,
@@ -38,7 +39,7 @@ Smart AI Proxy hanya bertanggung jawab sebagai decision layer:
 - menyediakan auto-start,
 - mencatat metadata non-sensitif.
 
-Smart AI Proxy tidak boleh mengambil alih fungsi 9Router seperti:
+AtlasBridge tidak boleh mengambil alih fungsi 9Router seperti:
 
 - provider failover,
 - load balancing,
@@ -58,9 +59,9 @@ Dokumen ini tidak berisi kode implementasi. Dokumen ini hanya menjelaskan rencan
 
 ### 2.2 Boundary First
 
-Setiap fase implementasi wajib menjaga batas tanggung jawab antara Smart AI Proxy dan 9Router.
+Setiap fase implementasi wajib menjaga batas tanggung jawab antara AtlasBridge dan 9Router.
 
-Smart AI Proxy:
+AtlasBridge:
 
 ```text
 Analyze request → classify task → select route profile → forward to 9Router
@@ -74,7 +75,7 @@ Provider routing → failover → fallback → load balancing → account rotati
 
 ### 2.3 Local-First and Privacy-First
 
-Smart AI Proxy harus aman untuk berjalan di local machine developer.
+AtlasBridge harus aman untuk berjalan di local machine developer.
 
 Default behavior:
 
@@ -134,7 +135,7 @@ Implementation Plan ini mengikuti dua dokumen utama:
 
 ### 3.1 PRD v1.1 Alignment
 
-PRD v1.1 menetapkan Smart AI Proxy sebagai OpenAI-compatible intelligent routing proxy dengan Local Web Control Panel. Fitur utama yang harus diimplementasikan mencakup:
+PRD v1.1 menetapkan AtlasBridge sebagai OpenAI-compatible intelligent routing proxy dengan Local Web Control Panel. Fitur utama yang harus diimplementasikan mencakup:
 
 - OpenAI-compatible proxy.
 - Streaming and non-streaming passthrough.
@@ -159,7 +160,7 @@ Technical Plan v0.1 menetapkan keputusan teknis berikut:
 - `net/http` + `chi` sebagai HTTP foundation.
 - Vue 3 + TypeScript + Vite sebagai frontend.
 - Tailwind CSS + DaisyUI sebagai UI layer.
-- Default Smart AI Proxy port `20127`.
+- Default AtlasBridge port `20127`.
 - Default 9Router port `20128`.
 - Satu port untuk API dan Web UI.
 - Local YAML/JSON untuk config MVP.
@@ -177,7 +178,7 @@ Technical Plan v0.1 menetapkan keputusan teknis berikut:
 
 MVP dianggap berhasil jika user dapat:
 
-1. menjalankan Smart AI Proxy di local machine,
+1. menjalankan AtlasBridge di local machine,
 2. melihat tray icon saat aplikasi aktif,
 3. membuka Web UI lokal,
 4. mengatur downstream 9Router endpoint,
@@ -439,7 +440,7 @@ Menyiapkan struktur project, keputusan teknis, build environment, dan skeleton a
 
 ### 8.1 Goal
 
-Membuat Smart AI Proxy dapat menerima request OpenAI-compatible dan meneruskannya ke 9Router.
+Membuat AtlasBridge dapat menerima request OpenAI-compatible dan meneruskannya ke 9Router.
 
 ### 8.2 Deliverables
 
@@ -481,7 +482,7 @@ Membuat Smart AI Proxy dapat menerima request OpenAI-compatible dan meneruskanny
 - Request ID appears in logs.
 - Authorization header is not logged.
 - If 9Router is offline, user receives clear downstream error.
-- Smart AI Proxy does not attempt provider fallback.
+- AtlasBridge does not attempt provider fallback.
 
 ### 8.5 Testing
 
@@ -609,7 +610,7 @@ route_profiles:
 
 ### 10.1 Goal
 
-Membuat user dapat mengatur Smart AI Proxy melalui browser lokal tanpa edit config manual.
+Membuat user dapat mengatur AtlasBridge melalui browser lokal tanpa edit config manual.
 
 ### 10.2 Deliverables
 
@@ -717,7 +718,7 @@ Membuat user dapat mengatur Smart AI Proxy melalui browser lokal tanpa edit conf
 
 ### 11.1 Goal
 
-Membuat Smart AI Proxy terasa seperti aplikasi lokal background dengan icon di system tray seperti 9Router.
+Membuat AtlasBridge terasa seperti aplikasi lokal background dengan icon di system tray seperti 9Router.
 
 ### 11.2 Deliverables
 
@@ -738,7 +739,7 @@ Membuat Smart AI Proxy terasa seperti aplikasi lokal background dengan icon di s
 ### 11.3 Tray Menu MVP
 
 ```text
-Smart AI Proxy
+AtlasBridge
 Status: Running / Stopped / Error
 Endpoint: 127.0.0.1:20127
 Open Dashboard
@@ -840,7 +841,7 @@ Linux x64
 
 ### 12.1 Goal
 
-Membuat Smart AI Proxy mudah diinstall, dijalankan, dan didistribusikan untuk developer.
+Membuat AtlasBridge mudah diinstall, dijalankan, dan didistribusikan untuk developer.
 
 ### 12.2 Distribution Channels
 
@@ -901,17 +902,17 @@ Recommended stages:
 Package name concept:
 
 ```text
-smart-ai-proxy
+atlasbridge
 ```
 
 Behavior:
 
 ```text
-npm install -g smart-ai-proxy
-smart-ai-proxy start
-smart-ai-proxy status
-smart-ai-proxy open
-smart-ai-proxy tray
+npm install -g atlasbridge
+atlasbridge start
+atlasbridge status
+atlasbridge open
+atlasbridge tray
 ```
 
 The npm package acts as installer/launcher for Go binary.
@@ -933,13 +934,13 @@ Requirements:
 Long-term package layout:
 
 ```text
-smart-ai-proxy
-@smart-ai-proxy/win32-x64
-@smart-ai-proxy/win32-arm64
-@smart-ai-proxy/darwin-x64
-@smart-ai-proxy/darwin-arm64
-@smart-ai-proxy/linux-x64
-@smart-ai-proxy/linux-arm64
+atlasbridge
+@atlasbridge/win32-x64
+@atlasbridge/win32-arm64
+@atlasbridge/darwin-x64
+@atlasbridge/darwin-arm64
+@atlasbridge/linux-x64
+@atlasbridge/linux-arm64
 ```
 
 ### 12.5 Tasks
@@ -1080,7 +1081,7 @@ MVP siap dirilis jika:
 18. Config persists after restart.
 19. Safe passthrough works if classifier fails.
 20. 9Router failure shows clear message.
-21. No provider-level routing is implemented inside Smart AI Proxy.
+21. No provider-level routing is implemented inside AtlasBridge.
 22. Documentation is sufficient for first-time setup.
 
 ### 14.3 Release Artifacts
@@ -1198,7 +1199,7 @@ After MVP release, track:
 
 | Story ID | User Story | Priority |
 |---|---|---|
-| E1-S1 | As a developer, I can start Smart AI Proxy locally. | P0 |
+| E1-S1 | As a developer, I can start AtlasBridge locally. | P0 |
 | E1-S2 | As a developer, I can access health status. | P0 |
 | E1-S3 | As a developer, I can use default config files. | P0 |
 | E1-S4 | As a maintainer, I can build frontend and backend. | P0 |
@@ -1208,7 +1209,7 @@ After MVP release, track:
 
 | Story ID | User Story | Priority |
 |---|---|---|
-| E2-S1 | As a user, I can send chat completion requests to Smart AI Proxy. | P0 |
+| E2-S1 | As a user, I can send chat completion requests to AtlasBridge. | P0 |
 | E2-S2 | As a user, I can receive non-streaming responses. | P0 |
 | E2-S3 | As a user, I can receive streaming responses. | P0 |
 | E2-S4 | As a user, I can use generic OpenAI-compatible client. | P0 |
@@ -1247,7 +1248,7 @@ After MVP release, track:
 | E5-S2 | As a user, I can open dashboard from tray. | P0 |
 | E5-S3 | As a user, I can start/stop/restart from tray. | P0 |
 | E5-S4 | As a user, I can enable run at startup. | P0 |
-| E5-S5 | As a user, Smart AI Proxy starts after login in Always On mode. | P0 |
+| E5-S5 | As a user, AtlasBridge starts after login in Always On mode. | P0 |
 | E5-S6 | As a user, I can copy API endpoint from tray. | P1 |
 
 ### Epic E6 — Packaging and Distribution
@@ -1508,9 +1509,9 @@ Output:
 Recommended repository structure:
 
 ```text
-smart-ai-proxy/
+atlasbridge/
 ├── cmd/
-│   └── smart-ai-proxy/
+│   └── atlasbridge/
 │       └── main.go
 ├── internal/
 │   ├── app/
@@ -1595,9 +1596,9 @@ Recommended location:
 
 | OS | Location |
 |---|---|
-| Windows | `%APPDATA%/SmartAIProxy/` |
-| macOS | `~/Library/Application Support/SmartAIProxy/` |
-| Linux | `~/.config/smart-ai-proxy/` |
+| Windows | `%APPDATA%/AtlasBridge/` |
+| macOS | `~/Library/Application Support/AtlasBridge/` |
+| Linux | `~/.config/AtlasBridge/` |
 
 ### 20.2 Config Lifecycle
 
@@ -1802,7 +1803,7 @@ Forward to 9Router
 Steps:
 
 1. Welcome.
-2. Confirm Smart AI Proxy endpoint.
+2. Confirm AtlasBridge endpoint.
 3. Configure 9Router endpoint.
 4. Test 9Router connection.
 5. Configure default route.
@@ -2329,7 +2330,7 @@ A task is done if:
 - documentation is updated if user-facing,
 - feature works with default port `20127`,
 - downstream remains 9Router,
-- no provider-level routing responsibility is added to Smart AI Proxy.
+- no provider-level routing responsibility is added to AtlasBridge.
 
 ---
 
@@ -2368,7 +2369,7 @@ A task is done if:
 
 1. What exact mechanism should be used to pass route intent to 9Router: model alias, custom header, or metadata?
 2. Should Web UI auth be mandatory on localhost from MVP or optional?
-3. Should tray run by default after `npm install -g`, or only after explicit `smart-ai-proxy tray`?
+3. Should tray run by default after `npm install -g`, or only after explicit `atlasbridge tray`?
 4. Should npm wrapper download binary from GitHub Releases or bundle Windows binary first?
 5. Should MVP support macOS/Linux tray, or document Windows-only tray initially?
 6. Should `/v1/models` list only smart aliases or also fetch downstream models from 9Router?
@@ -2416,7 +2417,7 @@ Move these to post-MVP if needed:
 
 ## 36. Final Implementation Positioning
 
-Smart AI Proxy MVP should be implemented as:
+AtlasBridge MVP should be implemented as:
 
 ```text
 A Go-based local background app with:
@@ -2432,5 +2433,4 @@ A Go-based local background app with:
 
 The first release should prove the core product promise:
 
-> Developer cukup memakai satu endpoint dan satu model virtual seperti `smart-auto`; Smart AI Proxy memilih route terbaik berdasarkan task dan setting user; 9Router tetap mengeksekusi provider-level routing secara andal.
-
+> Developer cukup memakai satu endpoint dan satu model virtual seperti `smart-auto`; AtlasBridge memilih route terbaik berdasarkan task dan setting user; 9Router tetap mengeksekusi provider-level routing secara andal.
