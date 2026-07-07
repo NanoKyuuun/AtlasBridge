@@ -1,117 +1,195 @@
 <template>
-  <div>
-    <div class="card bg-base-100 shadow-md mb-6">
-      <div class="card-body">
-        <h2 class="card-title">Privacy & Logging</h2>
-        <p class="text-sm text-base-content/60 mb-4">
-          Configure privacy mode and logging behavior.
-        </p>
+  <div class="space-y-6 lg:space-y-8">
+    <PageHeader
+      eyebrow="Privacy"
+      title="Privacy & Logging"
+      description="Configure privacy mode and logging behavior."
+    />
+
+    <GlassCard>
+      <div class="space-y-5">
+        <div>
+          <h2 class="text-lg font-semibold text-white">Privacy Mode</h2>
+          <p class="mt-1 text-sm text-slate-400">
+            Choose how much request detail AtlasBridge keeps in logs.
+          </p>
+        </div>
+
+        <div class="grid gap-3 lg:grid-cols-3">
+          <label
+            class="relative cursor-pointer overflow-hidden rounded-3xl border p-4 transition-all duration-200"
+            :class="modeCardClass('standard')"
+          >
+            <input type="radio" class="sr-only" v-model="logging.privacy_mode" value="standard" @change="dirty = true" />
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-white">Standard</div>
+                <div class="mt-2 text-xs leading-5 text-slate-400">
+                  Log metadata routing without full prompt content.
+                </div>
+              </div>
+              <StatusBadge :status="logging.privacy_mode === 'standard' ? 'active' : 'inactive'" :label="logging.privacy_mode === 'standard' ? 'selected' : 'ready'" />
+            </div>
+          </label>
+
+          <label
+            class="relative cursor-pointer overflow-hidden rounded-3xl border p-4 transition-all duration-200"
+            :class="modeCardClass('strict')"
+          >
+            <input type="radio" class="sr-only" v-model="logging.privacy_mode" value="strict" @change="dirty = true" />
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-white">Strict</div>
+                <div class="mt-2 text-xs leading-5 text-slate-400">
+                  Log only request ID, status, latency, and route.
+                </div>
+              </div>
+              <StatusBadge :status="logging.privacy_mode === 'strict' ? 'active' : 'inactive'" :label="logging.privacy_mode === 'strict' ? 'selected' : 'ready'" />
+            </div>
+          </label>
+
+          <label
+            class="relative cursor-pointer overflow-hidden rounded-3xl border p-4 transition-all duration-200"
+            :class="modeCardClass('debug')"
+          >
+            <input type="radio" class="sr-only" v-model="logging.privacy_mode" value="debug" @change="dirty = true" />
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-white">Debug</div>
+                <div class="mt-2 text-xs leading-5 text-slate-400">
+                  Additional info for troubleshooting, explicitly opt-in only.
+                </div>
+              </div>
+              <StatusBadge :status="logging.privacy_mode === 'debug' ? 'warning' : 'inactive'" :label="logging.privacy_mode === 'debug' ? 'selected' : 'ready'" />
+            </div>
+          </label>
+        </div>
+
+        <div v-if="logging.privacy_mode === 'debug'" class="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+          Debug mode increases logging verbosity. Do not use in production or shared environments.
+        </div>
+      </div>
+    </GlassCard>
+
+    <div class="grid gap-4 lg:grid-cols-2">
+      <GlassCard>
         <div class="space-y-4">
-          <div class="form-control">
-            <label class="label"
-              ><span class="label-text">Privacy Mode</span></label
-            >
-            <select
-              class="select select-bordered"
-              v-model="logging.privacy_mode"
-              @change="dirty = true"
-            >
-              <option value="standard">
-                Standard - Log metadata routing without full prompt
-              </option>
-              <option value="strict">
-                Strict - Log only request ID, status, latency, and route
-              </option>
-              <option value="debug">
-                Debug - Additional info (explicit opt-in)
-              </option>
-            </select>
+          <div>
+            <h2 class="text-lg font-semibold text-white">Logging Controls</h2>
+            <p class="mt-1 text-sm text-slate-400">
+              Toggle what AtlasBridge records for diagnostics and privacy protection.
+            </p>
           </div>
-          <div v-if="logging.privacy_mode === 'debug'" class="alert alert-warning">
-            <span>Debug mode increases logging verbosity. Do not use in production or shared environments.</span>
-          </div>
-          <div class="form-control">
-            <label class="label cursor-pointer justify-start gap-4">
-              <input
-                type="checkbox"
-                class="toggle toggle-primary"
-                v-model="logging.metadata_logging_enabled"
-                @change="dirty = true"
-              />
-              <div>
-                <span class="label-text font-medium">Metadata Logging</span>
-                <p class="text-xs text-base-content/50">
-                  Log request metadata (task type, route, latency)
-                </p>
+
+          <label class="flex cursor-pointer items-start gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-cyan-400/25 hover:bg-white/8">
+            <ToggleSwitch v-model="logging.metadata_logging_enabled" label="Metadata logging" @update:model-value="dirty = true" />
+            <div class="min-w-0">
+              <div class="text-sm font-medium text-white">Metadata logging</div>
+              <div class="mt-1 text-xs leading-5 text-slate-400">
+                Log request metadata such as task type, route, and latency.
               </div>
-            </label>
-          </div>
-          <div class="form-control">
-            <label class="label cursor-pointer justify-start gap-4">
-              <input
-                type="checkbox"
-                class="toggle toggle-primary"
-                v-model="logging.prompt_logging_enabled"
-                @change="dirty = true"
-              />
+            </div>
+          </label>
+
+          <div class="rounded-3xl border border-white/10 bg-white/5 p-4">
+            <div class="flex items-start justify-between gap-4">
               <div>
-                <span class="label-text font-medium">Prompt Logging</span>
-                <p class="text-xs text-base-content/50">
-                  Log full prompts (WARNING: contains sensitive data)
-                </p>
+                <div class="text-sm font-medium text-white">Full prompt logging</div>
+                <div class="mt-1 text-xs leading-5 text-slate-400">
+                  Log full prompts only when explicitly enabled.
+                </div>
               </div>
-            </label>
+              <StatusBadge :status="logging.prompt_logging_enabled ? 'warning' : 'inactive'" :label="logging.prompt_logging_enabled ? 'enabled' : 'disabled'" />
+            </div>
+            <div class="mt-3 rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-xs text-slate-300">
+              Full prompt logging disabled by default.
+            </div>
           </div>
-          <div class="form-control">
-            <label class="label cursor-pointer justify-start gap-4">
+
+          <label class="flex cursor-pointer items-start gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-cyan-400/25 hover:bg-white/8">
+            <ToggleSwitch v-model="redactSecrets" label="Secret redaction" @update:model-value="dirty = true" />
+            <div class="min-w-0">
+              <div class="text-sm font-medium text-white">Secret redaction</div>
+              <div class="mt-1 text-xs leading-5 text-slate-400">
+                Automatically redact API keys, tokens, and passwords from logs.
+              </div>
+            </div>
+          </label>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-emerald-200">Redaction status</div>
+              <div class="mt-2 text-sm font-semibold text-white">
+                {{ redactSecrets ? 'Protected' : 'Unprotected' }}
+              </div>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Retention days</div>
               <input
-                type="checkbox"
-                class="toggle toggle-primary"
-                v-model="redactSecrets"
-                @change="dirty = true"
+                type="number"
+                class="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/40 focus:ring-2 focus:ring-cyan-400/20"
+                v-model.number="logging.retention_days"
+                @input="dirty = true"
+                min="1"
+                max="90"
               />
-              <div>
-                <span class="label-text font-medium">Redact Secrets</span>
-                <p class="text-xs text-base-content/50">
-                  Automatically redact API keys, tokens, and passwords from logs
-                </p>
-              </div>
-            </label>
-          </div>
-          <div class="form-control">
-            <label class="label"
-              ><span class="label-text">Retention Days</span></label
-            >
-            <input
-              type="number"
-              class="input input-bordered w-32"
-              v-model.number="logging.retention_days"
-              @input="dirty = true"
-              min="1"
-              max="90"
-            />
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </GlassCard>
 
-    <div class="card bg-base-100 shadow-md mb-6">
-      <div class="card-body">
-        <h2 class="card-title">Logs</h2>
-        <div class="flex gap-2">
-          <button class="btn btn-outline btn-sm" @click="exportLogs">
-            Export Diagnostics
-          </button>
-          <button class="btn btn-error btn-sm" @click="clearLogs">
-            Clear Logs
-          </button>
+      <GlassCard>
+        <div class="space-y-4">
+          <div>
+            <h2 class="text-lg font-semibold text-white">Security Snapshot</h2>
+            <p class="mt-1 text-sm text-slate-400">
+              Quick readout of the current privacy posture.
+            </p>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Metadata logging</div>
+              <div class="mt-2 flex items-center gap-2 text-sm text-white">
+                <span class="h-2 w-2 rounded-full" :class="logging.metadata_logging_enabled ? 'bg-emerald-400 shadow-[0_0_10px_rgba(34,197,94,0.45)]' : 'bg-slate-500'"></span>
+                {{ logging.metadata_logging_enabled ? 'Enabled' : 'Disabled' }}
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Prompt logging</div>
+              <div class="mt-2 flex items-center gap-2 text-sm text-white">
+                <span class="h-2 w-2 rounded-full" :class="logging.prompt_logging_enabled ? 'bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.45)]' : 'bg-slate-500'"></span>
+                {{ logging.prompt_logging_enabled ? 'Enabled' : 'Disabled' }}
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Secret redaction</div>
+              <div class="mt-2 flex items-center gap-2 text-sm text-white">
+                <span class="h-2 w-2 rounded-full" :class="redactSecrets ? 'bg-cyan-400 shadow-[0_0_10px_rgba(53,215,242,0.45)]' : 'bg-slate-500'"></span>
+                {{ redactSecrets ? 'Protected' : 'Off' }}
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Privacy mode</div>
+              <div class="mt-2 flex items-center gap-2 text-sm text-white">
+                <StatusBadge :status="logging.privacy_mode === 'debug' ? 'warning' : logging.privacy_mode === 'strict' ? 'active' : 'inactive'" :label="logging.privacy_mode" />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </GlassCard>
     </div>
 
-    <button class="btn btn-primary" @click="save" :disabled="!dirty">
-      Save Changes
-    </button>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex gap-2">
+        <GhostButton @click="exportLogs">Export Diagnostic Report</GhostButton>
+        <button class="inline-flex items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-2.5 text-sm font-medium text-rose-100 transition-all hover:border-rose-400/30 hover:bg-rose-400/15" @click="clearLogs">Clear Logs</button>
+      </div>
+      <GradientButton @click="save" :disabled="!dirty">Save Changes</GradientButton>
+    </div>
   </div>
 </template>
 
@@ -119,6 +197,12 @@
 import { ref, onMounted } from "vue";
 import { useConfigStore } from "../stores/config";
 import { api } from "../api/client";
+import GlassCard from "../components/ui/GlassCard.vue";
+import PageHeader from "../components/ui/PageHeader.vue";
+import GradientButton from "../components/ui/GradientButton.vue";
+import GhostButton from "../components/ui/GhostButton.vue";
+import StatusBadge from "../components/ui/StatusBadge.vue";
+import ToggleSwitch from "../components/ui/ToggleSwitch.vue";
 
 const configStore = useConfigStore();
 const dirty = ref(false);
@@ -137,6 +221,18 @@ function load() {
     logging.value = { ...configStore.config.logging };
   }
   dirty.value = false;
+}
+
+function modeCardClass(mode: string) {
+  const selected = logging.value.privacy_mode === mode;
+  if (mode === "debug") {
+    return selected
+      ? "border-amber-400/30 bg-amber-400/10 shadow-[0_0_24px_rgba(245,158,11,0.12)]"
+      : "border-white/10 bg-white/5 hover:border-amber-400/20 hover:bg-white/8";
+  }
+  return selected
+    ? "border-cyan-400/30 bg-gradient-to-br from-blue-500/16 via-violet-500/14 to-cyan-400/10 shadow-[0_0_24px_rgba(53,215,242,0.12)]"
+    : "border-white/10 bg-white/5 hover:border-cyan-400/20 hover:bg-white/8";
 }
 
 async function save() {

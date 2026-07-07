@@ -1,148 +1,189 @@
 <template>
-  <div>
-    <div v-if="validationError" class="alert alert-error mb-6">
-      <span>{{ validationError }}</span>
+  <div class="space-y-6 lg:space-y-8">
+    <PageHeader
+      eyebrow="Routing"
+      title="Route Profiles"
+      description="Manage reusable route profiles used by task routing and overrides."
+    >
+      <template #actions>
+        <GradientButton @click="openCreateModal">Create Route Profile</GradientButton>
+      </template>
+    </PageHeader>
+
+    <div v-if="validationError" class="rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+      {{ validationError }}
     </div>
 
-    <div class="card bg-base-100 shadow-md mb-6">
-      <div class="card-body">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="card-title">Route Profiles</h2>
-          <button class="btn btn-primary btn-sm" @click="showAddModal = true">
-            Add Profile
-          </button>
+    <div v-if="configStore.error" class="rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+      {{ configStore.error }}
+    </div>
+
+    <GlassCard>
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-white">Profile Library</h2>
+          <p class="mt-1 text-sm text-slate-400">
+            Each profile controls a target alias and priority mode for a route.
+          </p>
         </div>
-        <div class="overflow-x-auto">
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Label</th>
-                <th>Description</th>
-                <th>Downstream Alias</th>
-                <th>Priority</th>
-                <th>Enabled</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(profile, name) in profiles"
-                :key="name"
-                :class="{ 'opacity-50': !profile.enabled }"
+
+        <div class="flex flex-wrap gap-2 text-xs text-slate-400">
+          <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">{{ orderedProfiles.length }} profiles</span>
+          <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">{{ activeProfileCount }} active</span>
+          <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">{{ inactiveProfileCount }} inactive</span>
+        </div>
+      </div>
+
+      <div v-if="configStore.loading" class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-400">
+        Loading route profiles...
+      </div>
+
+      <div v-else-if="orderedProfiles.length === 0" class="mt-5">
+        <EmptyState
+          title="No route profiles yet"
+          description="Create your first profile to define a reusable route target and priority mode."
+        >
+          <template #icon>
+            <span class="text-xl text-cyan-300">✦</span>
+          </template>
+          <template #actions>
+            <GradientButton @click="openCreateModal">Create Route Profile</GradientButton>
+          </template>
+        </EmptyState>
+      </div>
+
+      <div v-else class="mt-5 grid gap-4 xl:grid-cols-2">
+        <article
+          v-for="{ name, profile } in orderedProfiles"
+          :key="name"
+          class="glass-card glow-border rounded-3xl p-5 sm:p-6 transition-all duration-200"
+          :class="profile.enabled ? 'border-white/10' : 'opacity-85'"
+        >
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="min-w-0 space-y-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 class="truncate text-lg font-semibold text-white">{{ name }}</h3>
+                <StatusBadge :status="profile.enabled ? 'active' : 'inactive'" :label="profile.enabled ? 'active' : 'inactive'" />
+                <span class="rounded-full border px-3 py-1 text-xs capitalize" :class="priorityClass(profile.priority)">
+                  {{ priorityLabel(profile.priority) }}
+                </span>
+              </div>
+
+              <p class="text-sm leading-6 text-slate-400">
+                {{ profile.description || 'No description provided.' }}
+              </p>
+
+              <div class="flex flex-wrap gap-3 text-xs text-slate-400">
+                <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                  Label: <span class="text-slate-100">{{ profile.label || 'Untitled' }}</span>
+                </span>
+                <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                  Target: <span class="font-mono text-cyan-200">{{ profile.downstream_alias || '-' }}</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:shrink-0">
+              <button
+                class="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-200 transition-all hover:border-cyan-400/25 hover:bg-white/10 disabled:opacity-50"
+                @click="toggleProfile(name)"
+                :disabled="name === 'route.default'"
               >
-                <td class="font-mono text-sm">{{ name }}</td>
-                <td>{{ profile.label }}</td>
-                <td class="max-w-xs truncate">{{ profile.description }}</td>
-                <td class="font-mono text-sm">
-                  {{ profile.downstream_alias }}
-                </td>
-                <td>
-                  <span class="badge badge-outline badge-sm">{{
-                    profile.priority
-                  }}</span>
-                </td>
-                <td>
-                  <input
-                    type="checkbox"
-                    class="toggle toggle-sm"
-                    v-model="profile.enabled"
-                    @change="dirty = true"
-                    :disabled="name === 'route.default'"
-                  />
-                </td>
-                <td>
-                  <button
-                    class="btn btn-ghost btn-xs"
-                    @click="editProfile(name as string, profile)"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    class="btn btn-ghost btn-xs text-error"
-                    @click="deleteProfile(name as string)"
-                    v-if="name !== 'route.default'"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                {{ profile.enabled ? 'Disable' : 'Enable' }}
+              </button>
+              <button
+                class="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-200 transition-all hover:border-cyan-400/25 hover:bg-white/10"
+                @click="editProfile(name, profile)"
+              >
+                Edit
+              </button>
+              <button
+                v-if="name !== 'route.default'"
+                class="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-rose-200 transition-all hover:border-rose-400/25 hover:bg-rose-400/10 hover:text-rose-100"
+                @click="deleteProfile(name)"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </GlassCard>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="text-sm text-slate-400">
+        Changes are staged locally until you save them.
+      </div>
+      <div class="flex gap-3">
+        <GhostButton @click="load" :disabled="!dirty">Discard</GhostButton>
+        <GradientButton @click="save" :disabled="!dirty">Save Changes</GradientButton>
       </div>
     </div>
 
-    <button class="btn btn-primary" @click="save" :disabled="!dirty">
-      Save Changes
-    </button>
-
     <dialog class="modal" :class="{ 'modal-open': showAddModal }">
-      <div class="modal-box">
-        <h3 class="font-bold text-lg">
-          {{ editingName ? "Edit Profile" : "Add Profile" }}
-        </h3>
-        <div v-if="modalError" class="alert alert-error mt-2">
-          <span>{{ modalError }}</span>
+      <div class="modal-box glass-card glow-border rounded-[1.75rem] bg-[rgba(8,12,22,0.95)] p-0 text-slate-100 shadow-[0_24px_80px_rgba(0,0,0,0.45)]">
+        <div class="border-b border-white/10 px-6 py-5">
+          <h3 class="text-lg font-semibold text-white">
+            {{ editingName ? "Edit Profile" : "Add Profile" }}
+          </h3>
+          <p class="mt-1 text-sm text-slate-400">
+            Define the profile name, target alias, and priority mode.
+          </p>
         </div>
-        <div class="py-4 space-y-4">
-          <div class="form-control">
-            <label class="label"><span class="label-text">Name</span></label>
+
+        <div v-if="modalError" class="mx-6 mt-5 rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+          {{ modalError }}
+        </div>
+
+        <div class="space-y-4 px-6 py-5">
+          <FormField label="Name" :error="formError.name" required>
             <input
-              class="input input-bordered"
-              :class="{ 'input-error': formError.name }"
+              class="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
               v-model="form.name"
               :disabled="!!editingName"
               placeholder="route.custom"
               @input="clearFormError('name')"
             />
-            <label class="label" v-if="formError.name">
-              <span class="label-text-alt text-error">{{ formError.name }}</span>
-            </label>
-          </div>
-          <div class="form-control">
-            <label class="label"><span class="label-text">Label</span></label>
+          </FormField>
+
+          <FormField label="Label">
             <input
-              class="input input-bordered"
+              class="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
               v-model="form.label"
               placeholder="Custom Route"
             />
-          </div>
-          <div class="form-control">
-            <label class="label"
-              ><span class="label-text">Description</span></label
-            >
-            <input class="input input-bordered" v-model="form.description" />
-          </div>
-          <div class="form-control">
-            <label class="label"
-              ><span class="label-text">Downstream Alias</span></label
-            >
+          </FormField>
+
+          <FormField label="Description">
             <input
-              class="input input-bordered"
-              :class="{ 'input-error': formError.downstream_alias }"
+              class="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+              v-model="form.description"
+              placeholder="Describe when to use this route profile"
+            />
+          </FormField>
+
+          <FormField label="Downstream Alias" :error="formError.downstream_alias" required>
+            <input
+              class="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
               v-model="form.downstream_alias"
               placeholder="combo.custom"
               @input="clearFormError('downstream_alias')"
             />
-            <label class="label" v-if="formError.downstream_alias">
-              <span class="label-text-alt text-error">{{ formError.downstream_alias }}</span>
-            </label>
-          </div>
-          <div class="form-control">
-            <label class="label"
-              ><span class="label-text">Priority</span></label
-            >
-            <select class="select select-bordered" v-model="form.priority">
-              <option value="quality">Quality</option>
+          </FormField>
+
+          <FormField label="Priority Mode">
+            <select class="w-full bg-transparent text-sm text-white outline-none" v-model="form.priority">
+              <option value="speed">Speed</option>
               <option value="balanced">Balanced</option>
+              <option value="quality">Quality</option>
               <option value="cost">Cost</option>
             </select>
-          </div>
+          </FormField>
         </div>
-        <div class="modal-action">
-          <button class="btn btn-ghost" @click="closeModal">Cancel</button>
-          <button class="btn btn-primary" @click="saveProfile">Save</button>
+
+        <div class="flex items-center justify-end gap-3 border-t border-white/10 px-6 py-5">
+          <GhostButton @click="closeModal">Cancel</GhostButton>
+          <GradientButton @click="saveProfile">Save</GradientButton>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop" @click="closeModal">
@@ -153,9 +194,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { useConfigStore } from "../stores/config";
 import { type RouteProfile } from "../api/client";
+import GlassCard from "../components/ui/GlassCard.vue";
+import PageHeader from "../components/ui/PageHeader.vue";
+import GradientButton from "../components/ui/GradientButton.vue";
+import GhostButton from "../components/ui/GhostButton.vue";
+import EmptyState from "../components/ui/EmptyState.vue";
+import StatusBadge from "../components/ui/StatusBadge.vue";
+import FormField from "../components/ui/FormField.vue";
 
 const configStore = useConfigStore();
 const profiles = ref<Record<string, RouteProfile>>({});
@@ -174,6 +222,18 @@ const form = ref({
   priority: "balanced" as string,
 });
 
+const orderedProfiles = computed(() =>
+  Object.entries(profiles.value).map(([name, profile]) => ({ name, profile })),
+);
+
+const activeProfileCount = computed(() =>
+  orderedProfiles.value.filter(({ profile }) => profile.enabled).length,
+);
+
+const inactiveProfileCount = computed(() =>
+  orderedProfiles.value.filter(({ profile }) => !profile.enabled).length,
+);
+
 function load() {
   if (configStore.profiles) {
     profiles.value = JSON.parse(
@@ -183,7 +243,21 @@ function load() {
   dirty.value = false;
 }
 
-function clearFormError(field: 'name' | 'downstream_alias') {
+function openCreateModal() {
+  editingName.value = null;
+  form.value = {
+    name: "",
+    label: "",
+    description: "",
+    downstream_alias: "",
+    priority: "balanced",
+  };
+  formError.value = {};
+  modalError.value = null;
+  showAddModal.value = true;
+}
+
+function clearFormError(field: "name" | "downstream_alias") {
   if (formError.value[field]) {
     const newErrors = { ...formError.value };
     delete newErrors[field];
@@ -194,26 +268,30 @@ function clearFormError(field: 'name' | 'downstream_alias') {
 
 function validateForm(): boolean {
   const errors: { name?: string; downstream_alias?: string } = {};
-  
+
   if (!form.value.name.trim()) {
     errors.name = "Profile name is required";
   } else if (!editingName.value && profiles.value[form.value.name]) {
     errors.name = "Profile name already exists";
-  } else if (editingName.value && form.value.name !== editingName.value && profiles.value[form.value.name]) {
+  } else if (
+    editingName.value &&
+    form.value.name !== editingName.value &&
+    profiles.value[form.value.name]
+  ) {
     errors.name = "Profile name already exists";
   }
-  
+
   if (!form.value.downstream_alias.trim()) {
     errors.downstream_alias = "Downstream alias is required";
   }
-  
+
   formError.value = errors;
-  
+
   if (Object.keys(errors).length > 0) {
     modalError.value = "Please fix the errors below";
     return false;
   }
-  
+
   return true;
 }
 
@@ -227,6 +305,14 @@ function editProfile(name: string, profile: RouteProfile) {
 
 function deleteProfile(name: string) {
   delete profiles.value[name];
+  dirty.value = true;
+}
+
+function toggleProfile(name: string) {
+  if (name === "route.default") return;
+  const profile = profiles.value[name];
+  if (!profile) return;
+  profile.enabled = !profile.enabled;
   dirty.value = true;
 }
 
@@ -246,7 +332,7 @@ function closeModal() {
 
 function saveProfile() {
   if (!validateForm()) return;
-  
+
   profiles.value[form.value.name] = {
     label: form.value.label,
     description: form.value.description,
@@ -279,6 +365,23 @@ async function save() {
     dirty.value = false;
   } catch (e: any) {
     validationError.value = e.message;
+  }
+}
+
+function priorityLabel(priority: string) {
+  return priority || "balanced";
+}
+
+function priorityClass(priority: string) {
+  switch (priority) {
+    case "speed":
+      return "border-cyan-400/20 bg-cyan-400/10 text-cyan-200";
+    case "quality":
+      return "border-violet-400/20 bg-violet-400/10 text-violet-200";
+    case "cost":
+      return "border-amber-400/20 bg-amber-400/10 text-amber-200";
+    default:
+      return "border-blue-400/20 bg-blue-400/10 text-blue-200";
   }
 }
 

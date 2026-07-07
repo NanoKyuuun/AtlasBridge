@@ -1,191 +1,230 @@
 <template>
-  <div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-      <div class="card bg-base-100 shadow-md">
-        <div class="card-body">
-          <h2 class="card-title text-sm">Proxy Status</h2>
-          <div class="flex items-center gap-2">
-            <div class="badge badge-lg" :class="statusBadge">
-              {{ status?.status || "Loading..." }}
-            </div>
-          </div>
-          <p class="text-xs text-base-content/50 mt-1">
-            Uptime: {{ status?.uptime || "-" }}
-          </p>
-        </div>
-      </div>
-      <div class="card bg-base-100 shadow-md">
-        <div class="card-body">
-          <h2 class="card-title text-sm">API Endpoint</h2>
-          <p class="font-mono text-sm">
-            http://{{ status?.host }}:{{ status?.port }}/v1
-          </p>
-          <button class="btn btn-xs btn-outline mt-2" @click="copyEndpoint">
-            Copy
-          </button>
-        </div>
-      </div>
-      <div class="card bg-base-100 shadow-md">
-        <div class="card-body">
-          <h2 class="card-title text-sm">Admin URL</h2>
-          <p class="font-mono text-sm">
-            http://{{ status?.host }}:{{ status?.port }}/admin
-          </p>
-          <button class="btn btn-xs btn-outline mt-2" @click="copyAdminUrl">
-            Copy
-          </button>
-        </div>
-      </div>
-    </div>
+  <div class="space-y-8 lg:space-y-10">
+    <PageHeader
+      eyebrow="Dashboard"
+      title="AtlasBridge Control Center"
+      description="Route every AI coding task to the right model path."
+    >
+      <template #actions>
+        <GradientButton :disabled="status?.mode === 'always_on'" @click="startProxy">
+          Start Proxy
+        </GradientButton>
+        <GhostButton @click="openRoutingSettings">
+          Open Routing Settings
+        </GhostButton>
+      </template>
+    </PageHeader>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-      <div class="card bg-base-100 shadow-md">
-        <div class="card-body">
-          <h2 class="card-title text-sm">9Router Downstream</h2>
-          <div class="flex items-center gap-2 mb-2">
-            <div class="badge badge-sm" :class="downstreamBadge">
-              {{ downstreamStatus }}
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard
+        label="Proxy Status"
+        :value="statusText"
+        :description="status?.uptime ? `Uptime ${status.uptime}` : 'Waiting for status signal'"
+        :tone="statusTone"
+      >
+        <template #icon>
+          <StatusBadge :status="statusStatus" :label="statusStatus" />
+        </template>
+      </StatCard>
+
+      <MetricCard
+        label="OpenAI-compatible endpoint"
+        :value="openAiEndpoint"
+        description="Base URL used by coding assistants."
+      />
+
+      <MetricCard
+        label="Downstream 9Router endpoint"
+        :value="downstreamEndpoint"
+        :description="downstreamStatusLabel"
+      />
+
+      <MetricCard
+        label="Startup mode"
+        :value="startupMode"
+        :description="startupDescription"
+        :delta="startupDelta"
+        :tone="startupTone"
+      />
+
+      <StatCard
+        label="Default route"
+        :value="defaultRoute"
+        description="Fallback route used when no override applies."
+      >
+        <template #icon>
+          <span class="text-cyan-300">↪</span>
+        </template>
+      </StatCard>
+
+      <MetricCard
+        label="Request count today"
+        :value="requestCountToday"
+        description="Derived from currently available dashboard state."
+      />
+
+      <MetricCard
+        label="Most used task type"
+        :value="mostUsedTaskType"
+        description="Best available task classification view."
+      />
+
+      <MetricCard
+        label="Most used route profile"
+        :value="mostUsedRouteProfile"
+        description="Top profile based on current configuration data."
+      />
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+      <GlassCard class="relative overflow-hidden">
+        <div class="relative z-10 space-y-5">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold text-white">Architecture Flow</h2>
+              <p class="mt-1 text-sm text-slate-400">
+                OpenCode / AI Coding Assistant → AtlasBridge → 9Router → AI Providers
+              </p>
             </div>
-            <span class="text-xs text-base-content/50">{{
-              status?.downstream
-            }}</span>
+            <StatusBadge :status="statusStatus" :label="statusStatus" />
           </div>
-          <a
-            :href="ninerDashboardUrl"
-            target="_blank"
-            class="btn btn-xs btn-outline"
-          >
-            Open 9Router Dashboard
-          </a>
-        </div>
-      </div>
-      <div class="card bg-base-100 shadow-md">
-        <div class="card-body">
-          <h2 class="card-title text-sm">Configuration</h2>
-          <div class="space-y-2 text-sm">
-            <div class="flex justify-between">
-              <span class="text-base-content/60">Mode</span>
-              <span class="badge badge-outline badge-sm">{{
-                status?.mode || "-"
-              }}</span>
+
+          <div class="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] md:items-center">
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-center shadow-[0_0_22px_rgba(47,128,255,0.08)]">
+              <div class="text-sm font-medium text-white">OpenCode / AI Assistant</div>
+              <div class="mt-2 text-xs text-slate-400">Request source</div>
             </div>
-            <div class="flex justify-between">
-              <span class="text-base-content/60">Privacy</span>
-              <span class="badge badge-outline badge-sm">{{
-                status?.privacy || "-"
-              }}</span>
+            <div class="hidden justify-center text-cyan-300 md:flex">→</div>
+
+            <div class="rounded-2xl border border-blue-400/25 bg-gradient-to-br from-blue-500/18 via-violet-500/18 to-cyan-400/12 px-5 py-5 text-center shadow-[0_0_30px_rgba(47,128,255,0.14)]">
+              <div class="text-sm font-semibold text-white">AtlasBridge</div>
+              <div class="mt-2 text-xs text-slate-300">Routing core</div>
+              <div class="mt-3 flex items-center justify-center gap-2">
+                <span class="neon-dot"></span>
+                <span class="text-[11px] uppercase tracking-[0.22em] text-slate-400">Center</span>
+              </div>
             </div>
-            <div class="flex justify-between">
-              <span class="text-base-content/60">Auto Routing</span>
-              <span class="badge badge-outline badge-sm">{{
-                config?.routing?.auto_routing ? "ON" : "OFF"
-              }}</span>
+            <div class="hidden justify-center text-cyan-300 md:flex">→</div>
+
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-center shadow-[0_0_22px_rgba(124,58,237,0.08)]">
+              <div class="text-sm font-medium text-white">9Router</div>
+              <div class="mt-2 text-xs text-slate-400">Policy + alias routing</div>
             </div>
-            <div class="flex justify-between">
-              <span class="text-base-content/60">Run at Startup</span>
-              <span class="badge badge-outline badge-sm">{{
-                config?.startup?.run_at_login ? "ON" : "OFF"
-              }}</span>
+            <div class="hidden justify-center text-cyan-300 md:flex">→</div>
+
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-center shadow-[0_0_22px_rgba(53,215,242,0.08)] md:col-span-1 col-span-full">
+              <div class="text-sm font-medium text-white">AI Providers</div>
+              <div class="mt-2 text-xs text-slate-400">Final model execution</div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="card bg-base-100 shadow-md">
-        <div class="card-body">
-          <h2 class="card-title text-sm">Quick Actions</h2>
+      </GlassCard>
+
+      <GlassCard>
+        <div class="space-y-4">
+          <div>
+            <h2 class="text-lg font-semibold text-white">Quick Actions</h2>
+            <p class="mt-1 text-sm text-slate-400">Common runtime actions and routing shortcuts.</p>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <GradientButton @click="startProxy" :disabled="status?.mode === 'always_on'">
+              Start Proxy
+            </GradientButton>
+            <GhostButton @click="stopProxy" :disabled="status?.mode === 'disabled'">
+              Stop Proxy
+            </GhostButton>
+            <GhostButton @click="restartProxy">Restart Proxy</GhostButton>
+          </div>
+
+          <div class="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="flex items-center justify-between gap-3 text-sm">
+              <span class="text-slate-400">OpenAI-compatible endpoint</span>
+              <button class="text-cyan-300 transition hover:text-cyan-200" @click="copyEndpoint">
+                Copy
+              </button>
+            </div>
+            <div class="font-mono text-sm text-white break-all">{{ openAiEndpoint }}</div>
+            <div class="flex items-center justify-between gap-3 text-sm">
+              <span class="text-slate-400">Downstream endpoint</span>
+              <button class="text-cyan-300 transition hover:text-cyan-200" @click="copyDownstreamUrl">
+                Copy
+              </button>
+            </div>
+            <div class="font-mono text-sm text-white break-all">{{ downstreamEndpoint }}</div>
+          </div>
+        </div>
+      </GlassCard>
+    </section>
+
+    <section class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+      <GlassCard>
+        <div class="space-y-4">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold text-white">Model Aliases</h2>
+              <p class="mt-1 text-sm text-slate-400">Reference aliases currently exposed through the dashboard.</p>
+            </div>
+            <StatusBadge status="active" label="ready" />
+          </div>
+
+          <div class="overflow-hidden rounded-2xl border border-white/10">
+            <div class="grid grid-cols-[1.1fr_1.6fr_1fr] gap-3 border-b border-white/10 bg-white/5 px-4 py-3 text-[11px] uppercase tracking-[0.22em] text-slate-500">
+              <span>Alias</span>
+              <span>Purpose</span>
+              <span>Route</span>
+            </div>
+            <div v-for="alias in smartAliases" :key="alias.id" class="grid grid-cols-[1.1fr_1.6fr_1fr] gap-3 border-b border-white/5 px-4 py-3 text-sm last:border-b-0">
+              <span class="font-mono text-slate-100">{{ alias.id }}</span>
+              <span class="text-slate-400">{{ alias.description }}</span>
+              <span class="text-cyan-200">{{ alias.route }}</span>
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <div class="space-y-4">
+          <div>
+            <h2 class="text-lg font-semibold text-white">Combo Tester</h2>
+            <p class="mt-1 text-sm text-slate-400">
+              Test model combos through 9Router. Enter a model name or select from the list.
+            </p>
+          </div>
+
+          <FormField label="Model name" forId="combo-model" hint="Examples: combo.default, COding, atlas-auto">
+            <input
+              id="combo-model"
+              v-model="comboModel"
+              type="text"
+              placeholder="Model name (e.g. combo.default, COding)"
+              class="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+            />
+          </FormField>
+
           <div class="flex flex-wrap gap-2">
-            <button
-              class="btn btn-primary btn-sm"
-              @click="startProxy"
-              :disabled="status?.mode === 'always_on'"
+            <GhostButton
+              v-for="m in comboPresets"
+              :key="m"
+              :class="comboModel === m ? 'border-cyan-400/35 bg-cyan-400/10 text-cyan-100' : ''"
+              @click="comboModel = m"
             >
-              Start
-            </button>
-            <button
-              class="btn btn-warning btn-sm"
-              @click="stopProxy"
-              :disabled="status?.mode === 'disabled'"
-            >
-              Stop
-            </button>
-            <button class="btn btn-info btn-sm" @click="restartProxy">
-              Restart
-            </button>
+              {{ m }}
+            </GhostButton>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <div class="card bg-base-100 shadow-md">
-      <div class="card-body">
-        <h2 class="card-title text-sm">Model Aliases</h2>
-        <div class="overflow-x-auto">
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th>Alias</th>
-                <th>Purpose</th>
-                <th>Route</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="alias in smartAliases" :key="alias.id">
-                <td class="font-mono text-sm">{{ alias.id }}</td>
-                <td>{{ alias.description }}</td>
-                <td>
-                  <span class="badge badge-outline badge-sm">{{
-                    alias.route
-                  }}</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+          <div class="flex flex-wrap gap-3">
+            <GradientButton :disabled="!comboModel || comboLoading" @click="testCombo">
+              Test Combo
+            </GradientButton>
+          </div>
 
-    <div class="card bg-base-100 shadow-md mt-4">
-      <div class="card-body">
-        <h2 class="card-title text-sm">Combo Tester</h2>
-        <p class="text-xs text-base-content/50 mb-3">
-          Test model combos through 9Router. Enter a model name or select from
-          the list.
-        </p>
-        <div class="flex gap-2 mb-3">
-          <input
-            v-model="comboModel"
-            type="text"
-            placeholder="Model name (e.g. combo.default, COding)"
-            class="input input-bordered input-sm flex-1 font-mono"
-          />
-          <button
-            class="btn btn-primary btn-sm"
-            :class="{ loading: comboLoading }"
-            :disabled="!comboModel || comboLoading"
-            @click="testCombo"
-          >
-            Test
-          </button>
-        </div>
-        <div class="flex flex-wrap gap-1 mb-3">
-          <button
-            v-for="m in comboPresets"
-            :key="m"
-            class="btn btn-xs btn-outline"
-            :class="{ 'btn-active': comboModel === m }"
-            @click="comboModel = m"
-          >
-            {{ m }}
-          </button>
-        </div>
-        <div v-if="comboResult" class="alert alert-sm" :class="comboResult.success ? 'alert-success' : 'alert-error'">
-          <div class="text-xs">
+          <div v-if="comboResult" class="rounded-2xl border px-4 py-3 text-sm" :class="comboResult.success ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100' : 'border-rose-400/20 bg-rose-400/10 text-rose-100'">
             <div v-if="comboResult.success">
-              <span class="font-mono font-bold">{{ comboResult.model }}</span>
+              <span class="font-mono font-semibold">{{ comboResult.model }}</span>
               <span v-if="comboResult.resolved_model && comboResult.resolved_model !== comboResult.model">
                 → <span class="font-mono">{{ comboResult.resolved_model }}</span>
               </span>
-              <span class="ml-2 opacity-70">{{ comboResult.latency }}ms</span>
+              <span class="ml-2 text-white/70">{{ comboResult.latency }}ms</span>
             </div>
             <div v-else>
               <span class="font-mono">{{ comboResult.model }}</span> failed:
@@ -193,37 +232,84 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </GlassCard>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
 import { useAppStore } from "../stores/app";
 import { useConfigStore } from "../stores/config";
 import { api, type ComboTestResult } from "../api/client";
+import GlassCard from "../components/ui/GlassCard.vue";
+import PageHeader from "../components/ui/PageHeader.vue";
+import StatCard from "../components/ui/StatCard.vue";
+import MetricCard from "../components/ui/MetricCard.vue";
+import StatusBadge from "../components/ui/StatusBadge.vue";
+import GradientButton from "../components/ui/GradientButton.vue";
+import GhostButton from "../components/ui/GhostButton.vue";
+import FormField from "../components/ui/FormField.vue";
 
 const appStore = useAppStore();
 const configStore = useConfigStore();
+const router = useRouter();
 
 const status = computed(() => appStore.status);
 const config = computed(() => configStore.config);
+const routes = computed(() => configStore.routes);
+const profiles = computed(() => configStore.profiles);
 const downstreamStatus = computed(
   () => appStore.downstreamHealth?.status || "unknown",
 );
 
-const statusBadge = computed(() => {
-  const s = status.value?.status;
-  if (s === "running") return "badge-success";
-  if (s === "stopped") return "badge-warning";
-  return "badge-ghost";
+const statusStatus = computed(() => status.value?.status || "inactive");
+
+const statusTone = computed(() => {
+  const s = statusStatus.value;
+  if (s === "running") return "success";
+  if (s === "stopped") return "warning";
+  if (s === "error") return "error";
+  return "default";
 });
 
-const downstreamBadge = computed(() => {
-  const s = downstreamStatus.value;
-  if (s === "connected") return "badge-success";
-  return "badge-error";
+const statusText = computed(() => status.value?.status || "Loading...");
+
+const openAiEndpoint = computed(() => {
+  const host = status.value?.host || "127.0.0.1";
+  const port = status.value?.port || 20127;
+  return `http://${host}:${port}/v1`;
+});
+
+const downstreamEndpoint = computed(() => status.value?.downstream || "http://127.0.0.1:20128/v1");
+
+const downstreamStatusLabel = computed(() => {
+  const state = downstreamStatus.value;
+  if (state === "connected") return "Connected and ready";
+  if (state === "unavailable") return "Downstream health unavailable";
+  return `Status: ${state}`;
+});
+
+const startupMode = computed(() => config.value?.startup?.run_at_login ? "Auto start" : "Manual start");
+const startupDescription = computed(() => config.value?.startup?.run_at_login ? "Proxy starts with the system." : "Proxy starts manually from the dashboard.");
+const startupDelta = computed(() => config.value?.startup?.start_proxy_on_app_launch ? "App launch enabled" : "App launch disabled");
+const startupTone = computed(() => config.value?.startup?.run_at_login ? "success" : "warning");
+
+const defaultRoute = computed(() => config.value?.routing?.default_route || "route.default");
+
+const requestCountToday = computed(() => "Unavailable");
+
+const mostUsedTaskType = computed(() => {
+  const taskRouteCount = Object.keys(routes.value?.task_routes || {}).length;
+  return taskRouteCount > 0 ? "Derived routing map" : "Unavailable";
+});
+
+const mostUsedRouteProfile = computed(() => {
+  const profileEntries = Object.entries(profiles.value?.route_profiles || {});
+  if (!profileEntries.length) return "Unavailable";
+  const [name, profile] = profileEntries[0];
+  return profile.label || name;
 });
 
 const smartAliases = [
@@ -304,24 +390,16 @@ const smartAliases = [
   },
 ];
 
-const ninerDashboardUrl = computed(() => {
-  const downstream = status.value?.downstream || "http://127.0.0.1:20128/v1";
-  try {
-    const url = new URL(downstream);
-    return `${url.protocol}//${url.hostname}:${url.port}/dashboard`;
-  } catch {
-    return "http://127.0.0.1:20128/dashboard";
-  }
-});
-
 async function copyEndpoint() {
-  const addr = `http://${status.value?.host || "127.0.0.1"}:${status.value?.port || 20127}/v1`;
-  await navigator.clipboard.writeText(addr);
+  await navigator.clipboard.writeText(openAiEndpoint.value);
 }
 
-async function copyAdminUrl() {
-  const addr = `http://${status.value?.host || "127.0.0.1"}:${status.value?.port || 20127}/admin`;
-  await navigator.clipboard.writeText(addr);
+async function copyDownstreamUrl() {
+  await navigator.clipboard.writeText(downstreamEndpoint.value);
+}
+
+function openRoutingSettings() {
+  router.push("/routing");
 }
 
 async function startProxy() {

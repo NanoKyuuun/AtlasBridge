@@ -1,108 +1,102 @@
 <template>
-  <div class="max-w-2xl mx-auto">
-    <div class="card bg-base-100 shadow-md">
-      <div class="card-body">
-        <h2 class="card-title text-xl mb-4">Setup Wizard</h2>
+  <div class="mx-auto max-w-2xl space-y-6 lg:space-y-8">
+    <PageHeader
+      eyebrow="Setup"
+      title="Setup Wizard"
+      description="Configure AtlasBridge AI Proxy for the first time."
+    />
 
-        <ul class="steps steps-horizontal w-full mb-6">
+    <GlassCard>
+      <div class="space-y-6">
+        <ul class="steps steps-horizontal w-full">
           <li class="step" :class="{ 'step-primary': step >= 1 }">Welcome</li>
           <li class="step" :class="{ 'step-primary': step >= 2 }">Endpoint</li>
-          <li class="step" :class="{ 'step-primary': step >= 3 }">
-            Downstream
-          </li>
+          <li class="step" :class="{ 'step-primary': step >= 3 }">Downstream</li>
           <li class="step" :class="{ 'step-primary': step >= 4 }">Routing</li>
           <li class="step" :class="{ 'step-primary': step >= 5 }">Done</li>
         </ul>
 
         <div v-if="step === 1" class="space-y-4">
-          <h3 class="text-lg font-semibold">Welcome to AtlasBridge AI Proxy</h3>
-          <p class="text-sm text-base-content/70">
-            This wizard will help you configure AtlasBridge AI Proxy for the
-            first time. You can change these settings later from the Web UI.
-          </p>
-          <div class="alert alert-info">
-            <span
-              >AtlasBridge AI Proxy acts as an intelligent routing layer
-              between your AI coding assistant and 9Router.</span
-            >
+          <div>
+            <h3 class="text-lg font-semibold text-white">Welcome to AtlasBridge AI Proxy</h3>
+            <p class="mt-1 text-sm text-slate-400">
+              This wizard will help you configure AtlasBridge AI Proxy for the
+              first time. You can change these settings later from the Web UI.
+            </p>
           </div>
-          <button class="btn btn-primary" @click="step = 2">Get Started</button>
+          <div class="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
+            AtlasBridge AI Proxy acts as an intelligent routing layer between
+            your AI coding assistant and 9Router.
+          </div>
+          <GradientButton @click="step = 2">Get Started</GradientButton>
         </div>
 
         <div v-if="step === 2" class="space-y-4">
-          <h3 class="text-lg font-semibold">API Endpoint</h3>
-          <p class="text-sm text-base-content/70">
-            Configure where AtlasBridge AI Proxy listens for requests.
-          </p>
-          <div class="form-control">
-            <label class="label"><span class="label-text">Host</span></label>
+          <div>
+            <h3 class="text-lg font-semibold text-white">API Endpoint</h3>
+            <p class="mt-1 text-sm text-slate-400">
+              Configure where AtlasBridge AI Proxy listens for requests.
+            </p>
+          </div>
+          <FormField label="Host">
             <input
-              class="input input-bordered font-mono"
+              class="w-full bg-transparent font-mono text-sm text-white outline-none"
               v-model="config.server.host"
             />
-          </div>
-          <div class="form-control">
-            <label class="label"><span class="label-text">Port</span></label>
+          </FormField>
+          <FormField label="Port">
             <input
               type="number"
-              class="input input-bordered font-mono"
+              class="w-full bg-transparent text-sm text-white outline-none"
               v-model.number="config.server.port"
             />
-          </div>
-          <div class="alert alert-success">
-            <span
-              >Endpoint: http://{{ config.server.host }}:{{
-                config.server.port
-              }}/v1</span
-            >
+          </FormField>
+          <div class="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+            Endpoint: http://{{ config.server.host }}:{{ config.server.port }}/v1
           </div>
           <div class="flex gap-2">
-            <button class="btn btn-ghost" @click="step = 1">Back</button>
-            <button class="btn btn-primary" @click="step = 3">Next</button>
+            <GhostButton @click="step = 1">Back</GhostButton>
+            <GradientButton @click="step = 3">Next</GradientButton>
           </div>
         </div>
 
         <div v-if="step === 3" class="space-y-4">
-          <h3 class="text-lg font-semibold">9Router Downstream</h3>
-          <p class="text-sm text-base-content/70">
-            Configure the 9Router endpoint to forward requests to.
-          </p>
-          <div class="form-control">
-            <label class="label"
-              ><span class="label-text">Base URL</span></label
-            >
+          <div>
+            <h3 class="text-lg font-semibold text-white">9Router Downstream</h3>
+            <p class="mt-1 text-sm text-slate-400">
+              Configure the 9Router endpoint to forward requests to.
+            </p>
+          </div>
+          <FormField label="Base URL">
             <input
-              class="input input-bordered font-mono"
+              class="w-full bg-transparent font-mono text-sm text-white outline-none"
               v-model="config.downstream.base_url"
             />
-          </div>
-          <div class="form-control">
-            <label class="label"
-              ><span class="label-text">Timeout (seconds)</span></label
-            >
+          </FormField>
+          <FormField label="Timeout (seconds)">
             <input
               type="number"
-              class="input input-bordered"
+              class="w-full bg-transparent text-sm text-white outline-none"
               v-model.number="config.downstream.timeout_seconds"
             />
-          </div>
+          </FormField>
           <div class="flex gap-2">
-            <button class="btn btn-ghost" @click="step = 2">Back</button>
-            <button class="btn btn-primary" @click="step = 4">Next</button>
+            <GhostButton @click="step = 2">Back</GhostButton>
+            <GradientButton @click="step = 4">Next</GradientButton>
           </div>
         </div>
 
         <div v-if="step === 4" class="space-y-4">
-          <h3 class="text-lg font-semibold">Routing Mode</h3>
-          <p class="text-sm text-base-content/70">
-            Choose how AtlasBridge AI Proxy routes requests.
-          </p>
+          <div>
+            <h3 class="text-lg font-semibold text-white">Routing Mode</h3>
+            <p class="mt-1 text-sm text-slate-400">
+              Choose how AtlasBridge AI Proxy routes requests.
+            </p>
+          </div>
           <div class="space-y-2">
             <label
-              class="flex items-center gap-3 p-4 rounded-lg border cursor-pointer"
-              :class="{
-                'border-primary bg-primary/5': config.routing.auto_routing,
-              }"
+              class="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-white/20"
+              :class="{ 'border-cyan-400/40 bg-cyan-400/10': config.routing.auto_routing }"
             >
               <input
                 type="radio"
@@ -111,17 +105,15 @@
                 @change="config.routing.auto_routing = true"
               />
               <div>
-                <span class="font-medium">Auto Routing (Recommended)</span>
-                <p class="text-xs text-base-content/50">
+                <span class="font-medium text-white">Auto Routing (Recommended)</span>
+                <p class="text-xs text-slate-400">
                   Automatically classify tasks and select the best route
                 </p>
               </div>
             </label>
             <label
-              class="flex items-center gap-3 p-4 rounded-lg border cursor-pointer"
-              :class="{
-                'border-primary bg-primary/5': !config.routing.auto_routing,
-              }"
+              class="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-white/20"
+              :class="{ 'border-cyan-400/40 bg-cyan-400/10': !config.routing.auto_routing }"
             >
               <input
                 type="radio"
@@ -130,53 +122,49 @@
                 @change="config.routing.auto_routing = false"
               />
               <div>
-                <span class="font-medium">Manual Routing</span>
-                <p class="text-xs text-base-content/50">
+                <span class="font-medium text-white">Manual Routing</span>
+                <p class="text-xs text-slate-400">
                   Use the model field to determine the route
                 </p>
               </div>
             </label>
           </div>
           <div class="flex gap-2">
-            <button class="btn btn-ghost" @click="step = 3">Back</button>
-            <button class="btn btn-primary" @click="step = 5">Next</button>
+            <GhostButton @click="step = 3">Back</GhostButton>
+            <GradientButton @click="step = 5">Next</GradientButton>
           </div>
         </div>
 
         <div v-if="step === 5" class="space-y-4">
-          <h3 class="text-lg font-semibold">Setup Complete</h3>
-          <p class="text-sm text-base-content/70">
-            AtlasBridge AI Proxy is configured and ready to use.
-          </p>
-          <div class="alert alert-success">
-            <div>
-              <span class="font-medium">Your endpoint:</span>
-              <p class="font-mono text-sm">
-                http://{{ config.server.host }}:{{ config.server.port }}/v1
-              </p>
-              <p class="text-xs mt-1">
-                Set this as the base URL in your AI coding assistant.
-              </p>
-            </div>
+          <div>
+            <h3 class="text-lg font-semibold text-white">Setup Complete</h3>
+            <p class="mt-1 text-sm text-slate-400">
+              AtlasBridge AI Proxy is configured and ready to use.
+            </p>
           </div>
-          <div class="alert alert-info">
-            <span
-              >Use model <code class="font-mono">atlas-auto</code> or
-              <code class="font-mono">smart-auto</code> for automatic routing,
-              or pick a specific alias like
-              <code class="font-mono">atlas-debug</code> /
-              <code class="font-mono">smart-debug</code>.</span
-            >
+          <div class="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3">
+            <span class="font-medium text-emerald-100">Your endpoint:</span>
+            <p class="mt-1 font-mono text-sm text-white">
+              http://{{ config.server.host }}:{{ config.server.port }}/v1
+            </p>
+            <p class="mt-1 text-xs text-emerald-200/70">
+              Set this as the base URL in your AI coding assistant.
+            </p>
+          </div>
+          <div class="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
+            Use model <code class="font-mono">atlas-auto</code> or
+            <code class="font-mono">smart-auto</code> for automatic routing,
+            or pick a specific alias like
+            <code class="font-mono">atlas-debug</code> /
+            <code class="font-mono">smart-debug</code>.
           </div>
           <div class="flex gap-2">
-            <button class="btn btn-ghost" @click="step = 4">Back</button>
-            <button class="btn btn-primary" @click="finish">
-              Finish & Save
-            </button>
+            <GhostButton @click="step = 4">Back</GhostButton>
+            <GradientButton @click="finish">Finish & Save</GradientButton>
           </div>
         </div>
       </div>
-    </div>
+    </GlassCard>
   </div>
 </template>
 
@@ -184,6 +172,11 @@
 import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useConfigStore } from "../stores/config";
+import GlassCard from "../components/ui/GlassCard.vue";
+import PageHeader from "../components/ui/PageHeader.vue";
+import FormField from "../components/ui/FormField.vue";
+import GradientButton from "../components/ui/GradientButton.vue";
+import GhostButton from "../components/ui/GhostButton.vue";
 
 const router = useRouter();
 const configStore = useConfigStore();

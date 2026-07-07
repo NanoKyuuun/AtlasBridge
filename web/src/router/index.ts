@@ -39,6 +39,11 @@ const router = createRouter({
       component: () => import("../pages/DownstreamSettings.vue"),
     },
     {
+      path: "/logs",
+      name: "logs",
+      component: () => import("../pages/Logs.vue"),
+    },
+    {
       path: "/privacy",
       name: "privacy",
       component: () => import("../pages/PrivacySettings.vue"),

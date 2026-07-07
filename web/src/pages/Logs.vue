@@ -1,90 +1,96 @@
 <template>
-  <div>
-    <div class="card bg-base-100 shadow-md mb-6">
-      <div class="card-body">
-        <div class="flex justify-between items-center mb-4">
-          <div>
-            <h2 class="card-title">Metadata Logs</h2>
-            <p class="text-sm text-base-content/60">
-              Routing decisions and request metadata. Prompts, API keys, and
-              authorization headers are never shown.
-            </p>
-          </div>
-          <div class="flex gap-2">
-            <button class="btn btn-outline btn-sm" @click="refreshLogs">
-              Refresh
-            </button>
-            <button class="btn btn-outline btn-sm" @click="exportLogs">
-              Export
-            </button>
-          </div>
+  <div class="space-y-6 lg:space-y-8">
+    <PageHeader
+      eyebrow="Logs"
+      title="Metadata Logs"
+      description="Routing decisions and request metadata. Prompts, API keys, and authorization headers are never shown."
+    >
+      <template #actions>
+        <GhostButton @click="refreshLogs">Refresh</GhostButton>
+        <GhostButton @click="exportLogs">Export</GhostButton>
+      </template>
+    </PageHeader>
+
+    <GlassCard>
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <StatusBadge :status="metadataEnabled ? 'active' : 'inactive'" :label="metadataEnabled ? 'metadata enabled' : 'metadata disabled'" />
+          <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">Total: {{ totalEntries }}</span>
+          <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">Privacy: {{ privacyMode }}</span>
         </div>
 
-        <div class="flex items-center gap-4 mb-4">
-          <div class="badge badge-outline">
-            Privacy: {{ privacyMode }}
-          </div>
-          <div class="badge badge-outline">
-            Total: {{ totalEntries }}
-          </div>
-          <div v-if="!metadataEnabled" class="alert alert-warning py-1 text-xs">
-            Metadata logging is disabled. Enable it in Privacy settings.
-          </div>
-        </div>
-
-        <div v-if="logs.length === 0" class="text-center py-12 text-base-content/40">
-          <p class="text-lg">No logs yet</p>
-          <p class="text-sm">Routing decisions will appear here</p>
-        </div>
-
-        <div v-else class="overflow-x-auto">
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Request ID</th>
-                <th>Task Type</th>
-                <th>Route</th>
-                <th>Status</th>
-                <th>Latency</th>
-                <th>Stream</th>
-                <th>Error</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(log, index) in logs" :key="index">
-                <td class="text-xs whitespace-nowrap">{{ formatTime(log.timestamp) }}</td>
-                <td class="font-mono text-xs">{{ shortId(log.request_id) }}</td>
-                <td>
-                  <span class="badge badge-sm badge-outline">{{ log.task_type || "-" }}</span>
-                </td>
-                <td class="font-mono text-xs">{{ log.route_key || log.selected_route || "-" }}</td>
-                <td>
-                  <span
-                    class="badge badge-sm"
-                    :class="log.status === 'success' ? 'badge-success' : log.status === 'failed' ? 'badge-error' : 'badge-warning'"
-                  >
-                    {{ log.status || "fallback" }}
-                  </span>
-                </td>
-                <td class="text-xs">{{ log.latency_ms || "-" }}ms</td>
-                <td>
-                  <span v-if="log.is_stream" class="badge badge-xs badge-info">SSE</span>
-                  <span v-else class="badge badge-xs badge-ghost">JSON</span>
-                </td>
-                <td class="text-xs text-error max-w-[120px] truncate">{{ log.error_class || "" }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div v-if="!metadataEnabled" class="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+          Metadata logging is disabled. Enable it in Privacy settings.
         </div>
       </div>
-    </div>
+    </GlassCard>
+
+    <GlassCard>
+      <div class="space-y-4">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-semibold text-white">Log List</h2>
+            <p class="mt-1 text-sm text-slate-400">
+              Compact request history with only the non-sensitive fields needed for routing review.
+            </p>
+          </div>
+        </div>
+
+        <div v-if="loading" class="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-400">
+          Loading logs...
+        </div>
+
+        <EmptyState v-else-if="logs.length === 0" title="No logs yet" description="Routing decisions will appear here.">
+          <template #icon>
+            <span class="text-xl text-cyan-300">📝</span>
+          </template>
+        </EmptyState>
+
+        <div v-else class="overflow-hidden rounded-3xl border border-white/10">
+          <div class="grid grid-cols-12 gap-3 border-b border-white/10 bg-white/5 px-4 py-3 text-[11px] uppercase tracking-[0.22em] text-slate-500">
+            <div class="col-span-12 md:col-span-2">Timestamp</div>
+            <div class="col-span-12 md:col-span-3">Request ID</div>
+            <div class="col-span-12 md:col-span-2">Route</div>
+            <div class="col-span-12 md:col-span-2">Status</div>
+            <div class="col-span-12 md:col-span-1">Latency</div>
+            <div class="col-span-12 md:col-span-2">Type</div>
+          </div>
+
+          <div v-for="(log, index) in logs" :key="index" class="grid grid-cols-12 gap-3 border-b border-white/5 px-4 py-4 last:border-b-0">
+            <div class="col-span-12 md:col-span-2 text-xs text-slate-300 whitespace-nowrap">
+              {{ formatTime(log.timestamp) }}
+            </div>
+            <div class="col-span-12 md:col-span-3 font-mono text-xs text-white">
+              {{ shortId(log.request_id) }}
+            </div>
+            <div class="col-span-12 md:col-span-2 text-sm text-cyan-200">
+              {{ log.route_key || log.selected_route || '-' }}
+            </div>
+            <div class="col-span-12 md:col-span-2">
+              <StatusBadge :status="statusTone(log.status)" :label="log.status || 'fallback'" />
+            </div>
+            <div class="col-span-12 md:col-span-1 text-sm text-slate-300">
+              {{ log.latency_ms ?? '-' }}ms
+            </div>
+            <div class="col-span-12 md:col-span-2 text-sm text-slate-400">
+              <span v-if="log.task_type" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs">{{ log.task_type }}</span>
+              <span v-else class="text-slate-500">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </GlassCard>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { api } from "../api/client";
+import GlassCard from "../components/ui/GlassCard.vue";
+import PageHeader from "../components/ui/PageHeader.vue";
+import GhostButton from "../components/ui/GhostButton.vue";
+import StatusBadge from "../components/ui/StatusBadge.vue";
+import EmptyState from "../components/ui/EmptyState.vue";
 
 interface LogEntry {
   timestamp?: string;
@@ -105,8 +111,10 @@ const logs = ref<LogEntry[]>([]);
 const totalEntries = ref(0);
 const privacyMode = ref("standard");
 const metadataEnabled = ref(true);
+const loading = ref(false);
 
 async function refreshLogs() {
+  loading.value = true;
   try {
     const data = await api.getLogs();
     logs.value = data.logs || [];
@@ -115,6 +123,8 @@ async function refreshLogs() {
     metadataEnabled.value = data.metadata_enabled !== false;
   } catch (e: any) {
     console.error("Failed to fetch logs:", e.message);
+  } finally {
+    loading.value = false;
   }
 }
 
@@ -133,7 +143,7 @@ function exportLogs() {
 function formatTime(ts?: string) {
   if (!ts) return "-";
   try {
-    return new Date(ts).toLocaleTimeString();
+    return new Date(ts).toLocaleString();
   } catch {
     return ts;
   }
@@ -142,6 +152,13 @@ function formatTime(ts?: string) {
 function shortId(id?: string) {
   if (!id) return "-";
   return id.length > 12 ? id.substring(0, 12) + "..." : id;
+}
+
+function statusTone(status?: string) {
+  if (status === "success") return "running";
+  if (status === "failed") return "error";
+  if (status === "warning") return "warning";
+  return "inactive";
 }
 
 onMounted(refreshLogs);
