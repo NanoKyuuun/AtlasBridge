@@ -57,10 +57,24 @@
       </div>
     </SettingsSection>
 
+    <AdminTokenNotice
+      v-if="configStore.generatedToken"
+      :token="configStore.generatedToken"
+      @dismiss="configStore.dismissToken()"
+    />
+
     <SettingsSection
       title="Security"
-      description="Adjust bind behavior and access scope for the local proxy.">
+      description="Adjust bind behavior, admin authentication, and access scope.">
       <div class="grid gap-4 lg:grid-cols-2">
+        <label class="flex cursor-pointer items-start gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-cyan-400/25 hover:bg-white/8">
+          <ToggleSwitch v-model="security.admin_auth_enabled" label="Admin auth" @update:model-value="dirty = true" />
+          <div>
+            <div class="text-sm font-medium text-white">Admin authentication</div>
+            <p class="mt-1 text-xs text-slate-400">Require a bearer token for all /admin/api/* requests.</p>
+          </div>
+        </label>
+
         <label class="flex cursor-pointer items-start gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-cyan-400/25 hover:bg-white/8">
           <ToggleSwitch v-model="security.bind_localhost_only" label="Localhost only" @update:model-value="dirty = true" />
           <div>
@@ -136,6 +150,7 @@ import FormField from "../components/ui/FormField.vue";
 import ToggleSwitch from "../components/ui/ToggleSwitch.vue";
 import GradientButton from "../components/ui/GradientButton.vue";
 import GhostButton from "../components/ui/GhostButton.vue";
+import AdminTokenNotice from "../components/ui/AdminTokenNotice.vue";
 
 const configStore = useConfigStore();
 const dirty = ref(false);
@@ -181,7 +196,7 @@ async function save() {
         level: debugMode.value ? "debug" : "info",
       },
     });
-    dirty.value = false;
+    load();
   } catch (e: any) {
     console.error("Failed to save settings:", e.message);
   }

@@ -179,13 +179,16 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useAppStore } from "../stores/app";
 import { useConfigStore } from "../stores/config";
+import { useAuthStore } from "../stores/auth";
 
 const route = useRoute();
+const router = useRouter();
 const appStore = useAppStore();
 const configStore = useConfigStore();
+const authStore = useAuthStore();
 const mobileNavOpen = ref(false);
 
 const navItems = [
@@ -239,6 +242,15 @@ watch(
   () => route.path,
   () => {
     mobileNavOpen.value = false;
+  },
+);
+
+watch(
+  () => authStore.authRequired,
+  (required) => {
+    if (required && !authStore.token && route.name !== "login") {
+      router.replace("/login");
+    }
   },
 );
 </script>

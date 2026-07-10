@@ -6,28 +6,43 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 
 	"github.com/atlasbridge/atlasbridge/internal/config"
 	"github.com/atlasbridge/atlasbridge/internal/forwarder"
 	"github.com/atlasbridge/atlasbridge/internal/observability"
 	"github.com/atlasbridge/atlasbridge/internal/runtime"
+	"github.com/atlasbridge/atlasbridge/internal/security"
 	"github.com/atlasbridge/atlasbridge/internal/server"
 	"github.com/atlasbridge/atlasbridge/internal/startup"
 	"github.com/atlasbridge/atlasbridge/internal/tray"
 )
 
 type App struct {
-	cfg       *config.Config
-	server    *http.Server
-	listener  net.Listener
-	routes    *config.RoutesConfig
-	profiles  *config.ProfilesConfig
-	state     *runtime.State
-	tray      *tray.Tray
-	quitCh    chan struct{}
+	cfg        *config.Config
+	server     *http.Server
+	listener   net.Listener
+	routes     *config.RoutesConfig
+	profiles   *config.ProfilesConfig
+	state      *runtime.State
+	tray       *tray.Tray
+	quitCh     chan struct{}
+	authConfig *server.AuthConfig
+}
+
+func effectiveHost(cfg *config.Config) string {
+	if cfg.Security.BindLocalhostOnly && !cfg.Security.AllowLANAccess {
+		return "127.0.0.1"
+	}
+	return cfg.Server.Host
 }
 
 func New(cfg *config.Config, routes *config.RoutesConfig, profiles *config.ProfilesConfig) (*App, error) {
+	host := effectiveHost(cfg)
+	if host != cfg.Server.Host {
+		log.Printf("SECURITY: forcing bind to 127.0.0.1 (allow_lan_access=false, bind_localhost_only=true)")
+		cfg.Server.Host = host
+	}
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -44,6 +59,11 @@ func New(cfg *config.Config, routes *config.RoutesConfig, profiles *config.Profi
 
 	obsLogger := observability.NewLogger(observability.DefaultMaxEntries)
 
+	authCfg := &server.AuthConfig{
+		Enabled:   cfg.Security.AdminAuthEnabled,
+		TokenHash: cfg.Security.AdminTokenHash,
+	}
+
 	deps := &server.ServerDeps{
 		Config:       cfg,
 		Routes:       routes,
@@ -51,18 +71,20 @@ func New(cfg *config.Config, routes *config.RoutesConfig, profiles *config.Profi
 		Fwd:          fwd,
 		ObsLogger:    obsLogger,
 		RuntimeState: state,
+		AuthConfig:   authCfg,
 	}
 
 	srv := server.New(deps)
 
 	return &App{
-		cfg:      cfg,
-		server:   srv,
-		listener: ln,
-		routes:   routes,
-		profiles: profiles,
-		state:    state,
-		quitCh:   make(chan struct{}),
+		cfg:        cfg,
+		server:     srv,
+		listener:   ln,
+		routes:     routes,
+		profiles:   profiles,
+		state:      state,
+		quitCh:     make(chan struct{}),
+		authConfig: authCfg,
 	}, nil
 }
 
@@ -70,6 +92,24 @@ func (a *App) Run() error {
 	if err := startup.Init(); err != nil {
 		return fmt.Errorf("another instance is already running: %w", err)
 	}
+
+	if a.cfg.Security.AdminAuthEnabled {
+		rawToken, err := security.EnsureToken(&a.cfg.Security.AdminTokenHash)
+		if err != nil {
+			log.Printf("WARNING: failed to generate admin token: %v", err)
+		} else if rawToken != "" {
+			if err := config.Save(a.cfg); err != nil {
+				log.Printf("WARNING: failed to save config with admin token: %v", err)
+			}
+			fmt.Fprint(os.Stdout, "\n")
+			fmt.Fprintf(os.Stdout, "  ADMIN TOKEN: %s\n", rawToken)
+			fmt.Fprint(os.Stdout, "  This token will NOT be shown again.\n")
+			fmt.Fprint(os.Stdout, "  Store it safely before closing this window.\n")
+			fmt.Fprint(os.Stdout, "\n")
+		}
+	}
+
+	a.authConfig.Set(a.cfg.Security.AdminAuthEnabled, a.cfg.Security.AdminTokenHash)
 
 	a.tray = tray.New(a.cfg, a.state)
 

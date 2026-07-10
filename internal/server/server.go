@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -23,9 +24,32 @@ import (
 	"github.com/atlasbridge/atlasbridge/internal/observability"
 	"github.com/atlasbridge/atlasbridge/internal/routing"
 	runtimemod "github.com/atlasbridge/atlasbridge/internal/runtime"
+	"github.com/atlasbridge/atlasbridge/internal/security"
 )
 
-const Version = "0.1.0"
+// AuthConfig provides thread-safe access to admin auth settings.
+// The middleware reads from this on every request; putConfigHandler
+// writes to it so changes take effect immediately.
+type AuthConfig struct {
+	mu         sync.RWMutex
+	Enabled    bool
+	TokenHash  string
+}
+
+func (a *AuthConfig) Get() (bool, string) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.Enabled, a.TokenHash
+}
+
+func (a *AuthConfig) Set(enabled bool, hash string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.Enabled = enabled
+	a.TokenHash = hash
+}
+
+var Version = "0.1.0"
 
 var startTime = time.Now()
 
@@ -36,6 +60,7 @@ type ServerDeps struct {
 	Fwd           *forwarder.Forwarder
 	ObsLogger     *observability.Logger
 	RuntimeState  *runtimemod.State
+	AuthConfig    *AuthConfig
 }
 
 func New(deps *ServerDeps) *http.Server {
@@ -51,6 +76,14 @@ func New(deps *ServerDeps) *http.Server {
 	// Create observability logger if not provided
 	if deps.ObsLogger == nil {
 		deps.ObsLogger = observability.NewLogger(observability.DefaultMaxEntries)
+	}
+
+	// Create AuthConfig if not provided (for backward compatibility with tests)
+	if deps.AuthConfig == nil {
+		deps.AuthConfig = &AuthConfig{
+			Enabled:   deps.Config.Security.AdminAuthEnabled,
+			TokenHash: deps.Config.Security.AdminTokenHash,
+		}
 	}
 
 	r := chi.NewRouter()
@@ -69,7 +102,9 @@ func New(deps *ServerDeps) *http.Server {
 
 	r.Route("/admin", func(r chi.Router) {
 		r.Route("/api", func(r chi.Router) {
-			r.Get("/status", statusHandler(deps.Config))
+			authCfg := deps.AuthConfig
+			r.Use(security.AdminAuth(func() (bool, string) { return authCfg.Get() }))
+			r.Get("/status", statusHandler(deps.Config, deps.RuntimeState))
 
 			adminDeps := &AdminDeps{
 				Config:        deps.Config,
@@ -77,6 +112,8 @@ func New(deps *ServerDeps) *http.Server {
 				Profiles:      deps.Profiles,
 				Forwarder:     deps.Fwd,
 				Observability: deps.ObsLogger,
+				RuntimeState:  deps.RuntimeState,
+				AuthConfig:    deps.AuthConfig,
 			}
 
 			r.Get("/config", getConfigHandler(adminDeps))
@@ -132,17 +169,27 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func statusHandler(cfg *config.Config) http.HandlerFunc {
+func statusHandler(cfg *config.Config, runtimeState *runtimemod.State) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		runtimeStatus := string(runtimemod.StatusRunning)
+		runtimeMode := cfg.App.Mode
+		runtimeUptime := time.Since(startTime).String()
+		if runtimeState != nil {
+			runtimeStatus = string(runtimeState.GetStatus())
+			runtimeMode = string(runtimeState.GetMode())
+			if u := runtimeState.GetUptime(); u > 0 {
+				runtimeUptime = u.String()
+			}
+		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":     "running",
+			"status":     runtimeStatus,
 			"version":    Version,
-			"uptime":     time.Since(startTime).String(),
+			"uptime":     runtimeUptime,
 			"port":       cfg.Server.Port,
 			"host":       cfg.Server.Host,
 			"downstream": cfg.Downstream.BaseURL,
-			"mode":       cfg.App.Mode,
+			"mode":       runtimeMode,
 			"privacy":    cfg.Logging.PrivacyMode,
 			"go_version": runtime.Version(),
 			"pid":        os.Getpid(),
@@ -241,11 +288,24 @@ func chatCompletionsHandler(deps *ServerDeps) http.HandlerFunc {
 		}
 
 		decision := analyzeAndRoute(r, body, deps.Routes, deps.Profiles, &deps.Config.Routing)
-		logRoutingDecision(reqID, decision)
-		recordObservation(deps.ObsLogger, reqID, r, decision, body)
+		if deps.Config.Logging.MetadataLoggingEnabled {
+			logRoutingDecision(reqID, decision)
+			recordObservation(deps.ObsLogger, reqID, r, decision, body)
+		}
 
-		if deps.Config.Routing.MetadataTransport == "header" && decision.DownstreamAlias != "" {
-			r.Header.Set("X-Route-Intent", decision.DownstreamAlias)
+		if decision.DownstreamAlias != "" && decision.OverrideSource == "smart_alias" {
+			if deps.Config.Routing.MetadataTransport == "header" {
+				r.Header.Set("X-Route-Intent", decision.DownstreamAlias)
+			} else if deps.Config.Routing.MetadataTransport == "model_alias" {
+				rewritten, err := rewriteModelInBody(body, decision.DownstreamAlias)
+				if err != nil {
+					log.Printf("[%s] failed to rewrite model in body: %v", reqID, err)
+				} else {
+					body = rewritten
+					r.Body = newCloserReader(bytes.NewReader(body))
+					r.ContentLength = int64(len(body))
+				}
+			}
 		}
 
 		isStream := forwarder.IsStreamRequest(r)
@@ -362,6 +422,15 @@ func analyzeAndRoute(
 	classification := classifier.Classify(analysis)
 
 	return routing.Resolve(model, analysis, classification, routes, profiles, routingCfg)
+}
+
+func rewriteModelInBody(body []byte, model string) ([]byte, error) {
+	var payload map[string]interface{}
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return nil, err
+	}
+	payload["model"] = model
+	return json.Marshal(payload)
 }
 
 func extractModelFromBody(body []byte) string {

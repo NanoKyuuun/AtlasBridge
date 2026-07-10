@@ -23,7 +23,7 @@ if [ -n "$(gofmt -l ./internal/ ./cmd/)" ]; then
 fi
 
 echo "[4/4] prettier (format)..."
-npx --yes prettier --write "src/**/*.{ts,vue,js}" 2>/dev/null
+npx --yes prettier --write "web/src/**/*.{ts,vue,js}" 2>/dev/null
 
 echo
 if [ "$FAILED" -eq 0 ]; then

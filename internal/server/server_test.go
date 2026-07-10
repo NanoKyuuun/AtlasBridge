@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/atlasbridge/atlasbridge/internal/config"
+	"github.com/atlasbridge/atlasbridge/internal/security"
 )
 
 func newTestServer(t *testing.T) *httptest.Server {
@@ -691,8 +692,8 @@ func TestRoutingPipelineSmartDebugAlias(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected status 200, got %d", resp.StatusCode)
 	}
-	if receivedModel != "smart-debug" {
-		t.Errorf("expected model smart-debug forwarded, got %s", receivedModel)
+	if receivedModel != "combo.debugging" {
+		t.Errorf("expected model combo.debugging forwarded, got %s", receivedModel)
 	}
 }
 
@@ -729,8 +730,8 @@ func TestRoutingPipelineSmartAutoBackendClassification(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected status 200, got %d", resp.StatusCode)
 	}
-	if receivedModel != "smart-auto" {
-		t.Errorf("expected model smart-auto forwarded, got %s", receivedModel)
+	if receivedModel != "combo.design" {
+		t.Errorf("expected model combo.design forwarded, got %s", receivedModel)
 	}
 }
 
@@ -803,8 +804,8 @@ func TestRoutingPipelineStreamingSmartAlias(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected status 200, got %d", resp.StatusCode)
 	}
-	if receivedModel != "smart-docs" {
-		t.Errorf("expected model smart-docs forwarded, got %s", receivedModel)
+	if receivedModel != "combo.documentation" {
+		t.Errorf("expected model combo.documentation forwarded, got %s", receivedModel)
 	}
 	if resp.Header.Get("Content-Type") != "text/event-stream" {
 		t.Errorf("expected Content-Type text/event-stream, got %s", resp.Header.Get("Content-Type"))
@@ -838,8 +839,8 @@ func TestRoutingPipelineBodyPreservedAfterAnalysis(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	if receivedBody["model"] != "smart-auto" {
-		t.Errorf("expected model smart-auto in downstream body, got %v", receivedBody["model"])
+	if receivedBody["model"] != "combo.test_generation" {
+		t.Errorf("expected model combo.test_generation in downstream body, got %v", receivedBody["model"])
 	}
 	if receivedBody["temperature"] != 0.7 {
 		t.Errorf("expected temperature 0.7 preserved, got %v", receivedBody["temperature"])
@@ -971,6 +972,121 @@ func TestAdminPutConfig(t *testing.T) {
 	json.NewDecoder(resp.Body).Decode(&result)
 	if result["status"] != "ok" {
 		t.Errorf("expected status ok, got %s", result["status"])
+	}
+}
+
+func TestAdminPutConfigGeneratesToken(t *testing.T) {
+	ts := newTestServer(t)
+	defer ts.Close()
+
+	patch := `{"security":{"admin_auth_enabled":true}}`
+	req, _ := http.NewRequest("PUT", ts.URL+"/admin/api/config", strings.NewReader(patch))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var putResp map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&putResp)
+	adminToken, _ := putResp["admin_token"].(string)
+	if adminToken == "" {
+		t.Fatal("expected admin_token in PUT response")
+	}
+
+	getReq, _ := http.NewRequest("GET", ts.URL+"/admin/api/config", nil)
+	getReq.Header.Set("Authorization", "Bearer "+adminToken)
+	getResp, err := http.DefaultClient.Do(getReq)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer getResp.Body.Close()
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(getResp.Body).Decode(&result); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	sec, ok := result["security"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected security in config")
+	}
+
+	hash, ok := sec["admin_token_hash"].(string)
+	if !ok {
+		t.Fatal("expected admin_token_hash in security")
+	}
+	if hash == "" {
+		t.Error("admin_token_hash should be populated when auth enabled")
+	}
+	if hash == "****" {
+		t.Error("admin_token_hash should not be the masked placeholder")
+	}
+
+	authEnabled, ok := sec["admin_auth_enabled"].(bool)
+	if !ok {
+		t.Fatal("expected admin_auth_enabled in security")
+	}
+	if !authEnabled {
+		t.Error("admin_auth_enabled should be true")
+	}
+}
+
+func TestAdminPutConfigNoRegeneration(t *testing.T) {
+	ts := newTestServer(t)
+	defer ts.Close()
+
+	knownToken := "my-test-token-123"
+	knownHash := security.HashToken(knownToken)
+
+	patch := fmt.Sprintf(`{"security":{"admin_auth_enabled":true,"admin_token_hash":"%s"}}`, knownHash)
+	req, _ := http.NewRequest("PUT", ts.URL+"/admin/api/config", strings.NewReader(patch))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	getReq, _ := http.NewRequest("GET", ts.URL+"/admin/api/config", nil)
+	getReq.Header.Set("Authorization", "Bearer "+knownToken)
+	getResp, err := http.DefaultClient.Do(getReq)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer getResp.Body.Close()
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(getResp.Body).Decode(&result); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	sec, ok := result["security"].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected security in config")
+	}
+
+	hash, ok := sec["admin_token_hash"].(string)
+	if !ok {
+		t.Fatal("expected admin_token_hash in security")
+	}
+	if hash == "" {
+		t.Error("admin_token_hash should not be empty")
+	}
+	if hash == knownHash {
+		t.Error("admin_token_hash should be masked in GET response")
+	}
+	if len(hash) < 8 {
+		t.Error("masked hash should be at least 8 characters")
 	}
 }
 
@@ -1244,15 +1360,20 @@ func TestAdminDiagnosticsExportNoSecrets(t *testing.T) {
 	ts := newTestServer(t)
 	defer ts.Close()
 
+	knownToken := "diag-test-token-456"
+	knownHash := security.HashToken(knownToken)
+
 	cfg := config.DefaultConfig()
-	cfg.Security.AdminTokenHash = "secret123"
+	cfg.Security.AdminTokenHash = knownHash
 	cfg.Security.AdminAuthEnabled = true
 	body, _ := json.Marshal(cfg)
 	req, _ := http.NewRequest("PUT", ts.URL+"/admin/api/config", strings.NewReader(string(body)))
 	req.Header.Set("Content-Type", "application/json")
 	http.DefaultClient.Do(req)
 
-	resp, err := http.Post(ts.URL+"/admin/api/diagnostics/export", "application/json", nil)
+	diagReq, _ := http.NewRequest("POST", ts.URL+"/admin/api/diagnostics/export", nil)
+	diagReq.Header.Set("Authorization", "Bearer "+knownToken)
+	resp, err := http.DefaultClient.Do(diagReq)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1687,8 +1808,8 @@ func TestSafePassthroughInvalidRouteFallback(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected status 200, got %d", resp.StatusCode)
 	}
-	if receivedModel != "smart-debug" {
-		t.Errorf("expected model smart-debug forwarded, got %s", receivedModel)
+	if receivedModel != "combo.debugging" {
+		t.Errorf("expected model combo.debugging forwarded, got %s", receivedModel)
 	}
 }
 

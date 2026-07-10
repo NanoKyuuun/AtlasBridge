@@ -1,17 +1,46 @@
 const BASE = "/admin/api";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((options?.headers as Record<string, string>) || {}),
+  };
+
+  const { useAuthStore } = await import("../stores/auth");
+  const auth = useAuthStore();
+  if (auth.token) {
+    headers["Authorization"] = `Bearer ${auth.token}`;
+  }
+
   const res = await fetch(`${BASE}${path}`, {
     ...options,
-    headers: { "Content-Type": "application/json", ...options?.headers },
+    headers,
   });
+
   if (!res.ok) {
-    const err = await res
-      .json()
-      .catch(() => ({ error: { message: res.statusText } }));
-    throw new Error(err.error?.message || `HTTP ${res.status}`);
+    const body = await res.json().catch(() => ({}));
+    const errType = body?.error?.type;
+    const errMsg = body?.error?.message || `HTTP ${res.status}`;
+
+    if (res.status === 401 && errType === "auth_error") {
+      auth.authRequired = true;
+      if (auth.token) {
+        auth.clearToken();
+      }
+      throw new AuthError(errMsg);
+    }
+
+    throw new Error(errMsg);
   }
+
   return res.json();
+}
+
+export class AuthError extends Error {
+  constructor(msg: string) {
+    super(msg);
+    this.name = "AuthError";
+  }
 }
 
 export interface AppConfig {
@@ -105,7 +134,7 @@ export const api = {
   getStatus: () => request<StatusResponse>("/status"),
   getConfig: () => request<AppConfig>("/config"),
   updateConfig: (cfg: Partial<AppConfig>) =>
-    request<{ status: string }>("/config", {
+    request<{ status: string; admin_token?: string }>("/config", {
       method: "PUT",
       body: JSON.stringify(cfg),
     }),

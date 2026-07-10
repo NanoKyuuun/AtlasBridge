@@ -9,6 +9,11 @@ const router = createRouter({
       component: () => import("../pages/Dashboard.vue"),
     },
     {
+      path: "/login",
+      name: "login",
+      component: () => import("../pages/Login.vue"),
+    },
+    {
       path: "/setup",
       name: "setup",
       component: () => import("../pages/SetupWizard.vue"),
@@ -54,6 +59,19 @@ const router = createRouter({
       component: () => import("../pages/AdvancedSettings.vue"),
     },
   ],
+});
+
+router.beforeEach(async (to) => {
+  if (to.name === "login") return true;
+
+  const { useAuthStore } = await import("../stores/auth");
+  const auth = useAuthStore();
+
+  if (auth.authRequired && !auth.token) {
+    return { name: "login" };
+  }
+
+  return true;
 });
 
 export default router;

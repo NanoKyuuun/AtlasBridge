@@ -19,6 +19,9 @@ import (
 	"github.com/atlasbridge/atlasbridge/internal/forwarder"
 	"github.com/atlasbridge/atlasbridge/internal/observability"
 	"github.com/atlasbridge/atlasbridge/internal/routing"
+	runtimemod "github.com/atlasbridge/atlasbridge/internal/runtime"
+	"github.com/atlasbridge/atlasbridge/internal/security"
+	"github.com/atlasbridge/atlasbridge/internal/startup"
 )
 
 type AdminDeps struct {
@@ -27,6 +30,8 @@ type AdminDeps struct {
 	Profiles      *config.ProfilesConfig
 	Forwarder     *forwarder.Forwarder
 	Observability *observability.Logger
+	RuntimeState  *runtimemod.State
+	AuthConfig    *AuthConfig
 }
 
 func getConfigHandler(deps *AdminDeps) http.HandlerFunc {
@@ -44,24 +49,94 @@ func putConfigHandler(deps *AdminDeps) http.HandlerFunc {
 			return
 		}
 
-		var updated config.Config
-		if err := json.Unmarshal(body, &updated); err != nil {
+		var patch map[string]json.RawMessage
+		if err := json.Unmarshal(body, &patch); err != nil {
 			writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
 			return
 		}
 
-		if err := config.Validate(&updated); err != nil {
+		merged := *deps.Config
+
+		if raw, ok := patch["app"]; ok {
+			if err := json.Unmarshal(raw, &merged.App); err != nil {
+				writeError(w, http.StatusBadRequest, "invalid app config: "+err.Error())
+				return
+			}
+		}
+		if raw, ok := patch["server"]; ok {
+			if err := json.Unmarshal(raw, &merged.Server); err != nil {
+				writeError(w, http.StatusBadRequest, "invalid server config: "+err.Error())
+				return
+			}
+		}
+		if raw, ok := patch["downstream"]; ok {
+			if err := json.Unmarshal(raw, &merged.Downstream); err != nil {
+				writeError(w, http.StatusBadRequest, "invalid downstream config: "+err.Error())
+				return
+			}
+		}
+		if raw, ok := patch["security"]; ok {
+			if err := json.Unmarshal(raw, &merged.Security); err != nil {
+				writeError(w, http.StatusBadRequest, "invalid security config: "+err.Error())
+				return
+			}
+		}
+		if raw, ok := patch["startup"]; ok {
+			if err := json.Unmarshal(raw, &merged.Startup); err != nil {
+				writeError(w, http.StatusBadRequest, "invalid startup config: "+err.Error())
+				return
+			}
+		}
+		if raw, ok := patch["routing"]; ok {
+			if err := json.Unmarshal(raw, &merged.Routing); err != nil {
+				writeError(w, http.StatusBadRequest, "invalid routing config: "+err.Error())
+				return
+			}
+		}
+		if raw, ok := patch["logging"]; ok {
+			if err := json.Unmarshal(raw, &merged.Logging); err != nil {
+				writeError(w, http.StatusBadRequest, "invalid logging config: "+err.Error())
+				return
+			}
+		}
+
+		if err := config.Validate(&merged); err != nil {
 			writeError(w, http.StatusBadRequest, "validation failed: "+err.Error())
 			return
 		}
 
-		*deps.Config = updated
+		var rawToken string
+		if merged.Security.AdminAuthEnabled {
+			rawToken, err = security.EnsureToken(&merged.Security.AdminTokenHash)
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, "failed to generate admin token")
+				return
+			}
+			if rawToken != "" {
+				fmt.Fprint(os.Stdout, "\n")
+				fmt.Fprintf(os.Stdout, "  ADMIN TOKEN: %s\n", rawToken)
+				fmt.Fprint(os.Stdout, "  This token will NOT be shown again.\n")
+				fmt.Fprint(os.Stdout, "  Store it safely before closing this window.\n")
+				fmt.Fprint(os.Stdout, "\n")
+			}
+		}
+
+		deps.AuthConfig.Set(merged.Security.AdminAuthEnabled, merged.Security.AdminTokenHash)
+
+		*deps.Config = merged
 		if err := config.Save(deps.Config); err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
 			return
 		}
 
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "config updated"})
+		resp := map[string]interface{}{
+			"status":  "ok",
+			"message": "config updated",
+		}
+		if rawToken != "" {
+			resp["admin_token"] = rawToken
+		}
+		writeJSON(w, http.StatusOK, resp)
 	}
 }
 
@@ -142,6 +217,9 @@ func runtimeStartHandler(deps *AdminDeps) http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
 			return
 		}
+		if deps.RuntimeState != nil {
+			_ = deps.RuntimeState.Start()
+		}
 		log.Printf("ADMIN: proxy engine started")
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "proxy started", "mode": deps.Config.App.Mode})
 	}
@@ -154,6 +232,9 @@ func runtimeStopHandler(deps *AdminDeps) http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
 			return
 		}
+		if deps.RuntimeState != nil {
+			_ = deps.RuntimeState.Stop()
+		}
 		log.Printf("ADMIN: proxy engine stopped")
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "proxy stopped", "mode": deps.Config.App.Mode})
 	}
@@ -161,6 +242,10 @@ func runtimeStopHandler(deps *AdminDeps) http.HandlerFunc {
 
 func runtimeRestartHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if deps.RuntimeState != nil {
+			_ = deps.RuntimeState.Stop()
+			_ = deps.RuntimeState.Start()
+		}
 		log.Printf("ADMIN: proxy engine restarted")
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "proxy restarted", "mode": deps.Config.App.Mode})
 	}
@@ -184,6 +269,13 @@ func putStartupHandler(deps *AdminDeps) http.HandlerFunc {
 		if err := json.Unmarshal(body, &updated); err != nil {
 			writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
 			return
+		}
+
+		if updated.RunAtLogin != deps.Config.Startup.RunAtLogin {
+			if err := startup.SetRunAtLogin(updated.RunAtLogin); err != nil {
+				writeError(w, http.StatusInternalServerError, "failed to update startup registration: "+err.Error())
+				return
+			}
 		}
 
 		deps.Config.Startup = updated

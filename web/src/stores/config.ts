@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import {
   api,
+  AuthError,
   type AppConfig,
   type RoutesConfig,
   type ProfilesConfig,
@@ -28,21 +29,36 @@ export const useConfigStore = defineStore("config", () => {
       routes.value = r;
       profiles.value = p;
     } catch (e: any) {
-      error.value = e.message;
+      if (!(e instanceof AuthError)) {
+        error.value = e.message;
+      }
     } finally {
       loading.value = false;
     }
   }
 
+  const generatedToken = ref<string | null>(null);
+
   async function saveConfig(cfg: Partial<AppConfig>) {
     try {
-      await api.updateConfig(cfg);
+      const res = await api.updateConfig(cfg);
+      generatedToken.value = res.admin_token ?? null;
+      if (generatedToken.value) {
+        const { useAuthStore } = await import("../stores/auth");
+        useAuthStore().setToken(generatedToken.value);
+      }
       saveMessage.value = "Config saved";
       setTimeout(() => (saveMessage.value = null), 3000);
       await fetchAll();
     } catch (e: any) {
-      error.value = e.message;
+      if (!(e instanceof AuthError)) {
+        error.value = e.message;
+      }
     }
+  }
+
+  function dismissToken() {
+    generatedToken.value = null;
   }
 
   async function saveRoutes(r: RoutesConfig) {
@@ -52,7 +68,9 @@ export const useConfigStore = defineStore("config", () => {
       setTimeout(() => (saveMessage.value = null), 3000);
       routes.value = r;
     } catch (e: any) {
-      error.value = e.message;
+      if (!(e instanceof AuthError)) {
+        error.value = e.message;
+      }
     }
   }
 
@@ -63,7 +81,9 @@ export const useConfigStore = defineStore("config", () => {
       setTimeout(() => (saveMessage.value = null), 3000);
       profiles.value = p;
     } catch (e: any) {
-      error.value = e.message;
+      if (!(e instanceof AuthError)) {
+        error.value = e.message;
+      }
     }
   }
 
@@ -74,7 +94,9 @@ export const useConfigStore = defineStore("config", () => {
       setTimeout(() => (saveMessage.value = null), 3000);
       await fetchAll();
     } catch (e: any) {
-      error.value = e.message;
+      if (!(e instanceof AuthError)) {
+        error.value = e.message;
+      }
     }
   }
 
@@ -85,10 +107,12 @@ export const useConfigStore = defineStore("config", () => {
     loading,
     error,
     saveMessage,
+    generatedToken,
     fetchAll,
     saveConfig,
     saveRoutes,
     saveProfiles,
     resetConfig,
+    dismissToken,
   };
 });

@@ -28,7 +28,7 @@ if %errorlevel% neq 0 (
 )
 
 echo [4/4] prettier (format)...
-npx --yes prettier --write "src/**/*.{ts,vue,js}" 2>nul
+npx --yes prettier --write "web/src/**/*.{ts,vue,js}" 2>nul
 if %errorlevel% neq 0 (
     echo FAIL: prettier
     set FAILED=1

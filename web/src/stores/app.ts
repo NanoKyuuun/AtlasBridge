@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { api, type StatusResponse, type DownstreamHealth } from "../api/client";
+import { api, AuthError, type StatusResponse, type DownstreamHealth } from "../api/client";
 
 export const useAppStore = defineStore("app", () => {
   const status = ref<StatusResponse | null>(null);
@@ -14,7 +14,9 @@ export const useAppStore = defineStore("app", () => {
     try {
       status.value = await api.getStatus();
     } catch (e: any) {
-      error.value = e.message;
+      if (!(e instanceof AuthError)) {
+        error.value = e.message;
+      }
     } finally {
       loading.value = false;
     }
@@ -24,6 +26,7 @@ export const useAppStore = defineStore("app", () => {
     try {
       downstreamHealth.value = await api.getDownstreamHealth();
     } catch (e: any) {
+      if (e instanceof AuthError) return;
       downstreamHealth.value = {
         status: "unavailable",
         url: "",

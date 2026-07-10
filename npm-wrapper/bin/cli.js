@@ -61,6 +61,30 @@ function openBrowser(url) {
     require('child_process').spawn(start, [url], { detached: true, stdio: 'ignore' });
 }
 
+async function stopViaAPI() {
+    try {
+        const http = require('http');
+        const data = JSON.stringify({});
+        const options = {
+            hostname: '127.0.0.1',
+            port: parseInt(DEFAULT_PORT),
+            path: '/admin/api/runtime/stop',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Content-Length': data.length },
+        };
+        const req = http.request(options, (res) => {
+            console.log(`Stop request sent (status: ${res.statusCode})`);
+        });
+        req.on('error', (err) => {
+            console.error('Failed to stop AtlasBridge:', err.message);
+        });
+        req.write(data);
+        req.end();
+    } catch (err) {
+        console.error('Failed to stop AtlasBridge:', err.message);
+    }
+}
+
 async function cmdStart() {
     const binary = findBinary();
     if (!binary) {
@@ -132,6 +156,9 @@ For more info: https://github.com/atlasbridge/atlasbridge
 const command = process.argv[2] || 'help';
 
 switch (command) {
+    case 'stop':
+        stopViaAPI();
+        break;
     case 'start':
         cmdStart();
         break;
