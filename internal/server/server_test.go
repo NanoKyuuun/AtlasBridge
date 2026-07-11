@@ -1404,8 +1404,8 @@ func TestAdminDownstreamHealth(t *testing.T) {
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if body["status"] != "connected" && body["status"] != "unavailable" {
-		t.Errorf("expected status connected or unavailable, got %v", body["status"])
+	if body["status"] != "connected" && body["status"] != "unavailable" && body["status"] != "degraded" {
+		t.Errorf("expected status connected, unavailable, or degraded, got %v", body["status"])
 	}
 	if body["url"] == nil {
 		t.Error("expected url in response")

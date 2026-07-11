@@ -119,6 +119,7 @@ func (s *State) Stop() error {
 	}
 
 	s.status = StatusStopped
+	s.mode = ModeManual
 	s.errorMsg = ""
 	s.lastAction = "stop"
 	return nil

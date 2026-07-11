@@ -6,7 +6,7 @@
       description="Route every AI coding task to the right model path."
     >
       <template #actions>
-        <GradientButton :disabled="status?.mode === 'always_on'" @click="startProxy">
+        <GradientButton :disabled="status?.status === 'running'" @click="startProxy">
           Start Proxy
         </GradientButton>
         <GhostButton @click="openRoutingSettings">
@@ -127,10 +127,10 @@
             <p class="mt-1 text-sm text-slate-400">Common runtime actions and routing shortcuts.</p>
           </div>
           <div class="flex flex-wrap gap-3">
-            <GradientButton @click="startProxy" :disabled="status?.mode === 'always_on'">
+            <GradientButton @click="startProxy" :disabled="status?.status === 'running'">
               Start Proxy
             </GradientButton>
-            <GhostButton @click="stopProxy" :disabled="status?.mode === 'disabled'">
+            <GhostButton @click="stopProxy" :disabled="status?.status !== 'running'">
               Stop Proxy
             </GhostButton>
             <GhostButton @click="restartProxy">Restart Proxy</GhostButton>

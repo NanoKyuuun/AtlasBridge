@@ -176,7 +176,7 @@ func runtimeStartHandler(deps *AdminDeps) http.HandlerFunc {
 
 func runtimeStopHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := deps.ConfigService.UpdateMode("disabled"); err != nil {
+		if err := deps.ConfigService.UpdateMode("manual"); err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
 			return
 		}
@@ -184,7 +184,7 @@ func runtimeStopHandler(deps *AdminDeps) http.HandlerFunc {
 			_ = deps.RuntimeState.Stop()
 		}
 		log.Printf("ADMIN: proxy engine stopped")
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "proxy stopped", "mode": "disabled"})
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "proxy stopped", "mode": "manual"})
 	}
 }
 
@@ -296,10 +296,18 @@ func downstreamHealthHandler(deps *AdminDeps) http.HandlerFunc {
 		}
 		defer resp.Body.Close()
 
+		status := "connected"
+		msg := "downstream is healthy"
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			status = "degraded"
+			msg = fmt.Sprintf("health endpoint returned HTTP %d", resp.StatusCode)
+		}
+
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"status":      "connected",
+			"status":      status,
 			"status_code": resp.StatusCode,
 			"url":         snap.Config.Downstream.BaseURL,
+			"message":     msg,
 		})
 	}
 }

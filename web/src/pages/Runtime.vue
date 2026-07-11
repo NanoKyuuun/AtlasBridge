@@ -15,8 +15,8 @@
           </div>
 
           <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <GradientButton @click="start" :disabled="mode === 'always_on'">Start</GradientButton>
-            <GhostButton @click="stop" :disabled="mode === 'disabled'">Stop</GhostButton>
+            <GradientButton @click="start" :disabled="status?.status === 'running'">Start</GradientButton>
+            <GhostButton @click="stop" :disabled="status?.status !== 'running'">Stop</GhostButton>
             <GhostButton @click="restart">Restart</GhostButton>
           </div>
 

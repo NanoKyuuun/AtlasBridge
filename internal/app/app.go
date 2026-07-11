@@ -121,6 +121,10 @@ func (a *App) Run() error {
 			fmt.Fprint(os.Stdout, "  This token will NOT be shown again.\n")
 			fmt.Fprint(os.Stdout, "  Store it safely before closing this window.\n")
 			fmt.Fprint(os.Stdout, "\n")
+
+			next := a.store.Load().Clone()
+			next.Config.Security.AdminTokenHash = a.cfg.Security.AdminTokenHash
+			a.store.Swap(next)
 		}
 	}
 

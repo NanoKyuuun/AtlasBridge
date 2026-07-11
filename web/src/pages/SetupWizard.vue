@@ -197,6 +197,8 @@ const config = reactive({
     default_route: "route.default",
     low_confidence_route: "route.default",
     confidence_threshold: 0.55,
+    smart_fast_route: "route.low_cost",
+    metadata_transport: "header",
   },
   app: {
     name: "AtlasBridge AI Proxy",

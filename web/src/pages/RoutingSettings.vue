@@ -244,6 +244,8 @@ const routingConfig = ref({
   default_route: "route.default",
   low_confidence_route: "route.default",
   confidence_threshold: 0.55,
+  smart_fast_route: "route.low_cost",
+  metadata_transport: "header",
 });
 
 const defaultRoutes: Record<string, string> = {
@@ -268,6 +270,8 @@ const defaultRoutingConfig = {
   default_route: "route.default",
   low_confidence_route: "route.default",
   confidence_threshold: 0.55,
+  smart_fast_route: "route.low_cost",
+  metadata_transport: "header",
 };
 
 const taskDescriptions: Record<string, string> = {
