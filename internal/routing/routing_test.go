@@ -10,11 +10,10 @@ import (
 
 func defaultRoutingCfg() *config.RoutingConfig {
 	return &config.RoutingConfig{
-		AutoRouting:             true,
-		DefaultRoute:            "route.default",
-		LowConfidenceRoute:      "route.default",
-		ExplicitOverrideEnabled: true,
-		ConfidenceThreshold:     0.55,
+		AutoRouting:         true,
+		DefaultRoute:        "route.default",
+		LowConfidenceRoute:  "route.default",
+		ConfidenceThreshold: 0.55,
 	}
 }
 

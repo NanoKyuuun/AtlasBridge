@@ -322,13 +322,16 @@ func copyToClipboard(text string) {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
-		cmd = exec.Command("cmd", "/c", "echo", strings.TrimSpace(text), "|", "clip")
+		cmd = exec.Command("powershell", "-NoProfile", "-Command", "Set-Clipboard", "--", text)
 	case "darwin":
-		cmd = exec.Command("bash", "-c", fmt.Sprintf("echo -n %q | pbcopy", text))
+		cmd = exec.Command("pbcopy")
 	default:
-		cmd = exec.Command("bash", "-c", fmt.Sprintf("echo -n %q | xclip -selection clipboard", text))
+		cmd = exec.Command("xclip", "-selection", "clipboard")
 	}
-	if err := cmd.Start(); err != nil {
+	if runtime.GOOS != "windows" {
+		cmd.Stdin = strings.NewReader(text)
+	}
+	if err := cmd.Run(); err != nil {
 		log.Printf("failed to copy to clipboard: %v", err)
 	}
 }

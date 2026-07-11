@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -16,6 +17,9 @@ func TestDefaultConfig(t *testing.T) {
 	}
 	if cfg.Downstream.BaseURL != "http://127.0.0.1:20128/v1" {
 		t.Errorf("expected downstream URL http://127.0.0.1:20128/v1, got %s", cfg.Downstream.BaseURL)
+	}
+	if cfg.Security.AdminAuthEnabled != true {
+		t.Error("expected admin_auth_enabled to be true by default")
 	}
 	if cfg.Security.BindLocalhostOnly != true {
 		t.Error("expected bind_localhost_only to be true")
@@ -335,5 +339,170 @@ func TestConfigDir(t *testing.T) {
 	dir := ConfigDir()
 	if dir == "" {
 		t.Error("expected non-empty config dir")
+	}
+}
+
+func TestValidateLANModeRequiresAuth(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Security.AllowLANAccess = true
+	cfg.Security.AdminAuthEnabled = false
+	if err := Validate(cfg); err == nil {
+		t.Error("expected error when LAN access enabled without admin auth")
+	}
+}
+
+func TestValidateLANModeWithAuthOK(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Security.AllowLANAccess = true
+	cfg.Security.AdminAuthEnabled = true
+	if err := Validate(cfg); err != nil {
+		t.Errorf("expected valid config with LAN + auth, got error: %v", err)
+	}
+}
+
+func TestEnforceNetworkInvariantsForcesLoopback(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Server.Host = "0.0.0.0"
+	cfg.Security.AllowLANAccess = false
+
+	EnforceNetworkInvariants(cfg)
+
+	if cfg.Server.Host != "127.0.0.1" {
+		t.Errorf("expected host forced to 127.0.0.1, got %s", cfg.Server.Host)
+	}
+}
+
+func TestEnforceNetworkInvariantsPreservesHostWhenLANAllowed(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Server.Host = "0.0.0.0"
+	cfg.Security.AllowLANAccess = true
+
+	EnforceNetworkInvariants(cfg)
+
+	if cfg.Server.Host != "0.0.0.0" {
+		t.Errorf("expected host preserved as 0.0.0.0, got %s", cfg.Server.Host)
+	}
+}
+
+func TestAtomicWriteCreatesFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "test.yaml")
+	data := []byte("key: value\n")
+
+	if err := atomicWriteFile(path, data, 0o600); err != nil {
+		t.Fatalf("atomicWriteFile failed: %v", err)
+	}
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read written file: %v", err)
+	}
+	if string(got) != string(data) {
+		t.Errorf("content mismatch: got %q, want %q", got, data)
+	}
+}
+
+func TestAtomicWriteStrictPermissions(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "config.yaml")
+
+	if err := atomicWriteFile(path, []byte("test"), 0o600); err != nil {
+		t.Fatalf("atomicWriteFile failed: %v", err)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat failed: %v", err)
+	}
+
+	if runtime.GOOS != "windows" {
+		perm := info.Mode().Perm()
+		if perm != 0o600 {
+			t.Errorf("expected file permission 0600, got %o", perm)
+		}
+	} else {
+		if info.Mode().Perm() == 0o666 {
+			t.Skip("Windows does not enforce Unix file permissions via os.Chmod")
+		}
+	}
+}
+
+func TestAtomicWriteDirPermissions(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "subdir", "config.yaml")
+
+	if err := atomicWriteFile(path, []byte("test"), 0o600); err != nil {
+		t.Fatalf("atomicWriteFile failed: %v", err)
+	}
+
+	info, err := os.Stat(filepath.Join(tmpDir, "subdir"))
+	if err != nil {
+		t.Fatalf("stat dir failed: %v", err)
+	}
+
+	if runtime.GOOS != "windows" {
+		perm := info.Mode().Perm()
+		if perm != 0o700 {
+			t.Errorf("expected dir permission 0700, got %o", perm)
+		}
+	} else {
+		if info.Mode().Perm() == 0o777 {
+			t.Skip("Windows does not enforce Unix file permissions via os.Chmod")
+		}
+	}
+}
+
+func TestSaveWithBackupCreatesBackup(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "config.yaml")
+
+	if err := os.WriteFile(path, []byte("original"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := saveWithBackup(path, []byte("updated"), 0o600); err != nil {
+		t.Fatalf("saveWithBackup failed: %v", err)
+	}
+
+	backupPath := backupFilePath(path)
+	backup, err := os.ReadFile(backupPath)
+	if err != nil {
+		t.Fatalf("backup file not created: %v", err)
+	}
+	if string(backup) != "original" {
+		t.Errorf("backup content mismatch: got %q, want %q", backup, "original")
+	}
+
+	main, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("main file read failed: %v", err)
+	}
+	if string(main) != "updated" {
+		t.Errorf("main content mismatch: got %q, want %q", main, "updated")
+	}
+}
+
+func TestConfigSaveAndReloadAtomic(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir := os.Getenv("APPDATA")
+	t.Setenv("APPDATA", tmpDir)
+	defer os.Setenv("APPDATA", origDir)
+
+	cfg := DefaultConfig()
+	if err := Save(cfg); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	reloaded, err := Load()
+	if err != nil {
+		t.Fatalf("Load after Save failed: %v", err)
+	}
+	if reloaded.Server.Port != cfg.Server.Port {
+		t.Errorf("port mismatch: got %d, want %d", reloaded.Server.Port, cfg.Server.Port)
+	}
+
+	backup := backupFilePath(ConfigPath())
+	if _, err := os.Stat(backup); err == nil {
+		t.Log("backup file exists as expected on first save (may be from default creation)")
 	}
 }

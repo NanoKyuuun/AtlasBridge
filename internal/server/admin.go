@@ -10,42 +10,75 @@ import (
 	"net/url"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/atlasbridge/atlasbridge/internal/analyzer"
 	"github.com/atlasbridge/atlasbridge/internal/classifier"
 	"github.com/atlasbridge/atlasbridge/internal/config"
-	"github.com/atlasbridge/atlasbridge/internal/forwarder"
 	"github.com/atlasbridge/atlasbridge/internal/observability"
 	"github.com/atlasbridge/atlasbridge/internal/routing"
 	runtimemod "github.com/atlasbridge/atlasbridge/internal/runtime"
-	"github.com/atlasbridge/atlasbridge/internal/security"
 	"github.com/atlasbridge/atlasbridge/internal/startup"
 )
 
+// SecurityView is the DTO returned to clients. It never exposes the token hash.
+type SecurityView struct {
+	AdminAuthEnabled  bool `json:"admin_auth_enabled"`
+	TokenConfigured   bool `json:"token_configured"`
+	BindLocalhostOnly bool `json:"bind_localhost_only"`
+	AllowLANAccess    bool `json:"allow_lan_access"`
+}
+
+// SecurityUpdate is the DTO accepted from clients for partial updates.
+// All fields are pointers with omitempty so absent fields are not overwritten.
+// admin_token_hash is intentionally excluded — token rotation has a dedicated endpoint.
+type SecurityUpdate struct {
+	AdminAuthEnabled  *bool `json:"admin_auth_enabled,omitempty"`
+	BindLocalhostOnly *bool `json:"bind_localhost_only,omitempty"`
+	AllowLANAccess    *bool `json:"allow_lan_access,omitempty"`
+}
+
 type AdminDeps struct {
-	Config        *config.Config
-	Routes        *config.RoutesConfig
-	Profiles      *config.ProfilesConfig
-	Forwarder     *forwarder.Forwarder
+	Store         *StateStore
+	ConfigService *ConfigService
 	Observability *observability.Logger
 	RuntimeState  *runtimemod.State
-	AuthConfig    *AuthConfig
 }
 
 func getConfigHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		masked := maskConfig(deps.Config)
-		writeJSON(w, http.StatusOK, masked)
+		snap := deps.Store.Load()
+		secView := SecurityView{
+			AdminAuthEnabled:  snap.Config.Security.AdminAuthEnabled,
+			TokenConfigured:   snap.Config.Security.AdminTokenHash != "",
+			BindLocalhostOnly: snap.Config.Security.BindLocalhostOnly,
+			AllowLANAccess:    snap.Config.Security.AllowLANAccess,
+		}
+
+		cfgCopy := snap.Config
+		cfgCopy.Security = config.SecurityConfig{
+			AdminAuthEnabled:  secView.AdminAuthEnabled,
+			BindLocalhostOnly: secView.BindLocalhostOnly,
+			AllowLANAccess:    secView.AllowLANAccess,
+		}
+
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"app":            cfgCopy.App,
+			"server":         cfgCopy.Server,
+			"downstream":     cfgCopy.Downstream,
+			"security":       secView,
+			"startup":        cfgCopy.Startup,
+			"routing":        cfgCopy.Routing,
+			"logging":        cfgCopy.Logging,
+			"config_version": snap.Version,
+		})
 	}
 }
 
 func putConfigHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to read request body")
+		if handleBodyReadError(w, err) {
 			return
 		}
 
@@ -55,86 +88,27 @@ func putConfigHandler(deps *AdminDeps) http.HandlerFunc {
 			return
 		}
 
-		merged := *deps.Config
-
-		if raw, ok := patch["app"]; ok {
-			if err := json.Unmarshal(raw, &merged.App); err != nil {
-				writeError(w, http.StatusBadRequest, "invalid app config: "+err.Error())
-				return
-			}
-		}
-		if raw, ok := patch["server"]; ok {
-			if err := json.Unmarshal(raw, &merged.Server); err != nil {
-				writeError(w, http.StatusBadRequest, "invalid server config: "+err.Error())
-				return
-			}
-		}
-		if raw, ok := patch["downstream"]; ok {
-			if err := json.Unmarshal(raw, &merged.Downstream); err != nil {
-				writeError(w, http.StatusBadRequest, "invalid downstream config: "+err.Error())
-				return
-			}
-		}
-		if raw, ok := patch["security"]; ok {
-			if err := json.Unmarshal(raw, &merged.Security); err != nil {
-				writeError(w, http.StatusBadRequest, "invalid security config: "+err.Error())
-				return
-			}
-		}
-		if raw, ok := patch["startup"]; ok {
-			if err := json.Unmarshal(raw, &merged.Startup); err != nil {
-				writeError(w, http.StatusBadRequest, "invalid startup config: "+err.Error())
-				return
-			}
-		}
-		if raw, ok := patch["routing"]; ok {
-			if err := json.Unmarshal(raw, &merged.Routing); err != nil {
-				writeError(w, http.StatusBadRequest, "invalid routing config: "+err.Error())
-				return
-			}
-		}
-		if raw, ok := patch["logging"]; ok {
-			if err := json.Unmarshal(raw, &merged.Logging); err != nil {
-				writeError(w, http.StatusBadRequest, "invalid logging config: "+err.Error())
-				return
-			}
-		}
-
-		if err := config.Validate(&merged); err != nil {
-			writeError(w, http.StatusBadRequest, "validation failed: "+err.Error())
+		result, err := deps.ConfigService.ApplyConfigPatch(patch)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		var rawToken string
-		if merged.Security.AdminAuthEnabled {
-			rawToken, err = security.EnsureToken(&merged.Security.AdminTokenHash)
-			if err != nil {
-				writeError(w, http.StatusInternalServerError, "failed to generate admin token")
-				return
-			}
-			if rawToken != "" {
-				fmt.Fprint(os.Stdout, "\n")
-				fmt.Fprintf(os.Stdout, "  ADMIN TOKEN: %s\n", rawToken)
-				fmt.Fprint(os.Stdout, "  This token will NOT be shown again.\n")
-				fmt.Fprint(os.Stdout, "  Store it safely before closing this window.\n")
-				fmt.Fprint(os.Stdout, "\n")
-			}
-		}
-
-		deps.AuthConfig.Set(merged.Security.AdminAuthEnabled, merged.Security.AdminTokenHash)
-
-		*deps.Config = merged
-		if err := config.Save(deps.Config); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
-			return
+		if result.AdminToken != "" {
+			fmt.Fprint(os.Stdout, "\n")
+			fmt.Fprintf(os.Stdout, "  ADMIN TOKEN: %s\n", result.AdminToken)
+			fmt.Fprint(os.Stdout, "  This token will NOT be shown again.\n")
+			fmt.Fprint(os.Stdout, "  Store it safely before closing this window.\n")
+			fmt.Fprint(os.Stdout, "\n")
 		}
 
 		resp := map[string]interface{}{
-			"status":  "ok",
-			"message": "config updated",
+			"status":           "ok",
+			"message":          result.Message,
+			"restart_required": result.RestartRequired,
 		}
-		if rawToken != "" {
-			resp["admin_token"] = rawToken
+		if result.AdminToken != "" {
+			resp["admin_token"] = result.AdminToken
 		}
 		writeJSON(w, http.StatusOK, resp)
 	}
@@ -142,32 +116,20 @@ func putConfigHandler(deps *AdminDeps) http.HandlerFunc {
 
 func getRoutesHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, deps.Routes)
+		snap := deps.Store.Load()
+		writeJSON(w, http.StatusOK, &snap.Routes)
 	}
 }
 
 func putRoutesHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to read request body")
+		if handleBodyReadError(w, err) {
 			return
 		}
 
-		var updated config.RoutesConfig
-		if err := json.Unmarshal(body, &updated); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
-			return
-		}
-
-		if err := config.ValidateFull(deps.Config, &updated, deps.Profiles); err != nil {
-			writeError(w, http.StatusBadRequest, "validation failed: "+err.Error())
-			return
-		}
-
-		*deps.Routes = updated
-		if err := config.SaveRoutes(deps.Routes); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to save routes: "+err.Error())
+		if err := deps.ConfigService.ApplyRoutes(body); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -177,32 +139,20 @@ func putRoutesHandler(deps *AdminDeps) http.HandlerFunc {
 
 func getProfilesHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, deps.Profiles)
+		snap := deps.Store.Load()
+		writeJSON(w, http.StatusOK, &snap.Profiles)
 	}
 }
 
 func putProfilesHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to read request body")
+		if handleBodyReadError(w, err) {
 			return
 		}
 
-		var updated config.ProfilesConfig
-		if err := json.Unmarshal(body, &updated); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
-			return
-		}
-
-		if err := config.ValidateFull(deps.Config, deps.Routes, &updated); err != nil {
-			writeError(w, http.StatusBadRequest, "validation failed: "+err.Error())
-			return
-		}
-
-		*deps.Profiles = updated
-		if err := config.SaveProfiles(deps.Profiles); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to save profiles: "+err.Error())
+		if err := deps.ConfigService.ApplyProfiles(body); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -212,8 +162,7 @@ func putProfilesHandler(deps *AdminDeps) http.HandlerFunc {
 
 func runtimeStartHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		deps.Config.App.Mode = "always_on"
-		if err := config.Save(deps.Config); err != nil {
+		if err := deps.ConfigService.UpdateMode("always_on"); err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
 			return
 		}
@@ -221,14 +170,13 @@ func runtimeStartHandler(deps *AdminDeps) http.HandlerFunc {
 			_ = deps.RuntimeState.Start()
 		}
 		log.Printf("ADMIN: proxy engine started")
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "proxy started", "mode": deps.Config.App.Mode})
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "proxy started", "mode": "always_on"})
 	}
 }
 
 func runtimeStopHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		deps.Config.App.Mode = "disabled"
-		if err := config.Save(deps.Config); err != nil {
+		if err := deps.ConfigService.UpdateMode("disabled"); err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
 			return
 		}
@@ -236,32 +184,33 @@ func runtimeStopHandler(deps *AdminDeps) http.HandlerFunc {
 			_ = deps.RuntimeState.Stop()
 		}
 		log.Printf("ADMIN: proxy engine stopped")
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "proxy stopped", "mode": deps.Config.App.Mode})
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "proxy stopped", "mode": "disabled"})
 	}
 }
 
 func runtimeRestartHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		snap := deps.Store.Load()
 		if deps.RuntimeState != nil {
 			_ = deps.RuntimeState.Stop()
 			_ = deps.RuntimeState.Start()
 		}
 		log.Printf("ADMIN: proxy engine restarted")
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "proxy restarted", "mode": deps.Config.App.Mode})
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "proxy restarted", "mode": snap.Config.App.Mode})
 	}
 }
 
 func getStartupHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, deps.Config.Startup)
+		snap := deps.Store.Load()
+		writeJSON(w, http.StatusOK, snap.Config.Startup)
 	}
 }
 
 func putStartupHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to read request body")
+		if handleBodyReadError(w, err) {
 			return
 		}
 
@@ -271,15 +220,15 @@ func putStartupHandler(deps *AdminDeps) http.HandlerFunc {
 			return
 		}
 
-		if updated.RunAtLogin != deps.Config.Startup.RunAtLogin {
+		snap := deps.Store.Load()
+		if updated.RunAtLogin != snap.Config.Startup.RunAtLogin {
 			if err := startup.SetRunAtLogin(updated.RunAtLogin); err != nil {
 				writeError(w, http.StatusInternalServerError, "failed to update startup registration: "+err.Error())
 				return
 			}
 		}
 
-		deps.Config.Startup = updated
-		if err := config.Save(deps.Config); err != nil {
+		if err := deps.ConfigService.ApplyStartup(updated); err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
 			return
 		}
@@ -288,25 +237,60 @@ func putStartupHandler(deps *AdminDeps) http.HandlerFunc {
 	}
 }
 
+func getSecurityHandler(deps *AdminDeps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		snap := deps.Store.Load()
+		writeJSON(w, http.StatusOK, SecurityView{
+			AdminAuthEnabled:  snap.Config.Security.AdminAuthEnabled,
+			TokenConfigured:   snap.Config.Security.AdminTokenHash != "",
+			BindLocalhostOnly: snap.Config.Security.BindLocalhostOnly,
+			AllowLANAccess:    snap.Config.Security.AllowLANAccess,
+		})
+	}
+}
+
+func rotateTokenHandler(deps *AdminDeps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		newToken, err := deps.ConfigService.RotateToken()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to rotate token: "+err.Error())
+			return
+		}
+
+		tokenPath := config.TokenFilePath()
+		if writeErr := os.WriteFile(tokenPath, []byte(newToken), 0o600); writeErr != nil {
+			log.Printf("WARNING: failed to update token file for CLI access: %v", writeErr)
+		}
+
+		log.Printf("ADMIN: admin token rotated")
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"status":  "ok",
+			"message": "token rotated — this is the only time the raw token is shown",
+			"token":   newToken,
+		})
+	}
+}
+
 func downstreamHealthHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		snap := deps.Store.Load()
 		client := &http.Client{Timeout: 5 * time.Second}
-		parsed, err := url.Parse(deps.Config.Downstream.BaseURL)
+		parsed, err := url.Parse(snap.Config.Downstream.BaseURL)
 		if err != nil {
+			log.Printf("downstream health: invalid URL: %v", err)
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"status":  "unavailable",
-				"message": fmt.Sprintf("invalid downstream URL: %v", err),
-				"url":     deps.Config.Downstream.BaseURL,
+				"message": "downstream URL configuration is invalid",
 			})
 			return
 		}
 		healthURL := fmt.Sprintf("%s://%s/health", parsed.Scheme, parsed.Host)
 		resp, err := client.Get(healthURL)
 		if err != nil {
+			log.Printf("downstream health: unreachable: %v", err)
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"status":  "unavailable",
-				"message": fmt.Sprintf("9Router unreachable: %v", err),
-				"url":     deps.Config.Downstream.BaseURL,
+				"message": "downstream service is unreachable",
 			})
 			return
 		}
@@ -315,29 +299,30 @@ func downstreamHealthHandler(deps *AdminDeps) http.HandlerFunc {
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"status":      "connected",
 			"status_code": resp.StatusCode,
-			"url":         deps.Config.Downstream.BaseURL,
+			"url":         snap.Config.Downstream.BaseURL,
 		})
 	}
 }
 
 func logsHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		snap := deps.Store.Load()
 		limit := 100
 		if deps.Observability != nil {
 			logs := deps.Observability.GetEntries(limit)
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"logs":             logs,
 				"total":            deps.Observability.Count(),
-				"privacy_mode":     deps.Config.Logging.PrivacyMode,
-				"metadata_enabled": deps.Config.Logging.MetadataLoggingEnabled,
+				"privacy_mode":     snap.Config.Logging.PrivacyMode,
+				"metadata_enabled": snap.Config.Logging.MetadataLoggingEnabled,
 			})
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"logs":             []interface{}{},
 			"total":            0,
-			"privacy_mode":     deps.Config.Logging.PrivacyMode,
-			"metadata_enabled": deps.Config.Logging.MetadataLoggingEnabled,
+			"privacy_mode":     snap.Config.Logging.PrivacyMode,
+			"metadata_enabled": snap.Config.Logging.MetadataLoggingEnabled,
 		})
 	}
 }
@@ -354,6 +339,7 @@ func logsClearHandler(deps *AdminDeps) http.HandlerFunc {
 
 func diagnosticsExportHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		snap := deps.Store.Load()
 		diagnostics := map[string]interface{}{
 			"version":    Version,
 			"uptime":     time.Since(startTime).String(),
@@ -362,15 +348,16 @@ func diagnosticsExportHandler(deps *AdminDeps) http.HandlerFunc {
 			"arch":       runtime.GOARCH,
 			"pid":        os.Getpid(),
 			"config": map[string]interface{}{
-				"host":           deps.Config.Server.Host,
-				"port":           deps.Config.Server.Port,
-				"downstream_url": deps.Config.Downstream.BaseURL,
-				"mode":           deps.Config.App.Mode,
-				"privacy_mode":   deps.Config.Logging.PrivacyMode,
-				"auto_routing":   deps.Config.Routing.AutoRouting,
+				"host":           snap.Config.Server.Host,
+				"port":           snap.Config.Server.Port,
+				"downstream_url": snap.Config.Downstream.BaseURL,
+				"mode":           snap.Config.App.Mode,
+				"privacy_mode":   snap.Config.Logging.PrivacyMode,
+				"auto_routing":   snap.Config.Routing.AutoRouting,
 			},
-			"route_profiles_count": len(deps.Profiles.RouteProfiles),
-			"task_routes_count":    len(deps.Routes.TaskRoutes),
+			"route_profiles_count": len(snap.Profiles.RouteProfiles),
+			"task_routes_count":    len(snap.Routes.TaskRoutes),
+			"config_version":       snap.Version,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -381,9 +368,9 @@ func diagnosticsExportHandler(deps *AdminDeps) http.HandlerFunc {
 
 func dryRunHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		snap := deps.Store.Load()
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to read request body")
+		if handleBodyReadError(w, err) {
 			return
 		}
 
@@ -401,10 +388,13 @@ func dryRunHandler(deps *AdminDeps) http.HandlerFunc {
 			return
 		}
 
-		mockBody := fmt.Sprintf(`{"model":"%s","messages":[{"role":"user","content":"%s"}]}`,
-			req.Model, req.Prompt)
+		mockBody, err := buildMockChatBody(req.Model, req.Prompt)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "failed to build request body: "+err.Error())
+			return
+		}
 
-		analysis, err := analyzer.Analyze(bytes.NewReader([]byte(mockBody)))
+		analysis, err := analyzer.Analyze(bytes.NewReader(mockBody))
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "analysis failed: "+err.Error())
 			return
@@ -412,7 +402,7 @@ func dryRunHandler(deps *AdminDeps) http.HandlerFunc {
 
 		classification := classifier.Classify(analysis)
 
-		decision := routing.Resolve(req.Model, analysis, classification, deps.Routes, deps.Profiles, &deps.Config.Routing)
+		decision := routing.Resolve(req.Model, analysis, classification, &snap.Routes, &snap.Profiles, &snap.Config.Routing)
 
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"analysis":       analysis,
@@ -424,9 +414,9 @@ func dryRunHandler(deps *AdminDeps) http.HandlerFunc {
 
 func comboTestHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		snap := deps.Store.Load()
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to read request body")
+		if handleBodyReadError(w, err) {
 			return
 		}
 
@@ -443,17 +433,20 @@ func comboTestHandler(deps *AdminDeps) http.HandlerFunc {
 			return
 		}
 
-		if deps.Forwarder == nil {
+		if snap.Forwarder == nil {
 			writeError(w, http.StatusServiceUnavailable, "downstream service unavailable")
 			return
 		}
 
-		testBody := fmt.Sprintf(`{"model":"%s","messages":[{"role":"user","content":"Reply with only: OK"}],"max_tokens":5}`,
-			req.Model)
+		testBody, err := buildComboTestBody(req.Model)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "failed to build request body: "+err.Error())
+			return
+		}
 
 		start := time.Now()
 
-		proxyReq, err := http.NewRequestWithContext(r.Context(), "POST", "/v1/chat/completions", bytes.NewReader([]byte(testBody)))
+		proxyReq, err := http.NewRequestWithContext(r.Context(), "POST", "/v1/chat/completions", bytes.NewReader(testBody))
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to create request: "+err.Error())
 			return
@@ -461,7 +454,7 @@ func comboTestHandler(deps *AdminDeps) http.HandlerFunc {
 		proxyReq.Header.Set("Content-Type", "application/json")
 		proxyReq.Header.Set("X-Request-ID", "combo-test")
 
-		result, err := deps.Forwarder.Forward(r.Context(), proxyReq, "combo-test")
+		result, err := snap.Forwarder.Forward(r.Context(), proxyReq, "combo-test")
 		latency := time.Since(start)
 
 		if err != nil {
@@ -491,10 +484,23 @@ func comboTestHandler(deps *AdminDeps) http.HandlerFunc {
 
 func configExportHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		snap := deps.Store.Load()
+		secView := SecurityView{
+			AdminAuthEnabled:  snap.Config.Security.AdminAuthEnabled,
+			TokenConfigured:   snap.Config.Security.AdminTokenHash != "",
+			BindLocalhostOnly: snap.Config.Security.BindLocalhostOnly,
+			AllowLANAccess:    snap.Config.Security.AllowLANAccess,
+		}
+		cfgCopy := snap.Config
+		cfgCopy.Security = config.SecurityConfig{
+			AdminAuthEnabled:  secView.AdminAuthEnabled,
+			BindLocalhostOnly: secView.BindLocalhostOnly,
+			AllowLANAccess:    secView.AllowLANAccess,
+		}
 		export := map[string]interface{}{
-			"config":   maskConfig(deps.Config),
-			"routes":   deps.Routes,
-			"profiles": deps.Profiles,
+			"config":   cfgCopy,
+			"routes":   &snap.Routes,
+			"profiles": &snap.Profiles,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -506,56 +512,13 @@ func configExportHandler(deps *AdminDeps) http.HandlerFunc {
 func configImportHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to read request body")
+		if handleBodyReadError(w, err) {
 			return
 		}
 
-		var imported struct {
-			Config   *config.Config         `json:"config"`
-			Routes   *config.RoutesConfig   `json:"routes"`
-			Profiles *config.ProfilesConfig `json:"profiles"`
-		}
-		if err := json.Unmarshal(body, &imported); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+		if err := deps.ConfigService.Import(body); err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
 			return
-		}
-
-		if imported.Config != nil {
-			if err := config.Validate(imported.Config); err != nil {
-				writeError(w, http.StatusBadRequest, "config validation failed: "+err.Error())
-				return
-			}
-			*deps.Config = *imported.Config
-			config.Save(deps.Config)
-		}
-
-		if imported.Routes != nil {
-			if imported.Profiles != nil {
-				if err := config.ValidateFull(deps.Config, imported.Routes, imported.Profiles); err != nil {
-					writeError(w, http.StatusBadRequest, "routes validation failed: "+err.Error())
-					return
-				}
-			}
-			*deps.Routes = *imported.Routes
-			if err := config.SaveRoutes(deps.Routes); err != nil {
-				writeError(w, http.StatusInternalServerError, "failed to save routes: "+err.Error())
-				return
-			}
-		}
-
-		if imported.Profiles != nil {
-			if imported.Routes != nil {
-				if err := config.ValidateFull(deps.Config, imported.Routes, imported.Profiles); err != nil {
-					writeError(w, http.StatusBadRequest, "profiles validation failed: "+err.Error())
-					return
-				}
-			}
-			*deps.Profiles = *imported.Profiles
-			if err := config.SaveProfiles(deps.Profiles); err != nil {
-				writeError(w, http.StatusInternalServerError, "failed to save profiles: "+err.Error())
-				return
-			}
 		}
 
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "config imported"})
@@ -564,20 +527,8 @@ func configImportHandler(deps *AdminDeps) http.HandlerFunc {
 
 func configResetHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		*deps.Config = *config.DefaultConfig()
-		*deps.Routes = *config.DefaultRoutesConfig()
-		*deps.Profiles = *config.DefaultProfilesConfig()
-
-		if err := config.Save(deps.Config); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
-			return
-		}
-		if err := config.SaveRoutes(deps.Routes); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to save routes: "+err.Error())
-			return
-		}
-		if err := config.SaveProfiles(deps.Profiles); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to save profiles: "+err.Error())
+		if err := deps.ConfigService.Reset(); err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to reset: "+err.Error())
 			return
 		}
 
@@ -601,17 +552,20 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	})
 }
 
-func maskConfig(cfg *config.Config) *config.Config {
-	masked := *cfg
-	if masked.Security.AdminTokenHash != "" {
-		masked.Security.AdminTokenHash = maskSecret(masked.Security.AdminTokenHash)
+func handleBodyReadError(w http.ResponseWriter, err error) bool {
+	if err == nil {
+		return false
 	}
-	return &masked
-}
-
-func maskSecret(s string) string {
-	if len(s) <= 4 {
-		return "****"
+	if isMaxBytesError(err) {
+		writeJSON(w, http.StatusRequestEntityTooLarge, map[string]interface{}{
+			"error": map[string]string{
+				"message": "request body too large",
+				"type":    "invalid_request_error",
+				"code":    "payload_too_large",
+			},
+		})
+		return true
 	}
-	return strings.Repeat("*", len(s)-4) + s[len(s)-4:]
+	writeError(w, http.StatusBadRequest, "failed to read request body")
+	return true
 }

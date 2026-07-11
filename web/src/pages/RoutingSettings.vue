@@ -243,7 +243,6 @@ const routingConfig = ref({
   auto_routing: true,
   default_route: "route.default",
   low_confidence_route: "route.default",
-  explicit_override_enabled: true,
   confidence_threshold: 0.55,
 });
 
@@ -268,7 +267,6 @@ const defaultRoutingConfig = {
   auto_routing: true,
   default_route: "route.default",
   low_confidence_route: "route.default",
-  explicit_override_enabled: true,
   confidence_threshold: 0.55,
 };
 

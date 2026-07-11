@@ -27,10 +27,7 @@ func main() {
 	signal.Notify(sigQuit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		if err := application.Run(); err != nil {
-			fmt.Fprintf(os.Stderr, "application error: %v\n", err)
-			os.Exit(1)
-		}
+		_ = application.Run()
 	}()
 
 	select {
@@ -44,5 +41,9 @@ func main() {
 		}()
 		return ch
 	}():
+	case err := <-application.ErrCh():
+		fmt.Fprintf(os.Stderr, "application error: %v\n", err)
+		application.Shutdown()
+		os.Exit(1)
 	}
 }

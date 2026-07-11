@@ -2,11 +2,13 @@ package forwarder
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -21,21 +23,80 @@ var forwardHeaders = []string{
 }
 
 type Forwarder struct {
-	client *http.Client
-	base   string
+	streamClient    *http.Client
+	nonstreamClient *http.Client
+	base            string
 }
 
 func New(baseURL string, timeoutSeconds int) (*Forwarder, error) {
-	if _, err := url.Parse(baseURL); err != nil {
+	parsedURL, err := url.Parse(baseURL)
+	if err != nil {
 		return nil, fmt.Errorf("invalid downstream URL: %w", err)
+	}
+	if parsedURL.User != nil {
+		return nil, fmt.Errorf("credentials in downstream URL are not allowed")
+	}
+	if parsedURL.Fragment != "" {
+		return nil, fmt.Errorf("URL fragments are not allowed")
+	}
+	if len(parsedURL.RawQuery) > 0 {
+		return nil, fmt.Errorf("URL query strings are not allowed for downstream")
 	}
 	if timeoutSeconds <= 0 {
 		timeoutSeconds = 120
 	}
+
+	nonstreamTransport := &http.Transport{
+		MaxIdleConns:          10,
+		MaxIdleConnsPerHost:   5,
+		IdleConnTimeout:       90 * time.Second,
+		ResponseHeaderTimeout: time.Duration(timeoutSeconds) * time.Second,
+	}
+
+	streamTransport := &http.Transport{
+		MaxIdleConns:          10,
+		MaxIdleConnsPerHost:   5,
+		IdleConnTimeout:       90 * time.Second,
+		ResponseHeaderTimeout: 30 * time.Second,
+		DialContext: (&netDialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		TLSHandshakeTimeout: 10 * time.Second,
+	}
+
 	return &Forwarder{
-		client: &http.Client{Timeout: time.Duration(timeoutSeconds) * time.Second},
-		base:   strings.TrimRight(baseURL, "/"),
+		nonstreamClient: &http.Client{
+			Timeout:   time.Duration(timeoutSeconds) * time.Second,
+			Transport: nonstreamTransport,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				if len(via) >= 5 {
+					return fmt.Errorf("stopped after 5 redirects")
+				}
+				return nil
+			},
+		},
+		streamClient: &http.Client{
+			Timeout:   0,
+			Transport: streamTransport,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				if len(via) >= 5 {
+					return fmt.Errorf("stopped after 5 redirects")
+				}
+				return nil
+			},
+		},
+		base: strings.TrimRight(baseURL, "/"),
 	}, nil
+}
+
+type netDialer struct {
+	Timeout   time.Duration
+	KeepAlive time.Duration
+}
+
+func (d *netDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	return (&net.Dialer{Timeout: d.Timeout, KeepAlive: d.KeepAlive}).DialContext(ctx, network, addr)
 }
 
 type Result struct {
@@ -47,7 +108,7 @@ type Result struct {
 func (f *Forwarder) buildDownstreamRequest(ctx context.Context, req *http.Request, body []byte, reqID string) (*http.Request, error) {
 	downstreamURL := f.base + "/chat/completions"
 
-	downstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, downstreamURL, strings.NewReader(string(body)))
+	downstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, downstreamURL, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("create downstream request: %w", err)
 	}
@@ -77,7 +138,7 @@ func (f *Forwarder) Forward(ctx context.Context, req *http.Request, reqID string
 	}
 
 	start := time.Now()
-	resp, err := f.client.Do(downstreamReq)
+	resp, err := f.nonstreamClient.Do(downstreamReq)
 	latency := time.Since(start)
 
 	if err != nil {
@@ -119,7 +180,7 @@ func (f *Forwarder) ForwardStream(ctx context.Context, req *http.Request, w http
 	}
 
 	start := time.Now()
-	resp, err := f.client.Do(downstreamReq)
+	resp, err := f.streamClient.Do(downstreamReq)
 	if err != nil {
 		if ctx.Err() == context.Canceled {
 			return fmt.Errorf("request cancelled")
@@ -136,27 +197,29 @@ func (f *Forwarder) ForwardStream(ctx context.Context, req *http.Request, w http
 
 	flusher, canFlush := w.(Flusher)
 
-	scanner := bufio.NewScanner(resp.Body)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	reader := bufio.NewReaderSize(resp.Body, 64*1024)
 
 	chunkCount := 0
-	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Fprintf(w, "%s\n", line)
-
-		if canFlush {
-			flusher.Flush()
+	for {
+		line, err := reader.ReadBytes('\n')
+		if len(line) > 0 {
+			w.Write(line)
+			if canFlush {
+				flusher.Flush()
+			}
+			chunkCount++
 		}
-		chunkCount++
-	}
-
-	if err := scanner.Err(); err != nil {
-		if ctx.Err() == context.Canceled {
-			log.Printf("[%s] POST %s -> stream cancelled after %d chunks (%v)", reqID, f.base+"/chat/completions", chunkCount, time.Since(start).Round(time.Microsecond))
-			return fmt.Errorf("stream cancelled")
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			if ctx.Err() == context.Canceled {
+				log.Printf("[%s] POST %s -> stream cancelled after %d chunks (%v)", reqID, f.base+"/chat/completions", chunkCount, time.Since(start).Round(time.Microsecond))
+				return fmt.Errorf("stream cancelled")
+			}
+			log.Printf("[%s] POST %s -> stream error after %d chunks: %v", reqID, f.base+"/chat/completions", chunkCount, err)
+			return fmt.Errorf("stream read error: %w", err)
 		}
-		log.Printf("[%s] POST %s -> stream error after %d chunks: %v", reqID, f.base+"/chat/completions", chunkCount, err)
-		return fmt.Errorf("stream read error: %w", err)
 	}
 
 	log.Printf("[%s] POST %s -> %d (streamed %d chunks, %v)", reqID, f.base+"/chat/completions", resp.StatusCode, chunkCount, time.Since(start).Round(time.Microsecond))
@@ -182,7 +245,7 @@ func IsStreamRequest(req *http.Request) bool {
 	if closer, ok := rest.(io.Closer); ok {
 		closer.Close()
 	}
-	req.Body = io.NopCloser(io.MultiReader(strings.NewReader(string(body)), rest))
+	req.Body = io.NopCloser(io.MultiReader(bytes.NewReader(body), rest))
 
 	if len(body) == 0 {
 		return false

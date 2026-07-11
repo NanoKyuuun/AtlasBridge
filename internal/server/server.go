@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -20,71 +19,36 @@ import (
 	"github.com/atlasbridge/atlasbridge/internal/analyzer"
 	"github.com/atlasbridge/atlasbridge/internal/classifier"
 	"github.com/atlasbridge/atlasbridge/internal/config"
-	"github.com/atlasbridge/atlasbridge/internal/forwarder"
 	"github.com/atlasbridge/atlasbridge/internal/observability"
 	"github.com/atlasbridge/atlasbridge/internal/routing"
 	runtimemod "github.com/atlasbridge/atlasbridge/internal/runtime"
 	"github.com/atlasbridge/atlasbridge/internal/security"
 )
 
-// AuthConfig provides thread-safe access to admin auth settings.
-// The middleware reads from this on every request; putConfigHandler
-// writes to it so changes take effect immediately.
-type AuthConfig struct {
-	mu         sync.RWMutex
-	Enabled    bool
-	TokenHash  string
-}
-
-func (a *AuthConfig) Get() (bool, string) {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-	return a.Enabled, a.TokenHash
-}
-
-func (a *AuthConfig) Set(enabled bool, hash string) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.Enabled = enabled
-	a.TokenHash = hash
-}
-
 var Version = "0.1.0"
 
 var startTime = time.Now()
 
 type ServerDeps struct {
-	Config        *config.Config
-	Routes        *config.RoutesConfig
-	Profiles      *config.ProfilesConfig
-	Fwd           *forwarder.Forwarder
+	Store         *StateStore
+	ConfigService *ConfigService
 	ObsLogger     *observability.Logger
 	RuntimeState  *runtimemod.State
-	AuthConfig    *AuthConfig
+	Bulkhead      *WeightedBulkhead
 }
 
 func New(deps *ServerDeps) *http.Server {
-	// Create forwarder if not provided (for backward compatibility)
-	if deps.Fwd == nil {
-		fwd, err := forwarder.New(deps.Config.Downstream.BaseURL, deps.Config.Downstream.TimeoutSeconds)
-		if err != nil {
-			log.Printf("WARNING: failed to create forwarder: %v", err)
-		}
-		deps.Fwd = fwd
-	}
-
-	// Create observability logger if not provided
 	if deps.ObsLogger == nil {
 		deps.ObsLogger = observability.NewLogger(observability.DefaultMaxEntries)
 	}
-
-	// Create AuthConfig if not provided (for backward compatibility with tests)
-	if deps.AuthConfig == nil {
-		deps.AuthConfig = &AuthConfig{
-			Enabled:   deps.Config.Security.AdminAuthEnabled,
-			TokenHash: deps.Config.Security.AdminTokenHash,
-		}
+	if deps.Store == nil || deps.ConfigService == nil {
+		log.Fatal("ServerDeps.Store and ServerDeps.ConfigService must be provided")
 	}
+	if deps.Bulkhead == nil {
+		deps.Bulkhead = NewWeightedBulkhead(MaxInFlight, 10*time.Second)
+	}
+
+	snap := deps.Store.Load()
 
 	r := chi.NewRouter()
 
@@ -96,41 +60,49 @@ func New(deps *ServerDeps) *http.Server {
 	r.Get("/health", healthHandler)
 
 	r.Route("/v1", func(r chi.Router) {
+		r.Use(bodyLimitMiddleware(MaxChatBody))
 		r.Post("/chat/completions", chatCompletionsHandler(deps))
 		r.Get("/models", modelsHandler)
 	})
 
 	r.Route("/admin", func(r chi.Router) {
 		r.Route("/api", func(r chi.Router) {
-			authCfg := deps.AuthConfig
-			r.Use(security.AdminAuth(func() (bool, string) { return authCfg.Get() }))
-			r.Get("/status", statusHandler(deps.Config, deps.RuntimeState))
+			r.Use(SecurityHeaders)
+			store := deps.Store
+			r.Use(security.AdminAuth(func() (bool, string) {
+				s := store.Load()
+				return s.Config.Security.AdminAuthEnabled, s.Config.Security.AdminTokenHash
+			}))
+			r.Use(HostGuard(snap.Config.Server.Host, snap.Config.Server.Port))
+			r.Use(RequireJSON)
+			r.Use(SameOriginAdmin("http://"+fmt.Sprintf("%s:%d", snap.Config.Server.Host, snap.Config.Server.Port)))
+			r.Get("/status", statusHandler(deps.Store, deps.RuntimeState, deps.Bulkhead))
 
 			adminDeps := &AdminDeps{
-				Config:        deps.Config,
-				Routes:        deps.Routes,
-				Profiles:      deps.Profiles,
-				Forwarder:     deps.Fwd,
+				Store:         deps.Store,
+				ConfigService: deps.ConfigService,
 				Observability: deps.ObsLogger,
 				RuntimeState:  deps.RuntimeState,
-				AuthConfig:    deps.AuthConfig,
 			}
 
 			r.Get("/config", getConfigHandler(adminDeps))
-			r.Put("/config", putConfigHandler(adminDeps))
+			r.Put("/config", limitBody(putConfigHandler(adminDeps), MaxAdminBody))
 
 			r.Get("/routes", getRoutesHandler(adminDeps))
-			r.Put("/routes", putRoutesHandler(adminDeps))
+			r.Put("/routes", limitBody(putRoutesHandler(adminDeps), MaxAdminBody))
 
 			r.Get("/profiles", getProfilesHandler(adminDeps))
-			r.Put("/profiles", putProfilesHandler(adminDeps))
+			r.Put("/profiles", limitBody(putProfilesHandler(adminDeps), MaxAdminBody))
+
+			r.Get("/security", getSecurityHandler(adminDeps))
+			r.Post("/security/token/rotate", rotateTokenHandler(adminDeps))
 
 			r.Post("/runtime/start", runtimeStartHandler(adminDeps))
 			r.Post("/runtime/stop", runtimeStopHandler(adminDeps))
 			r.Post("/runtime/restart", runtimeRestartHandler(adminDeps))
 
 			r.Get("/startup", getStartupHandler(adminDeps))
-			r.Put("/startup", putStartupHandler(adminDeps))
+			r.Put("/startup", limitBody(putStartupHandler(adminDeps), MaxAdminBody))
 
 			r.Get("/downstream/health", downstreamHealthHandler(adminDeps))
 
@@ -138,11 +110,11 @@ func New(deps *ServerDeps) *http.Server {
 			r.Post("/logs/clear", logsClearHandler(adminDeps))
 			r.Post("/diagnostics/export", diagnosticsExportHandler(adminDeps))
 
-			r.Post("/routing/dry-run", dryRunHandler(adminDeps))
+			r.Post("/routing/dry-run", limitBody(dryRunHandler(adminDeps), MaxAdminBody))
 
-			r.Post("/combo/test", comboTestHandler(adminDeps))
+			r.Post("/combo/test", limitBody(comboTestHandler(adminDeps), MaxAdminBody))
 
-			r.Post("/config/import", configImportHandler(adminDeps))
+			r.Post("/config/import", limitBody(configImportHandler(adminDeps), MaxImportBody))
 			r.Get("/config/export", configExportHandler(adminDeps))
 			r.Post("/config/reset", configResetHandler(adminDeps))
 		})
@@ -152,7 +124,7 @@ func New(deps *ServerDeps) *http.Server {
 	})
 
 	return &http.Server{
-		Addr:              fmt.Sprintf("%s:%d", deps.Config.Server.Host, deps.Config.Server.Port),
+		Addr:              fmt.Sprintf("%s:%d", snap.Config.Server.Host, snap.Config.Server.Port),
 		Handler:           r,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
@@ -169,8 +141,10 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func statusHandler(cfg *config.Config, runtimeState *runtimemod.State) http.HandlerFunc {
+func statusHandler(store *StateStore, runtimeState *runtimemod.State, bulkhead *WeightedBulkhead) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		snap := store.Load()
+		cfg := &snap.Config
 		runtimeStatus := string(runtimemod.StatusRunning)
 		runtimeMode := cfg.App.Mode
 		runtimeUptime := time.Since(startTime).String()
@@ -180,6 +154,10 @@ func statusHandler(cfg *config.Config, runtimeState *runtimemod.State) http.Hand
 			if u := runtimeState.GetUptime(); u > 0 {
 				runtimeUptime = u.String()
 			}
+		}
+		var bulkheadStats BulkheadStats
+		if bulkhead != nil {
+			bulkheadStats = bulkhead.Stats()
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -193,6 +171,8 @@ func statusHandler(cfg *config.Config, runtimeState *runtimemod.State) http.Hand
 			"privacy":    cfg.Logging.PrivacyMode,
 			"go_version": runtime.Version(),
 			"pid":        os.Getpid(),
+			"config_version": snap.Version,
+			"bulkhead":   bulkheadStats,
 		})
 	}
 }
@@ -221,15 +201,78 @@ func modelsHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type chatRequestEnvelope struct {
+	Model    string          `json:"model"`
+	Stream   *bool           `json:"stream"`
+	Messages json.RawMessage `json:"messages"`
+	Raw      json.RawMessage `json:"-"`
+}
+
+func decodeChatRequest(body []byte) (*chatRequestEnvelope, error) {
+	var env chatRequestEnvelope
+	if err := json.Unmarshal(body, &env); err != nil {
+		if len(body) == 0 {
+			return nil, &ValidationError{Message: "Request body must not be empty", Code: "invalid_request_error"}
+		}
+		return nil, &ValidationError{Message: "Invalid JSON", Code: "invalid_json"}
+	}
+	env.Raw = body
+	return &env, nil
+}
+
+func (env *chatRequestEnvelope) IsStream() bool {
+	return env.Stream != nil && *env.Stream
+}
+
+func (env *chatRequestEnvelope) Validate() *ValidationError {
+	if env.Messages == nil {
+		return &ValidationError{Message: "Missing required field: messages", Code: "invalid_request_error"}
+	}
+
+	var msgs []json.RawMessage
+	if err := json.Unmarshal(env.Messages, &msgs); err != nil || len(msgs) == 0 {
+		return &ValidationError{Message: "messages must not be empty", Code: "invalid_request_error"}
+	}
+	if len(msgs) > MaxMessages {
+		return &ValidationError{
+			Message: fmt.Sprintf("messages array exceeds maximum of %d entries", MaxMessages),
+			Code:    "invalid_request_error",
+		}
+	}
+	if len(env.Model) > MaxModelName {
+		return &ValidationError{
+			Message: fmt.Sprintf("model name exceeds maximum length of %d characters", MaxModelName),
+			Code:    "invalid_request_error",
+		}
+	}
+	for i, raw := range msgs {
+		var msg struct {
+			Content string `json:"content"`
+		}
+		if err := json.Unmarshal(raw, &msg); err == nil {
+			if len(msg.Content) > MaxMessageLen {
+				return &ValidationError{
+					Message: fmt.Sprintf("message %d content exceeds maximum length of %d characters", i, MaxMessageLen),
+					Code:    "invalid_request_error",
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func chatCompletionsHandler(deps *ServerDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Check runtime state only if provided
+		cw := &commitWriter{ResponseWriter: w}
+
+		snap := deps.Store.Load()
+
 		if deps.RuntimeState != nil {
 			mode := deps.RuntimeState.GetMode()
 			if mode == runtimemod.ModeDisabled {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusServiceUnavailable)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				cw.Header().Set("Content-Type", "application/json")
+				cw.WriteHeader(http.StatusServiceUnavailable)
+				json.NewEncoder(cw).Encode(map[string]interface{}{
 					"error": map[string]interface{}{
 						"message": "proxy is disabled",
 						"type":    "proxy_error",
@@ -239,13 +282,12 @@ func chatCompletionsHandler(deps *ServerDeps) http.HandlerFunc {
 				return
 			}
 
-			// Only check status if mode is not AlwaysOn (always on allows requests even when stopped)
 			if mode != runtimemod.ModeAlwaysOn {
 				status := deps.RuntimeState.GetStatus()
 				if status != runtimemod.StatusRunning {
-					w.Header().Set("Content-Type", "application/json")
-					w.WriteHeader(http.StatusServiceUnavailable)
-					json.NewEncoder(w).Encode(map[string]interface{}{
+					cw.Header().Set("Content-Type", "application/json")
+					cw.WriteHeader(http.StatusServiceUnavailable)
+					json.NewEncoder(cw).Encode(map[string]interface{}{
 						"error": map[string]interface{}{
 							"message": "proxy is not running",
 							"type":    "proxy_error",
@@ -258,11 +300,12 @@ func chatCompletionsHandler(deps *ServerDeps) http.HandlerFunc {
 		}
 
 		reqID, _ := r.Context().Value(RequestIDKey).(string)
+		reqID = validateRequestID(reqID)
 
-		if deps.Fwd == nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadGateway)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+		if snap.Forwarder == nil {
+			cw.Header().Set("Content-Type", "application/json")
+			cw.WriteHeader(http.StatusBadGateway)
+			json.NewEncoder(cw).Encode(map[string]interface{}{
 				"error": map[string]interface{}{
 					"message": "downstream service unavailable",
 					"type":    "proxy_error",
@@ -272,31 +315,82 @@ func chatCompletionsHandler(deps *ServerDeps) http.HandlerFunc {
 			return
 		}
 
-		body := readBodyForAnalysis(r)
-
-		if err := validateRequestBody(body); err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			if isMaxBytesError(err) {
+				cw.Header().Set("Content-Type", "application/json")
+				cw.WriteHeader(http.StatusRequestEntityTooLarge)
+				json.NewEncoder(cw).Encode(map[string]interface{}{
+					"error": map[string]interface{}{
+						"message": "request body too large",
+						"type":    "invalid_request_error",
+						"code":    "payload_too_large",
+					},
+				})
+				return
+			}
+			cw.Header().Set("Content-Type", "application/json")
+			cw.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(cw).Encode(map[string]interface{}{
 				"error": map[string]interface{}{
-					"message": err.Error(),
+					"message": "failed to read request body",
 					"type":    "invalid_request_error",
-					"code":    err.Code,
+					"code":    "body_read_error",
+				},
+			})
+			return
+		}
+		r.Body = newCloserReader(bytes.NewReader(body))
+
+		env, err := decodeChatRequest(body)
+		if err != nil {
+			ve := err.(*ValidationError)
+			cw.Header().Set("Content-Type", "application/json")
+			cw.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(cw).Encode(map[string]interface{}{
+				"error": map[string]interface{}{
+					"message": ve.Message,
+					"type":    "invalid_request_error",
+					"code":    ve.Code,
 				},
 			})
 			return
 		}
 
-		decision := analyzeAndRoute(r, body, deps.Routes, deps.Profiles, &deps.Config.Routing)
-		if deps.Config.Logging.MetadataLoggingEnabled {
+		if ve := env.Validate(); ve != nil {
+			cw.Header().Set("Content-Type", "application/json")
+			cw.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(cw).Encode(map[string]interface{}{
+				"error": map[string]interface{}{
+					"message": ve.Message,
+					"type":    "invalid_request_error",
+					"code":    ve.Code,
+				},
+			})
+			return
+		}
+
+		weight := WeightNonstream
+		if env.IsStream() {
+			weight = WeightStream
+		}
+
+		if !deps.Bulkhead.Acquire(weight, 5*time.Second) {
+			writeOverloadedJSON(cw, 2)
+			return
+		}
+		defer deps.Bulkhead.Release(weight)
+
+		decision := analyzeAndRoute(r, body, env.Model, env.IsStream(), &snap.Routes, &snap.Profiles, &snap.Config.Routing)
+		if snap.Config.Logging.MetadataLoggingEnabled {
 			logRoutingDecision(reqID, decision)
 			recordObservation(deps.ObsLogger, reqID, r, decision, body)
 		}
 
 		if decision.DownstreamAlias != "" && decision.OverrideSource == "smart_alias" {
-			if deps.Config.Routing.MetadataTransport == "header" {
+			if snap.Config.Routing.MetadataTransport == "header" {
 				r.Header.Set("X-Route-Intent", decision.DownstreamAlias)
-			} else if deps.Config.Routing.MetadataTransport == "model_alias" {
+			} else if snap.Config.Routing.MetadataTransport == "model_alias" {
 				rewritten, err := rewriteModelInBody(body, decision.DownstreamAlias)
 				if err != nil {
 					log.Printf("[%s] failed to rewrite model in body: %v", reqID, err)
@@ -308,54 +402,43 @@ func chatCompletionsHandler(deps *ServerDeps) http.HandlerFunc {
 			}
 		}
 
-		isStream := forwarder.IsStreamRequest(r)
-
-		if isStream {
-			err := deps.Fwd.ForwardStream(r.Context(), r, w, reqID)
+		if env.IsStream() {
+			err := snap.Forwarder.ForwardStream(r.Context(), r, cw, reqID)
 			if err != nil {
 				log.Printf("[%s] stream error: %v", reqID, err)
-				if !headersWritten(w) {
-					w.Header().Set("Content-Type", "application/json")
-					w.WriteHeader(http.StatusBadGateway)
-					json.NewEncoder(w).Encode(map[string]interface{}{
-						"error": map[string]interface{}{
-							"message": fmt.Sprintf("downstream error: %v", err),
-							"type":    "proxy_error",
-							"code":    "downstream_error",
-						},
-					})
-				}
+				writeJSONAfterCommit(cw, http.StatusBadGateway, map[string]interface{}{
+					"error": map[string]interface{}{
+						"message":        "downstream request failed",
+						"type":           "proxy_error",
+						"code":           "downstream_error",
+						"correlation_id": reqID,
+					},
+				})
 			}
 			return
 		}
 
-		result, err := deps.Fwd.Forward(r.Context(), r, reqID)
+		result, err := snap.Forwarder.Forward(r.Context(), r, reqID)
 		if err != nil {
 			log.Printf("[%s] forward error: %v", reqID, err)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadGateway)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			cw.Header().Set("Content-Type", "application/json")
+			cw.WriteHeader(http.StatusBadGateway)
+			json.NewEncoder(cw).Encode(map[string]interface{}{
 				"error": map[string]interface{}{
-					"message": fmt.Sprintf("downstream error: %v", err),
-					"type":    "proxy_error",
-					"code":    "downstream_error",
+					"message":        "downstream request failed",
+					"type":           "proxy_error",
+					"code":           "downstream_error",
+					"correlation_id": reqID,
 				},
 			})
 			return
 		}
 
-		for k, vv := range result.Headers {
-			if k == "Content-Type" || k == "X-Request-ID" {
-				continue
-			}
-			for _, v := range vv {
-				w.Header().Add(k, v)
-			}
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("X-Request-ID", reqID)
-		w.WriteHeader(result.StatusCode)
-		w.Write(result.Body)
+		copyAllowedHeaders(cw, result.Headers)
+		cw.Header().Set("Content-Type", "application/json")
+		cw.Header().Set("X-Request-ID", reqID)
+		cw.WriteHeader(result.StatusCode)
+		cw.Write(result.Body)
 	}
 }
 
@@ -369,50 +452,15 @@ func (e *ValidationError) Error() string {
 	return e.Message
 }
 
-// validateRequestBody checks that the body is valid JSON with a non-empty messages array.
-func validateRequestBody(body []byte) *ValidationError {
-	if len(body) == 0 {
-		return &ValidationError{Message: "Request body must not be empty", Code: "invalid_request_error"}
-	}
-
-	var req struct {
-		Messages []interface{} `json:"messages"`
-	}
-	if err := json.Unmarshal(body, &req); err != nil {
-		return &ValidationError{Message: "Invalid JSON", Code: "invalid_json"}
-	}
-
-	if req.Messages == nil {
-		return &ValidationError{Message: "Missing required field: messages", Code: "invalid_request_error"}
-	}
-	if len(req.Messages) == 0 {
-		return &ValidationError{Message: "messages must not be empty", Code: "invalid_request_error"}
-	}
-
-	return nil
-}
-
-func readBodyForAnalysis(r *http.Request) []byte {
-	if r.Body == nil {
-		return nil
-	}
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil
-	}
-	r.Body = newCloserReader(bytes.NewReader(body))
-	return body
-}
-
 func analyzeAndRoute(
 	r *http.Request,
 	body []byte,
+	model string,
+	isStream bool,
 	routes *config.RoutesConfig,
 	profiles *config.ProfilesConfig,
 	routingCfg *config.RoutingConfig,
 ) *routing.RoutingDecision {
-	model := extractModelFromBody(body)
-
 	analysis, err := analyzer.Analyze(bytes.NewReader(body))
 	if err != nil {
 		log.Printf("analysis error: %v", err)
@@ -431,19 +479,6 @@ func rewriteModelInBody(body []byte, model string) ([]byte, error) {
 	}
 	payload["model"] = model
 	return json.Marshal(payload)
-}
-
-func extractModelFromBody(body []byte) string {
-	if body == nil {
-		return ""
-	}
-	var req struct {
-		Model string `json:"model"`
-	}
-	if err := json.Unmarshal(body, &req); err != nil {
-		return ""
-	}
-	return req.Model
 }
 
 func logRoutingDecision(reqID string, decision *routing.RoutingDecision) {
@@ -467,8 +502,12 @@ func recordObservation(obsLogger *observability.Logger, reqID string, r *http.Re
 		return
 	}
 
-	model := extractModelFromBody(body)
-	isStream := strings.Contains(strings.ToLower(string(body)), `"stream":true`)
+	model := extractModelFromRaw(body)
+
+	var isStream bool
+	if idx := bytes.Index(body, []byte(`"stream"`)); idx >= 0 {
+		isStream = bytes.Contains(body[idx:min(idx+20, len(body))], []byte("true"))
+	}
 
 	entry := observability.LogEntry{
 		RequestID:   reqID,
@@ -488,8 +527,24 @@ func recordObservation(obsLogger *observability.Logger, reqID string, r *http.Re
 	obsLogger.Record(entry)
 }
 
-func headersWritten(w http.ResponseWriter) bool {
-	return false
+func extractModelFromRaw(body []byte) string {
+	if body == nil {
+		return ""
+	}
+	var req struct {
+		Model string `json:"model"`
+	}
+	if err := json.Unmarshal(body, &req); err != nil {
+		return ""
+	}
+	return req.Model
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func adminPlaceholder(w http.ResponseWriter, r *http.Request) {

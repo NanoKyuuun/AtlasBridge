@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/atlasbridge/atlasbridge/internal/config"
 	"github.com/atlasbridge/atlasbridge/internal/forwarder"
@@ -19,21 +20,21 @@ import (
 )
 
 type App struct {
-	cfg        *config.Config
-	server     *http.Server
-	listener   net.Listener
-	routes     *config.RoutesConfig
-	profiles   *config.ProfilesConfig
-	state      *runtime.State
-	tray       *tray.Tray
-	quitCh     chan struct{}
-	authConfig *server.AuthConfig
+	cfg           *config.Config
+	server        *http.Server
+	listener      net.Listener
+	routes        *config.RoutesConfig
+	profiles      *config.ProfilesConfig
+	state         *runtime.State
+	tray          *tray.Tray
+	quitCh        chan struct{}
+	errCh         chan error
+	store         *server.StateStore
+	configService *server.ConfigService
 }
 
 func effectiveHost(cfg *config.Config) string {
-	if cfg.Security.BindLocalhostOnly && !cfg.Security.AllowLANAccess {
-		return "127.0.0.1"
-	}
+	config.EnforceNetworkInvariants(cfg)
 	return cfg.Server.Host
 }
 
@@ -59,32 +60,42 @@ func New(cfg *config.Config, routes *config.RoutesConfig, profiles *config.Profi
 
 	obsLogger := observability.NewLogger(observability.DefaultMaxEntries)
 
-	authCfg := &server.AuthConfig{
-		Enabled:   cfg.Security.AdminAuthEnabled,
-		TokenHash: cfg.Security.AdminTokenHash,
+	retentionDays := cfg.Logging.RetentionDays
+	if retentionDays <= 0 {
+		retentionDays = 7
 	}
 
+	snap := &server.Snapshot{
+		Config:    *cfg,
+		Routes:    *routes,
+		Profiles:  *profiles,
+		Forwarder: fwd,
+		Version:   1,
+		CreatedAt: time.Now(),
+	}
+	store := server.NewStateStore(snap)
+	cs := server.NewConfigService(store)
+
 	deps := &server.ServerDeps{
-		Config:       cfg,
-		Routes:       routes,
-		Profiles:     profiles,
-		Fwd:          fwd,
-		ObsLogger:    obsLogger,
-		RuntimeState: state,
-		AuthConfig:   authCfg,
+		Store:         store,
+		ConfigService: cs,
+		ObsLogger:     obsLogger,
+		RuntimeState:  state,
 	}
 
 	srv := server.New(deps)
 
 	return &App{
-		cfg:        cfg,
-		server:     srv,
-		listener:   ln,
-		routes:     routes,
-		profiles:   profiles,
-		state:      state,
-		quitCh:     make(chan struct{}),
-		authConfig: authCfg,
+		cfg:           cfg,
+		server:        srv,
+		listener:      ln,
+		routes:        routes,
+		profiles:      profiles,
+		state:         state,
+		quitCh:        make(chan struct{}),
+		errCh:         make(chan error, 1),
+		store:         store,
+		configService: cs,
 	}, nil
 }
 
@@ -101,6 +112,10 @@ func (a *App) Run() error {
 			if err := config.Save(a.cfg); err != nil {
 				log.Printf("WARNING: failed to save config with admin token: %v", err)
 			}
+			tokenPath := config.TokenFilePath()
+			if err := os.WriteFile(tokenPath, []byte(rawToken), 0o600); err != nil {
+				log.Printf("WARNING: failed to write token file for CLI access: %v", err)
+			}
 			fmt.Fprint(os.Stdout, "\n")
 			fmt.Fprintf(os.Stdout, "  ADMIN TOKEN: %s\n", rawToken)
 			fmt.Fprint(os.Stdout, "  This token will NOT be shown again.\n")
@@ -108,8 +123,6 @@ func (a *App) Run() error {
 			fmt.Fprint(os.Stdout, "\n")
 		}
 	}
-
-	a.authConfig.Set(a.cfg.Security.AdminAuthEnabled, a.cfg.Security.AdminTokenHash)
 
 	a.tray = tray.New(a.cfg, a.state)
 
@@ -129,7 +142,7 @@ func (a *App) Run() error {
 	addr := fmt.Sprintf("%s:%d", a.cfg.Server.Host, a.cfg.Server.Port)
 	log.Printf("AtlasBridge v%s starting", server.Version)
 	log.Printf("Listening on http://%s", addr)
-	log.Printf("API endpoint: http://%s%s", addr, a.cfg.Server.APIBasePath)
+	log.Printf("API endpoint: http://%s/v1", addr)
 	log.Printf("Admin UI:     http://%s%s", addr, a.cfg.Server.AdminPath)
 	log.Printf("Health check: http://%s/health", addr)
 	log.Printf("Downstream:   %s", a.cfg.Downstream.BaseURL)
@@ -139,7 +152,7 @@ func (a *App) Run() error {
 	if err := a.server.Serve(a.listener); err != nil && err != http.ErrServerClosed {
 		a.state.SetError(err.Error())
 		a.tray.Update()
-		return fmt.Errorf("server error: %w", err)
+		a.errCh <- fmt.Errorf("server error: %w", err)
 	}
 	return nil
 }
@@ -148,15 +161,25 @@ func (a *App) WaitQuit() {
 	<-a.quitCh
 }
 
+func (a *App) ErrCh() <-chan error {
+	return a.errCh
+}
+
 func (a *App) Shutdown() {
 	log.Println("AtlasBridge shutting down...")
 	a.state.SetStatus(runtime.StatusStopped)
 	if a.tray != nil {
 		a.tray.Update()
 	}
-	if err := a.server.Shutdown(context.Background()); err != nil {
-		log.Printf("shutdown error: %v", err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := a.server.Shutdown(ctx); err != nil {
+		log.Printf("graceful shutdown timed out, forcing close: %v", err)
+		a.server.Close()
 	}
+
 	startup.ReleaseLock()
 	log.Println("AtlasBridge stopped.")
 }

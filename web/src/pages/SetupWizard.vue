@@ -187,10 +187,8 @@ const config = reactive({
     host: "127.0.0.1",
     port: 20127,
     admin_path: "/admin",
-    api_base_path: "/v1",
   },
   downstream: {
-    type: "9router",
     base_url: "http://127.0.0.1:20128/v1",
     timeout_seconds: 120,
   },
@@ -198,7 +196,6 @@ const config = reactive({
     auto_routing: true,
     default_route: "route.default",
     low_confidence_route: "route.default",
-    explicit_override_enabled: true,
     confidence_threshold: 0.55,
   },
   app: {

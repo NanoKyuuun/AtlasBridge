@@ -78,7 +78,6 @@ const dirty = ref(false);
 const health = ref<DownstreamHealth | null>(null);
 
 const downstream = ref({
-  type: "9router",
   base_url: "http://127.0.0.1:20128/v1",
   timeout_seconds: 120,
 });

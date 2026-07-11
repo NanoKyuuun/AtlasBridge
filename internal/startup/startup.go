@@ -4,46 +4,54 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
+	"time"
 
 	"github.com/atlasbridge/atlasbridge/internal/config"
+	"github.com/gofrs/flock"
 )
 
 var (
-	instanceLock *sync.Mutex
-	once         sync.Once
-	lockFile     string
+	fileLock    *flock.Flock
+	lockPath    string
+	PIDMetadata *PIDInfo
 )
 
-func Init() error {
-	once.Do(func() {
-		lockFile = filepath.Join(config.ConfigDir(), ".instance.lock")
-	})
-	return acquireLock()
+type PIDInfo struct {
+	PID       int       `json:"pid"`
+	StartedAt time.Time `json:"started_at"`
 }
 
-func acquireLock() error {
-	instanceLock = &sync.Mutex{}
-	instanceLock.Lock()
+func Init() error {
+	lockPath = filepath.Join(config.ConfigDir(), ".instance.lock")
 
-	if _, err := os.Stat(lockFile); os.IsNotExist(err) {
-		f, err := os.Create(lockFile)
-		if err != nil {
-			return fmt.Errorf("failed to create lock file: %w", err)
-		}
-		f.Close()
-		return nil
+	if err := os.MkdirAll(config.ConfigDir(), 0o700); err != nil {
+		return fmt.Errorf("create config dir: %w", err)
 	}
 
-	instanceLock.Unlock()
-	return fmt.Errorf("another instance is already running")
+	fileLock = flock.New(lockPath)
+
+	locked, err := fileLock.TryLock()
+	if err != nil {
+		return fmt.Errorf("failed to acquire lock: %w", err)
+	}
+	if !locked {
+		return fmt.Errorf("another instance is already running (lock held by another process)")
+	}
+
+	PIDMetadata = &PIDInfo{
+		PID:       os.Getpid(),
+		StartedAt: time.Now(),
+	}
+
+	return nil
 }
 
 func ReleaseLock() {
-	if instanceLock != nil {
-		os.Remove(lockFile)
-		instanceLock.Unlock()
+	if fileLock != nil {
+		fileLock.Unlock()
+		fileLock = nil
 	}
+	PIDMetadata = nil
 }
 
 func SetRunAtLogin(enable bool) error {

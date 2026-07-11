@@ -49,9 +49,8 @@ export interface AppConfig {
     host: string;
     port: number;
     admin_path: string;
-    api_base_path: string;
   };
-  downstream: { type: string; base_url: string; timeout_seconds: number };
+  downstream: { base_url: string; timeout_seconds: number };
   security: {
     admin_auth_enabled: boolean;
     admin_token_hash: string;
@@ -67,8 +66,9 @@ export interface AppConfig {
     auto_routing: boolean;
     default_route: string;
     low_confidence_route: string;
-    explicit_override_enabled: boolean;
     confidence_threshold: number;
+    smart_fast_route: string;
+    metadata_transport: string;
   };
   logging: {
     level: string;

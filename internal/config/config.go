@@ -34,14 +34,12 @@ type AppConfig struct {
 }
 
 type ServerConfig struct {
-	Host        string `yaml:"host" json:"host"`
-	Port        int    `yaml:"port" json:"port"`
-	AdminPath   string `yaml:"admin_path" json:"admin_path"`
-	APIBasePath string `yaml:"api_base_path" json:"api_base_path"`
+	Host      string `yaml:"host" json:"host"`
+	Port      int    `yaml:"port" json:"port"`
+	AdminPath string `yaml:"admin_path" json:"admin_path"`
 }
 
 type DownstreamConfig struct {
-	Type           string `yaml:"type" json:"type"`
 	BaseURL        string `yaml:"base_url" json:"base_url"`
 	TimeoutSeconds int    `yaml:"timeout_seconds" json:"timeout_seconds"`
 }
@@ -60,13 +58,12 @@ type StartupConfig struct {
 }
 
 type RoutingConfig struct {
-	AutoRouting             bool    `yaml:"auto_routing" json:"auto_routing"`
-	DefaultRoute            string  `yaml:"default_route" json:"default_route"`
-	LowConfidenceRoute      string  `yaml:"low_confidence_route" json:"low_confidence_route"`
-	ExplicitOverrideEnabled bool    `yaml:"explicit_override_enabled" json:"explicit_override_enabled"`
-	ConfidenceThreshold     float64 `yaml:"confidence_threshold" json:"confidence_threshold"`
-	SmartFastRoute          string  `yaml:"smart_fast_route" json:"smart_fast_route"`
-	MetadataTransport       string  `yaml:"metadata_transport" json:"metadata_transport"`
+	AutoRouting         bool    `yaml:"auto_routing" json:"auto_routing"`
+	DefaultRoute        string  `yaml:"default_route" json:"default_route"`
+	LowConfidenceRoute  string  `yaml:"low_confidence_route" json:"low_confidence_route"`
+	ConfidenceThreshold float64 `yaml:"confidence_threshold" json:"confidence_threshold"`
+	SmartFastRoute      string  `yaml:"smart_fast_route" json:"smart_fast_route"`
+	MetadataTransport   string  `yaml:"metadata_transport" json:"metadata_transport"`
 }
 
 type LoggingConfig struct {
@@ -85,18 +82,16 @@ func DefaultConfig() *Config {
 			FirstRunCompleted: false,
 		},
 		Server: ServerConfig{
-			Host:        DefaultHost,
-			Port:        DefaultPort,
-			AdminPath:   "/admin",
-			APIBasePath: "/v1",
+			Host:      DefaultHost,
+			Port:      DefaultPort,
+			AdminPath: "/admin",
 		},
 		Downstream: DownstreamConfig{
-			Type:           "9router",
 			BaseURL:        DefaultDownstreamURL,
 			TimeoutSeconds: 120,
 		},
 		Security: SecurityConfig{
-			AdminAuthEnabled:  false,
+			AdminAuthEnabled:  true,
 			BindLocalhostOnly: true,
 			AllowLANAccess:    false,
 		},
@@ -106,13 +101,12 @@ func DefaultConfig() *Config {
 			RestartAfterCrash:     true,
 		},
 		Routing: RoutingConfig{
-			AutoRouting:             true,
-			DefaultRoute:            "route.default",
-			LowConfidenceRoute:      "route.default",
-			ExplicitOverrideEnabled: true,
-			ConfidenceThreshold:     0.55,
-			SmartFastRoute:          "route.low_cost",
-			MetadataTransport:       "model_alias",
+			AutoRouting:         true,
+			DefaultRoute:        "route.default",
+			LowConfidenceRoute:  "route.default",
+			ConfidenceThreshold: 0.55,
+			SmartFastRoute:      "route.low_cost",
+			MetadataTransport:   "model_alias",
 		},
 		Logging: LoggingConfig{
 			Level:                  "info",
@@ -149,6 +143,10 @@ func ProfilesPath() string {
 	return filepath.Join(ConfigDir(), "profiles.yaml")
 }
 
+func TokenFilePath() string {
+	return filepath.Join(ConfigDir(), ".token")
+}
+
 func Load() (*Config, error) {
 	cfg := DefaultConfig()
 
@@ -156,7 +154,7 @@ func Load() (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(ConfigDir(), 0o755); err != nil {
+			if err := os.MkdirAll(ConfigDir(), 0o700); err != nil {
 				return nil, fmt.Errorf("create config dir: %w", err)
 			}
 			if err := Save(cfg); err != nil {
@@ -175,6 +173,8 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("validate config: %w", err)
 	}
 
+	EnforceNetworkInvariants(cfg)
+
 	return cfg, nil
 }
 
@@ -183,7 +183,7 @@ func Save(cfg *Config) error {
 	if err != nil {
 		return fmt.Errorf("marshal config: %w", err)
 	}
-	return os.WriteFile(ConfigPath(), data, 0o644)
+	return saveWithBackup(ConfigPath(), data, 0o600)
 }
 
 func Validate(cfg *Config) error {
@@ -214,7 +214,19 @@ func Validate(cfg *Config) error {
 	if cfg.Routing.MetadataTransport != "" && !validMetadataTransport[cfg.Routing.MetadataTransport] {
 		return fmt.Errorf("invalid metadata_transport: %s (must be model_alias or header)", cfg.Routing.MetadataTransport)
 	}
+	if cfg.Security.AllowLANAccess && !cfg.Security.AdminAuthEnabled {
+		return fmt.Errorf("admin auth must be enabled when LAN access is allowed")
+	}
 	return nil
+}
+
+// EnforceNetworkInvariants applies one-way security invariants to the config.
+// If LAN access is not allowed, the server host is forced to loopback
+// regardless of what BindLocalhostOnly or Host says.
+func EnforceNetworkInvariants(cfg *Config) {
+	if !cfg.Security.AllowLANAccess {
+		cfg.Server.Host = "127.0.0.1"
+	}
 }
 
 func validateDownstreamURL(rawURL string) error {
@@ -227,6 +239,15 @@ func validateDownstreamURL(rawURL string) error {
 	}
 	if parsed.Host == "" {
 		return fmt.Errorf("host cannot be empty")
+	}
+	if parsed.User != nil {
+		return fmt.Errorf("credentials in URL are not allowed")
+	}
+	if parsed.Fragment != "" {
+		return fmt.Errorf("URL fragments are not allowed")
+	}
+	if len(parsed.RawQuery) > 0 {
+		return fmt.Errorf("URL query strings are not allowed for downstream")
 	}
 	return nil
 }
@@ -294,5 +315,6 @@ func LoadFull() (*Config, *RoutesConfig, *ProfilesConfig, error) {
 	if err := ValidateFull(cfg, routes, profiles); err != nil {
 		return nil, nil, nil, fmt.Errorf("validate config: %w", err)
 	}
+	EnforceNetworkInvariants(cfg)
 	return cfg, routes, profiles, nil
 }

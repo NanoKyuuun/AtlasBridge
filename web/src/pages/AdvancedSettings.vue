@@ -160,10 +160,8 @@ const server = ref({
   host: "127.0.0.1",
   port: 20127,
   admin_path: "/admin",
-  api_base_path: "/v1",
 });
 const downstream = ref({
-  type: "9router",
   base_url: "http://127.0.0.1:20128/v1",
   timeout_seconds: 120,
 });

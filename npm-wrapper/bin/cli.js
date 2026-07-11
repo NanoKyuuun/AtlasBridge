@@ -17,6 +17,17 @@ function getConfigDir() {
     return path.join(os.homedir(), '.config', APP_NAME);
 }
 
+function getToken() {
+    const configDir = getConfigDir();
+    const tokenFile = path.join(configDir, '.token');
+    try {
+        if (fs.existsSync(tokenFile)) {
+            return fs.readFileSync(tokenFile, 'utf8').trim();
+        }
+    } catch { /* ignore read errors */ }
+    return null;
+}
+
 function getBinaryPath() {
     const configDir = getConfigDir();
     const binaryName = process.platform === 'win32' ? 'atlasbridge.exe' : 'atlasbridge';
@@ -56,23 +67,35 @@ function checkStatus() {
 }
 
 function openBrowser(url) {
-    const start = process.platform === 'win32' ? 'start' : 
-                 process.platform === 'darwin' ? 'open' : 'xdg-open';
-    require('child_process').spawn(start, [url], { detached: true, stdio: 'ignore' });
+    if (process.platform === 'win32') {
+        require('child_process').spawn('cmd.exe', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' });
+    } else {
+        const cmd = process.platform === 'darwin' ? 'open' : 'xdg-open';
+        require('child_process').spawn(cmd, [url], { detached: true, stdio: 'ignore' });
+    }
 }
 
 async function stopViaAPI() {
     try {
         const http = require('http');
         const data = JSON.stringify({});
+        const headers = { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) };
+        const token = getToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
         const options = {
             hostname: '127.0.0.1',
             port: parseInt(DEFAULT_PORT),
             path: '/admin/api/runtime/stop',
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Content-Length': data.length },
+            headers,
         };
         const req = http.request(options, (res) => {
+            if (res.statusCode === 401) {
+                console.error('Error: Admin auth is enabled. Set the Bearer token in ~/.config/AtlasBridge/.token or pass it via ATLASBRIDGE_TOKEN environment variable.');
+                process.exit(1);
+            }
             console.log(`Stop request sent (status: ${res.statusCode})`);
         });
         req.on('error', (err) => {

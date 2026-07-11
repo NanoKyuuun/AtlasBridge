@@ -3,6 +3,7 @@ package security
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -25,7 +26,7 @@ func HashToken(token string) string {
 }
 
 func VerifyToken(token, hash string) bool {
-	return HashToken(token) == hash
+	return subtle.ConstantTimeCompare([]byte(HashToken(token)), []byte(hash)) == 1
 }
 
 // EnsureToken checks whether a token hash exists. If not, it generates a

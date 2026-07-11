@@ -39,7 +39,7 @@ func LoadRoutes() (*RoutesConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(ConfigDir(), 0o755); err != nil {
+			if err := os.MkdirAll(ConfigDir(), 0o700); err != nil {
 				return nil, fmt.Errorf("create config dir: %w", err)
 			}
 			if err := SaveRoutes(cfg); err != nil {
@@ -62,5 +62,5 @@ func SaveRoutes(cfg *RoutesConfig) error {
 	if err != nil {
 		return fmt.Errorf("marshal routes: %w", err)
 	}
-	return os.WriteFile(RoutesPath(), data, 0o644)
+	return saveWithBackup(RoutesPath(), data, 0o600)
 }

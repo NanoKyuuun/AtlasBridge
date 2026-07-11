@@ -117,10 +117,10 @@
           </label>
 
           <div class="grid gap-3 sm:grid-cols-2">
-            <div class="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
-              <div class="text-xs uppercase tracking-[0.22em] text-emerald-200">Redaction status</div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Redaction status</div>
               <div class="mt-2 text-sm font-semibold text-white">
-                {{ redactSecrets ? 'Protected' : 'Unprotected' }}
+                {{ redactSecrets ? 'Enabled (backend enforced)' : 'Disabled' }}
               </div>
             </div>
             <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -168,7 +168,7 @@
               <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Secret redaction</div>
               <div class="mt-2 flex items-center gap-2 text-sm text-white">
                 <span class="h-2 w-2 rounded-full" :class="redactSecrets ? 'bg-cyan-400 shadow-[0_0_10px_rgba(53,215,242,0.45)]' : 'bg-slate-500'"></span>
-                {{ redactSecrets ? 'Protected' : 'Off' }}
+                {{ redactSecrets ? 'Enabled' : 'Off' }}
               </div>
             </div>
 

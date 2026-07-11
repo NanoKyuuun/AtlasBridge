@@ -34,8 +34,8 @@ func TestNewDefaultTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if f.client.Timeout != 120*time.Second {
-		t.Errorf("expected default timeout 120s, got %v", f.client.Timeout)
+	if f.nonstreamClient.Timeout != 120*time.Second {
+		t.Errorf("expected default timeout 120s, got %v", f.nonstreamClient.Timeout)
 	}
 }
 
