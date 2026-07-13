@@ -53,7 +53,7 @@ export interface AppConfig {
   downstream: { base_url: string; timeout_seconds: number };
   security: {
     admin_auth_enabled: boolean;
-    admin_token_hash: string;
+    token_configured: boolean;
     bind_localhost_only: boolean;
     allow_lan_access: boolean;
   };

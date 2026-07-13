@@ -629,3 +629,20 @@ func TestSafePassthroughRequestStillForwarded(t *testing.T) {
 		t.Error("override_source must be non-empty for safe passthrough")
 	}
 }
+
+func TestSmartAutoHonorsCustomRoutes(t *testing.T) {
+	routes := config.DefaultRoutesConfig()
+	profiles := config.DefaultProfilesConfig()
+	routingCfg := defaultRoutingCfg()
+
+	routes.TaskRoutes["backend_engineering"] = "route.low_cost"
+
+	analysis := &analyzer.Analysis{ComplexitySignal: "medium", DetectedKeywords: []string{"backend"}}
+	classification := classifier.Classify(analysis)
+
+	decision := Resolve("smart-auto", analysis, classification, routes, profiles, routingCfg)
+
+	if decision.RouteKey != "route.low_cost" {
+		t.Errorf("expected custom route route.low_cost, got %s", decision.RouteKey)
+	}
+}

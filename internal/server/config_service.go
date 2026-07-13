@@ -85,13 +85,6 @@ func (cs *ConfigService) ApplyConfigPatch(patch map[string]json.RawMessage) (*Co
 		}
 	}
 
-	if err := config.Validate(&merged); err != nil {
-		return nil, fmt.Errorf("validation failed: %w", err)
-	}
-
-	restartRequired := merged.Server.Host != current.Config.Server.Host ||
-		merged.Server.Port != current.Config.Server.Port
-
 	var adminToken string
 	if merged.Security.AdminAuthEnabled {
 		var err error
@@ -100,6 +93,13 @@ func (cs *ConfigService) ApplyConfigPatch(patch map[string]json.RawMessage) (*Co
 			return nil, fmt.Errorf("generate token: %w", err)
 		}
 	}
+
+	if err := config.Validate(&merged); err != nil {
+		return nil, fmt.Errorf("validation failed: %w", err)
+	}
+
+	restartRequired := merged.Server.Host != current.Config.Server.Host ||
+		merged.Server.Port != current.Config.Server.Port
 
 	fwd := current.Forwarder
 	if merged.Downstream.BaseURL != current.Config.Downstream.BaseURL ||
@@ -264,11 +264,15 @@ func (cs *ConfigService) ApplyStartup(startupCfg config.StartupConfig) error {
 
 // Reset restores all config, routes, and profiles to defaults atomically.
 // All three files are persisted before the snapshot is swapped.
+// The current admin token hash is preserved to prevent lockout.
 func (cs *ConfigService) Reset() error {
 	cs.store.persistMu.Lock()
 	defer cs.store.persistMu.Unlock()
 
+	current := cs.store.Load()
+
 	cfg := config.DefaultConfig()
+	cfg.Security.AdminTokenHash = current.Config.Security.AdminTokenHash
 	routes := config.DefaultRoutesConfig()
 	profiles := config.DefaultProfilesConfig()
 
@@ -325,6 +329,9 @@ func (cs *ConfigService) Import(body []byte) error {
 
 	if imported.Config != nil {
 		cfg = *imported.Config
+		if cfg.Security.AdminTokenHash == "" {
+			cfg.Security.AdminTokenHash = current.Config.Security.AdminTokenHash
+		}
 	}
 	if imported.Routes != nil {
 		routes = *imported.Routes

@@ -50,6 +50,10 @@ func New(deps *ServerDeps) *http.Server {
 
 	snap := deps.Store.Load()
 
+	if snap.Config.Security.AllowLANAccess {
+		log.Println("SECURITY WARNING: LAN access is enabled — /v1 data plane requires admin token authentication")
+	}
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.RealIP)
@@ -59,15 +63,20 @@ func New(deps *ServerDeps) *http.Server {
 
 	r.Get("/health", healthHandler)
 
+	store := deps.Store
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(bodyLimitMiddleware(MaxChatBody))
+		r.Use(dataPlaneAuth(func() (bool, string) {
+			s := store.Load()
+			return s.Config.Security.AllowLANAccess && s.Config.Security.AdminAuthEnabled, s.Config.Security.AdminTokenHash
+		}))
 		r.Post("/chat/completions", chatCompletionsHandler(deps))
 		r.Get("/models", modelsHandler)
 	})
 
 	r.Route("/admin", func(r chi.Router) {
+		r.Use(SecurityHeaders)
 		r.Route("/api", func(r chi.Router) {
-			r.Use(SecurityHeaders)
 			store := deps.Store
 			r.Use(security.AdminAuth(func() (bool, string) {
 				s := store.Load()

@@ -15,6 +15,7 @@ import (
 	"github.com/atlasbridge/atlasbridge/internal/analyzer"
 	"github.com/atlasbridge/atlasbridge/internal/classifier"
 	"github.com/atlasbridge/atlasbridge/internal/config"
+	"github.com/atlasbridge/atlasbridge/internal/netutil"
 	"github.com/atlasbridge/atlasbridge/internal/observability"
 	"github.com/atlasbridge/atlasbridge/internal/routing"
 	runtimemod "github.com/atlasbridge/atlasbridge/internal/runtime"
@@ -285,6 +286,14 @@ func downstreamHealthHandler(deps *AdminDeps) http.HandlerFunc {
 			return
 		}
 		healthURL := fmt.Sprintf("%s://%s/health", parsed.Scheme, parsed.Host)
+		if err := netutil.ValidateDownstreamURL(healthURL); err != nil {
+			log.Printf("downstream health: URL validation failed: %v", err)
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"status":  "unavailable",
+				"message": "downstream URL failed security validation",
+			})
+			return
+		}
 		resp, err := client.Get(healthURL)
 		if err != nil {
 			log.Printf("downstream health: unreachable: %v", err)

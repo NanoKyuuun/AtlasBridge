@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"log"
 	"mime"
@@ -10,6 +12,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -169,6 +172,38 @@ func HostGuard(expectedHost string, expectedPort int) func(http.Handler) http.Ha
 					http.Error(w, `{"error":{"message":"forbidden host","type":"auth_error"}}`, http.StatusForbidden)
 					return
 				}
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// dataPlaneAuth guards the /v1 data plane when LAN access is active.
+// When the getter returns enabled=true, requests must carry a valid Bearer
+// token. When disabled (localhost-only mode), requests pass through unauthenticated.
+func dataPlaneAuth(getter func() (bool, string)) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			enabled, tokenHash := getter()
+			if !enabled {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			token := r.Header.Get("Authorization")
+			token = strings.TrimPrefix(token, "Bearer ")
+
+			if token == "" {
+				http.Error(w, `{"error":{"message":"unauthorized — LAN mode requires authentication","type":"auth_error"}}`, http.StatusUnauthorized)
+				return
+			}
+
+			h := sha256.Sum256([]byte(token))
+			hash := hex.EncodeToString(h[:])
+			if subtle.ConstantTimeCompare([]byte(hash), []byte(tokenHash)) != 1 {
+				http.Error(w, `{"error":{"message":"invalid token","type":"auth_error"}}`, http.StatusUnauthorized)
+				return
 			}
 
 			next.ServeHTTP(w, r)

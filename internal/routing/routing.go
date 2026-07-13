@@ -107,7 +107,7 @@ func Resolve(
 	var d *RoutingDecision
 
 	if alias, ok := detectSmartAlias(model); ok {
-		d = resolveSmartAlias(alias, classification, profiles, routingCfg)
+		d = resolveSmartAlias(alias, classification, routes, profiles, routingCfg)
 	} else if isManualModelOverride(model, classification) {
 		d = resolveManualOverride(model, classification, routes, profiles, routingCfg)
 	} else {
@@ -159,6 +159,7 @@ func isManualModelOverride(model string, classification *classifier.Classificati
 func resolveSmartAlias(
 	alias SmartAlias,
 	classification *classifier.Classification,
+	routes *config.RoutesConfig,
 	profiles *config.ProfilesConfig,
 	routingCfg *config.RoutingConfig,
 ) *RoutingDecision {
@@ -173,8 +174,7 @@ func resolveSmartAlias(
 	}
 
 	if routeKey == "" && classification != nil {
-		autoRoutes := config.DefaultRoutesConfig()
-		if r, ok := autoRoutes.TaskRoutes[classification.TaskType]; ok {
+		if r, ok := routes.TaskRoutes[classification.TaskType]; ok {
 			routeKey = r
 		}
 	}

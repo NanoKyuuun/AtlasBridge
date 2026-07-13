@@ -19,7 +19,7 @@ export const MOCK_CONFIG = {
   downstream: { base_url: "http://127.0.0.1:20128/v1", timeout_seconds: 120 },
   security: {
     admin_auth_enabled: true,
-    admin_token_hash: "abc123",
+    token_configured: true,
     bind_localhost_only: true,
     allow_lan_access: false,
   },
@@ -61,18 +61,18 @@ export const MOCK_ROUTES = {
 
 export const MOCK_PROFILES = {
   route_profiles: {
-    "route.default": { label: "Default", description: "Standard routing", downstream_alias: "default", priority: "normal", enabled: true },
-    "route.backend": { label: "Backend", description: "Backend engineering", downstream_alias: "backend", priority: "normal", enabled: true },
-    "route.frontend": { label: "Frontend", description: "Frontend engineering", downstream_alias: "frontend", priority: "normal", enabled: true },
-    "route.debugging": { label: "Debugging", description: "Debug tasks", downstream_alias: "debug", priority: "high", enabled: true },
-    "route.design": { label: "Design", description: "Design tasks", downstream_alias: "design", priority: "normal", enabled: true },
-    "route.refactoring": { label: "Refactoring", description: "Code refactoring", downstream_alias: "refactor", priority: "normal", enabled: true },
-    "route.testing": { label: "Testing", description: "Test generation", downstream_alias: "testing", priority: "normal", enabled: true },
-    "route.documentation": { label: "Documentation", description: "Documentation", downstream_alias: "docs", priority: "low", enabled: true },
-    "route.architect": { label: "Architecture", description: "Architecture design", downstream_alias: "architect", priority: "high", enabled: true },
-    "route.security": { label: "Security", description: "Security review", downstream_alias: "security", priority: "high", enabled: true },
-    "route.long_context": { label: "Long Context", description: "Long context analysis", downstream_alias: "long_context", priority: "normal", enabled: true },
-    "route.low_cost": { label: "Low Cost", description: "Cost-optimized", downstream_alias: "low_cost", priority: "low", enabled: true },
+    "route.default": { label: "Default", description: "Standard routing", downstream_alias: "default", priority: "balanced", enabled: true },
+    "route.backend": { label: "Backend", description: "Backend engineering", downstream_alias: "backend", priority: "balanced", enabled: true },
+    "route.frontend": { label: "Frontend", description: "Frontend engineering", downstream_alias: "frontend", priority: "balanced", enabled: true },
+    "route.debugging": { label: "Debugging", description: "Debug tasks", downstream_alias: "debug", priority: "quality", enabled: true },
+    "route.design": { label: "Design", description: "Design tasks", downstream_alias: "design", priority: "balanced", enabled: true },
+    "route.refactoring": { label: "Refactoring", description: "Code refactoring", downstream_alias: "refactor", priority: "balanced", enabled: true },
+    "route.testing": { label: "Testing", description: "Test generation", downstream_alias: "testing", priority: "balanced", enabled: true },
+    "route.documentation": { label: "Documentation", description: "Documentation", downstream_alias: "docs", priority: "cost", enabled: true },
+    "route.architect": { label: "Architecture", description: "Architecture design", downstream_alias: "architect", priority: "quality", enabled: true },
+    "route.security": { label: "Security", description: "Security review", downstream_alias: "security", priority: "quality", enabled: true },
+    "route.long_context": { label: "Long Context", description: "Long context analysis", downstream_alias: "long_context", priority: "balanced", enabled: true },
+    "route.low_cost": { label: "Low Cost", description: "Cost-optimized", downstream_alias: "low_cost", priority: "cost", enabled: true },
   },
 };
 

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/atlasbridge/atlasbridge/internal/security"
 	"gopkg.in/yaml.v3"
 )
 
@@ -157,6 +158,13 @@ func Load() (*Config, error) {
 			if err := os.MkdirAll(ConfigDir(), 0o700); err != nil {
 				return nil, fmt.Errorf("create config dir: %w", err)
 			}
+			if cfg.Security.AdminAuthEnabled && cfg.Security.AdminTokenHash == "" {
+				rawToken, err := security.EnsureToken(&cfg.Security.AdminTokenHash)
+				if err == nil && rawToken != "" {
+					tokenPath := TokenFilePath()
+					_ = os.WriteFile(tokenPath, []byte(rawToken), 0o600)
+				}
+			}
 			if err := Save(cfg); err != nil {
 				return nil, fmt.Errorf("save default config: %w", err)
 			}
@@ -167,6 +175,15 @@ func Load() (*Config, error) {
 
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
+	}
+
+	if cfg.Security.AdminAuthEnabled && cfg.Security.AdminTokenHash == "" {
+		rawToken, err := security.EnsureToken(&cfg.Security.AdminTokenHash)
+		if err == nil && rawToken != "" {
+			_ = Save(cfg)
+			tokenPath := TokenFilePath()
+			_ = os.WriteFile(tokenPath, []byte(rawToken), 0o600)
+		}
 	}
 
 	if err := Validate(cfg); err != nil {
@@ -216,6 +233,9 @@ func Validate(cfg *Config) error {
 	}
 	if cfg.Security.AllowLANAccess && !cfg.Security.AdminAuthEnabled {
 		return fmt.Errorf("admin auth must be enabled when LAN access is allowed")
+	}
+	if cfg.Security.AdminAuthEnabled && cfg.Security.AdminTokenHash == "" {
+		return fmt.Errorf("admin token hash must be set when admin auth is enabled")
 	}
 	return nil
 }

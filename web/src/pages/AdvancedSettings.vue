@@ -167,7 +167,7 @@ const downstream = ref({
 });
 const security = ref({
   admin_auth_enabled: false,
-  admin_token_hash: "",
+  token_configured: false,
   bind_localhost_only: true,
   allow_lan_access: false,
 });

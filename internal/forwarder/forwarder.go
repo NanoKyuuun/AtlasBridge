@@ -10,9 +10,10 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
+
+	"github.com/atlasbridge/atlasbridge/internal/netutil"
 )
 
 var forwardHeaders = []string{
@@ -22,6 +23,13 @@ var forwardHeaders = []string{
 	"X-Route-Intent",
 }
 
+const MaxResponseBody = 64 << 20 // 64 MB
+
+const (
+	StreamIdleTimeout  = 5 * time.Minute
+	StreamMaxLifetime  = 30 * time.Minute
+)
+
 type Forwarder struct {
 	streamClient    *http.Client
 	nonstreamClient *http.Client
@@ -29,18 +37,8 @@ type Forwarder struct {
 }
 
 func New(baseURL string, timeoutSeconds int) (*Forwarder, error) {
-	parsedURL, err := url.Parse(baseURL)
-	if err != nil {
+	if err := netutil.ValidateDownstreamURL(baseURL); err != nil {
 		return nil, fmt.Errorf("invalid downstream URL: %w", err)
-	}
-	if parsedURL.User != nil {
-		return nil, fmt.Errorf("credentials in downstream URL are not allowed")
-	}
-	if parsedURL.Fragment != "" {
-		return nil, fmt.Errorf("URL fragments are not allowed")
-	}
-	if len(parsedURL.RawQuery) > 0 {
-		return nil, fmt.Errorf("URL query strings are not allowed for downstream")
 	}
 	if timeoutSeconds <= 0 {
 		timeoutSeconds = 120
@@ -67,24 +65,14 @@ func New(baseURL string, timeoutSeconds int) (*Forwarder, error) {
 
 	return &Forwarder{
 		nonstreamClient: &http.Client{
-			Timeout:   time.Duration(timeoutSeconds) * time.Second,
-			Transport: nonstreamTransport,
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				if len(via) >= 5 {
-					return fmt.Errorf("stopped after 5 redirects")
-				}
-				return nil
-			},
+			Timeout:       time.Duration(timeoutSeconds) * time.Second,
+			Transport:     nonstreamTransport,
+			CheckRedirect: netutil.SafeRedirectPolicy(),
 		},
 		streamClient: &http.Client{
-			Timeout:   0,
-			Transport: streamTransport,
-			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				if len(via) >= 5 {
-					return fmt.Errorf("stopped after 5 redirects")
-				}
-				return nil
-			},
+			Timeout:       0,
+			Transport:     streamTransport,
+			CheckRedirect: netutil.SafeRedirectPolicy(),
 		},
 		base: strings.TrimRight(baseURL, "/"),
 	}, nil
@@ -149,9 +137,12 @@ func (f *Forwarder) Forward(ctx context.Context, req *http.Request, reqID string
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, MaxResponseBody+1))
 	if err != nil {
 		return nil, fmt.Errorf("read downstream response: %w", err)
+	}
+	if int64(len(respBody)) > MaxResponseBody {
+		return nil, fmt.Errorf("downstream response exceeds %d bytes limit", MaxResponseBody)
 	}
 
 	log.Printf("[%s] POST %s -> %d (%v)", reqID, f.base+"/chat/completions", resp.StatusCode, latency.Round(time.Microsecond))
@@ -179,8 +170,11 @@ func (f *Forwarder) ForwardStream(ctx context.Context, req *http.Request, w http
 		return err
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, StreamMaxLifetime)
+	defer cancel()
+
 	start := time.Now()
-	resp, err := f.streamClient.Do(downstreamReq)
+	resp, err := f.streamClient.Do(downstreamReq.WithContext(ctx))
 	if err != nil {
 		if ctx.Err() == context.Canceled {
 			return fmt.Errorf("request cancelled")
@@ -199,6 +193,9 @@ func (f *Forwarder) ForwardStream(ctx context.Context, req *http.Request, w http
 
 	reader := bufio.NewReaderSize(resp.Body, 64*1024)
 
+	idleTimer := time.NewTimer(StreamIdleTimeout)
+	defer idleTimer.Stop()
+
 	chunkCount := 0
 	for {
 		line, err := reader.ReadBytes('\n')
@@ -208,6 +205,13 @@ func (f *Forwarder) ForwardStream(ctx context.Context, req *http.Request, w http
 				flusher.Flush()
 			}
 			chunkCount++
+			if !idleTimer.Stop() {
+				select {
+				case <-idleTimer.C:
+				default:
+				}
+			}
+			idleTimer.Reset(StreamIdleTimeout)
 		}
 		if err != nil {
 			if err == io.EOF {
@@ -219,6 +223,12 @@ func (f *Forwarder) ForwardStream(ctx context.Context, req *http.Request, w http
 			}
 			log.Printf("[%s] POST %s -> stream error after %d chunks: %v", reqID, f.base+"/chat/completions", chunkCount, err)
 			return fmt.Errorf("stream read error: %w", err)
+		}
+		select {
+		case <-idleTimer.C:
+			log.Printf("[%s] POST %s -> stream idle timeout after %d chunks (%v)", reqID, f.base+"/chat/completions", chunkCount, time.Since(start).Round(time.Microsecond))
+			return fmt.Errorf("stream idle timeout")
+		default:
 		}
 	}
 

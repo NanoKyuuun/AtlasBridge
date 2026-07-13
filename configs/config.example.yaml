@@ -7,16 +7,13 @@ server:
   host: 127.0.0.1
   port: 20127
   admin_path: /admin
-  api_base_path: /v1
 
 downstream:
-  type: 9router
   base_url: http://127.0.0.1:20128/v1
   timeout_seconds: 120
 
 security:
-  admin_auth_enabled: false
-  admin_token_hash: ""
+  admin_auth_enabled: true
   bind_localhost_only: true
   allow_lan_access: false
 
@@ -29,8 +26,9 @@ routing:
   auto_routing: true
   default_route: route.default
   low_confidence_route: route.default
-  explicit_override_enabled: true
   confidence_threshold: 0.55
+  smart_fast_route: route.low_cost
+  metadata_transport: model_alias
 
 logging:
   level: info

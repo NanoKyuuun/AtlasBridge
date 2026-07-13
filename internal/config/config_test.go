@@ -82,6 +82,7 @@ func TestDefaultProfilesConfig(t *testing.T) {
 
 func TestValidateValidConfig(t *testing.T) {
 	cfg := DefaultConfig()
+	cfg.Security.AdminTokenHash = "test-hash"
 	if err := Validate(cfg); err != nil {
 		t.Errorf("expected valid config, got error: %v", err)
 	}
@@ -159,6 +160,7 @@ func TestValidateInvalidPrivacyMode(t *testing.T) {
 
 func TestValidateFullValid(t *testing.T) {
 	cfg := DefaultConfig()
+	cfg.Security.AdminTokenHash = "test-hash"
 	routes := DefaultRoutesConfig()
 	profiles := DefaultProfilesConfig()
 	if err := ValidateFull(cfg, routes, profiles); err != nil {
@@ -353,6 +355,7 @@ func TestValidateLANModeRequiresAuth(t *testing.T) {
 
 func TestValidateLANModeWithAuthOK(t *testing.T) {
 	cfg := DefaultConfig()
+	cfg.Security.AdminTokenHash = "test-hash"
 	cfg.Security.AllowLANAccess = true
 	cfg.Security.AdminAuthEnabled = true
 	if err := Validate(cfg); err != nil {
