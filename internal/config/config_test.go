@@ -363,6 +363,15 @@ func TestValidateLANModeWithAuthOK(t *testing.T) {
 	}
 }
 
+func TestValidateRejectsEmptyHashWithAuthEnabled(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Security.AdminAuthEnabled = true
+	cfg.Security.AdminTokenHash = ""
+	if err := Validate(cfg); err == nil {
+		t.Error("expected error when AdminAuthEnabled=true with empty token hash")
+	}
+}
+
 func TestEnforceNetworkInvariantsForcesLoopback(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Server.Host = "0.0.0.0"

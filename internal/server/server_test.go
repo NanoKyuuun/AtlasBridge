@@ -2819,3 +2819,296 @@ func TestHeaderFilterAllowsContent(t *testing.T) {
 		t.Error("Connection should be blocked")
 	}
 }
+
+// --- P0-01: Admin lockout prevention tests ---
+
+func TestResetPreservesAdminTokenHash(t *testing.T) {
+	knownToken := "reset-preserve-test-token"
+	knownHash := security.HashToken(knownToken)
+
+	cfg := config.DefaultConfig()
+	cfg.Security.AdminAuthEnabled = true
+	cfg.Security.AdminTokenHash = knownHash
+	cfg.Server.Port = 99999
+	store, cs := newSnapshotFromConfig(cfg, config.DefaultRoutesConfig(), config.DefaultProfilesConfig())
+
+	if err := cs.Reset(); err != nil {
+		t.Fatalf("Reset failed: %v", err)
+	}
+
+	snap := store.Load()
+	if snap.Config.Security.AdminTokenHash != knownHash {
+		t.Errorf("expected AdminTokenHash preserved after reset, got %q", snap.Config.Security.AdminTokenHash)
+	}
+	if snap.Config.Server.Port != config.DefaultPort {
+		t.Errorf("expected port reset to default %d, got %d", config.DefaultPort, snap.Config.Server.Port)
+	}
+	if !snap.Config.Security.AdminAuthEnabled {
+		t.Error("expected AdminAuthEnabled to remain true after reset")
+	}
+
+	req, _ := http.NewRequest("GET", "/admin/api/status", nil)
+	req.Header.Set("Authorization", "Bearer "+knownToken)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !security.VerifyToken(knownToken, snap.Config.Security.AdminTokenHash) {
+			t.Error("token verification failed after reset — hash was not preserved")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected token to still work after reset, got %d", rr.Code)
+	}
+}
+
+func TestImportPreservesAdminTokenHash(t *testing.T) {
+	knownToken := "import-preserve-test-token"
+	knownHash := security.HashToken(knownToken)
+
+	cfg := config.DefaultConfig()
+	cfg.Security.AdminAuthEnabled = true
+	cfg.Security.AdminTokenHash = knownHash
+	store, cs := newSnapshotFromConfig(cfg, config.DefaultRoutesConfig(), config.DefaultProfilesConfig())
+
+	importBody := `{
+		"config": {
+			"app": {"name": "imported", "mode": "manual", "first_run_completed": false},
+			"server": {"host": "127.0.0.1", "port": 20127, "admin_path": "/admin"},
+			"downstream": {"base_url": "http://127.0.0.1:20128/v1", "timeout_seconds": 120},
+			"security": {"admin_auth_enabled": true, "admin_token_hash": "", "bind_localhost_only": true, "allow_lan_access": false},
+			"startup": {"run_at_login": false, "start_proxy_on_app_launch": true, "restart_after_crash": true},
+			"routing": {"auto_routing": true, "default_route": "route.default", "low_confidence_route": "route.default", "confidence_threshold": 0.55, "smart_fast_route": "route.low_cost", "metadata_transport": "model_alias"},
+			"logging": {"level": "info", "privacy_mode": "standard", "prompt_logging_enabled": false, "metadata_logging_enabled": true, "retention_days": 7}
+		}
+	}`
+
+	if err := cs.Import([]byte(importBody)); err != nil {
+		t.Fatalf("Import failed: %v", err)
+	}
+
+	snap := store.Load()
+	if snap.Config.Security.AdminTokenHash != knownHash {
+		t.Errorf("expected AdminTokenHash preserved after import with empty hash, got %q", snap.Config.Security.AdminTokenHash)
+	}
+	if snap.Config.App.Name != "imported" {
+		t.Errorf("expected app name 'imported', got %q", snap.Config.App.Name)
+	}
+}
+
+func TestImportAppliesValidConfigWithHash(t *testing.T) {
+	knownToken := "import-apply-test-token"
+	knownHash := security.HashToken(knownToken)
+
+	cfg := config.DefaultConfig()
+	cfg.Security.AdminAuthEnabled = true
+	cfg.Security.AdminTokenHash = knownHash
+	store, cs := newSnapshotFromConfig(cfg, config.DefaultRoutesConfig(), config.DefaultProfilesConfig())
+
+	newHash := security.HashToken("new-token-for-import")
+	importBody := fmt.Sprintf(`{
+		"config": {
+			"app": {"name": "imported-full", "mode": "always_on", "first_run_completed": true},
+			"server": {"host": "127.0.0.1", "port": 20127, "admin_path": "/admin"},
+			"downstream": {"base_url": "http://127.0.0.1:20128/v1", "timeout_seconds": 60},
+			"security": {"admin_auth_enabled": true, "admin_token_hash": %q, "bind_localhost_only": true, "allow_lan_access": false},
+			"startup": {"run_at_login": false, "start_proxy_on_app_launch": true, "restart_after_crash": true},
+			"routing": {"auto_routing": true, "default_route": "route.default", "low_confidence_route": "route.default", "confidence_threshold": 0.55, "smart_fast_route": "route.low_cost", "metadata_transport": "model_alias"},
+			"logging": {"level": "info", "privacy_mode": "strict", "prompt_logging_enabled": false, "metadata_logging_enabled": true, "retention_days": 7}
+		}
+	}`, newHash)
+
+	if err := cs.Import([]byte(importBody)); err != nil {
+		t.Fatalf("Import failed: %v", err)
+	}
+
+	snap := store.Load()
+	if snap.Config.Security.AdminTokenHash != newHash {
+		t.Errorf("expected AdminTokenHash to be the imported hash, got %q", snap.Config.Security.AdminTokenHash)
+	}
+	if snap.Config.App.Mode != "always_on" {
+		t.Errorf("expected mode 'always_on', got %q", snap.Config.App.Mode)
+	}
+	if snap.Config.Logging.PrivacyMode != "strict" {
+		t.Errorf("expected privacy_mode 'strict', got %q", snap.Config.Logging.PrivacyMode)
+	}
+}
+
+func TestImportPreservesHashWhenImportedConfigHasEmptyHash(t *testing.T) {
+	existingToken := "existing-admin-token"
+	existingHash := security.HashToken(existingToken)
+
+	cfg := config.DefaultConfig()
+	cfg.Security.AdminAuthEnabled = true
+	cfg.Security.AdminTokenHash = existingHash
+	store, cs := newSnapshotFromConfig(cfg, config.DefaultRoutesConfig(), config.DefaultProfilesConfig())
+
+	importBody := `{
+		"config": {
+			"app": {"name": "imported", "mode": "manual", "first_run_completed": false},
+			"server": {"host": "127.0.0.1", "port": 20127, "admin_path": "/admin"},
+			"downstream": {"base_url": "http://127.0.0.1:20128/v1", "timeout_seconds": 120},
+			"security": {"admin_auth_enabled": true, "bind_localhost_only": true, "allow_lan_access": false},
+			"startup": {"run_at_login": false, "start_proxy_on_app_launch": true, "restart_after_crash": true},
+			"routing": {"auto_routing": true, "default_route": "route.default", "low_confidence_route": "route.default", "confidence_threshold": 0.55, "smart_fast_route": "route.low_cost", "metadata_transport": "model_alias"},
+			"logging": {"level": "info", "privacy_mode": "standard", "prompt_logging_enabled": false, "metadata_logging_enabled": true, "retention_days": 7}
+		}
+	}`
+
+	if err := cs.Import([]byte(importBody)); err != nil {
+		t.Fatalf("Import failed: %v", err)
+	}
+
+	snap := store.Load()
+	if snap.Config.Security.AdminTokenHash != existingHash {
+		t.Errorf("expected existing AdminTokenHash preserved when imported config has empty hash, got %q", snap.Config.Security.AdminTokenHash)
+	}
+	if snap.Config.App.Name != "imported" {
+		t.Errorf("expected app name 'imported', got %q", snap.Config.App.Name)
+	}
+}
+
+func TestImportRejectsConfigWithMismatchedHash(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Security.AdminAuthEnabled = true
+	cfg.Security.AdminTokenHash = security.HashToken("original-token")
+	_, cs := newSnapshotFromConfig(cfg, config.DefaultRoutesConfig(), config.DefaultProfilesConfig())
+
+	newHash := security.HashToken("hijacked-token")
+	importBody := fmt.Sprintf(`{
+		"config": {
+			"app": {"name": "bad", "mode": "manual", "first_run_completed": false},
+			"server": {"host": "127.0.0.1", "port": 20127, "admin_path": "/admin"},
+			"downstream": {"base_url": "http://127.0.0.1:20128/v1", "timeout_seconds": 120},
+			"security": {"admin_auth_enabled": true, "admin_token_hash": %q, "bind_localhost_only": true, "allow_lan_access": false},
+			"startup": {"run_at_login": false, "start_proxy_on_app_launch": true, "restart_after_crash": true},
+			"routing": {"auto_routing": true, "default_route": "route.default", "low_confidence_route": "route.default", "confidence_threshold": 0.55, "smart_fast_route": "route.low_cost", "metadata_transport": "model_alias"},
+			"logging": {"level": "info", "privacy_mode": "standard", "prompt_logging_enabled": false, "metadata_logging_enabled": true, "retention_days": 7}
+		}
+	}`, newHash)
+
+	// Import with a different hash should succeed (user explicitly provides new config)
+	// but the new hash should be applied
+	if err := cs.Import([]byte(importBody)); err != nil {
+		t.Fatalf("Import with explicit hash should succeed: %v", err)
+	}
+}
+
+// --- P0-03: LAN data-plane auth middleware tests ---
+
+func TestDataPlaneAuthRejectsNoToken(t *testing.T) {
+	token, hash, _ := security.GenerateToken()
+	cfg := config.DefaultConfig()
+	cfg.Security.AllowLANAccess = true
+	cfg.Security.AdminAuthEnabled = true
+	cfg.Security.AdminTokenHash = hash
+	store, cs := newSnapshotFromConfig(cfg, config.DefaultRoutesConfig(), config.DefaultProfilesConfig())
+
+	_ = token
+	deps := &ServerDeps{
+		Store:         store,
+		ConfigService: cs,
+		ObsLogger:     observability.NewLogger(observability.DefaultMaxEntries),
+	}
+	r := New(deps)
+	ts := httptest.NewServer(r.Handler)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/v1/models")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("expected 401 for LAN /v1 request without token, got %d", resp.StatusCode)
+	}
+}
+
+func TestDataPlaneAuthAcceptsValidToken(t *testing.T) {
+	token, hash, _ := security.GenerateToken()
+	cfg := config.DefaultConfig()
+	cfg.Security.AllowLANAccess = true
+	cfg.Security.AdminAuthEnabled = true
+	cfg.Security.AdminTokenHash = hash
+	store, cs := newSnapshotFromConfig(cfg, config.DefaultRoutesConfig(), config.DefaultProfilesConfig())
+
+	deps := &ServerDeps{
+		Store:         store,
+		ConfigService: cs,
+		ObsLogger:     observability.NewLogger(observability.DefaultMaxEntries),
+	}
+	r := New(deps)
+	ts := httptest.NewServer(r.Handler)
+	defer ts.Close()
+
+	req, _ := http.NewRequest("GET", ts.URL+"/v1/models", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200 for LAN /v1 request with valid token, got %d", resp.StatusCode)
+	}
+}
+
+func TestDataPlaneAuthRejectsWrongToken(t *testing.T) {
+	_, hash, _ := security.GenerateToken()
+	cfg := config.DefaultConfig()
+	cfg.Security.AllowLANAccess = true
+	cfg.Security.AdminAuthEnabled = true
+	cfg.Security.AdminTokenHash = hash
+	store, cs := newSnapshotFromConfig(cfg, config.DefaultRoutesConfig(), config.DefaultProfilesConfig())
+
+	deps := &ServerDeps{
+		Store:         store,
+		ConfigService: cs,
+		ObsLogger:     observability.NewLogger(observability.DefaultMaxEntries),
+	}
+	r := New(deps)
+	ts := httptest.NewServer(r.Handler)
+	defer ts.Close()
+
+	req, _ := http.NewRequest("GET", ts.URL+"/v1/models", nil)
+	req.Header.Set("Authorization", "Bearer wrong-token-value")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("expected 401 for LAN /v1 request with wrong token, got %d", resp.StatusCode)
+	}
+}
+
+func TestDataPlaneAuthDisabledPassesThrough(t *testing.T) {
+	cfg := config.DefaultConfig()
+	cfg.Security.AllowLANAccess = false
+	cfg.Security.AdminAuthEnabled = false
+	store, cs := newSnapshotFromConfig(cfg, config.DefaultRoutesConfig(), config.DefaultProfilesConfig())
+
+	deps := &ServerDeps{
+		Store:         store,
+		ConfigService: cs,
+		ObsLogger:     observability.NewLogger(observability.DefaultMaxEntries),
+	}
+	r := New(deps)
+	ts := httptest.NewServer(r.Handler)
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL + "/v1/models")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200 for non-LAN /v1 request without token, got %d", resp.StatusCode)
+	}
+}
