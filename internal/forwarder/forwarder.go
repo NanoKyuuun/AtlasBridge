@@ -26,8 +26,8 @@ var forwardHeaders = []string{
 const MaxResponseBody = 64 << 20 // 64 MB
 
 const (
-	StreamIdleTimeout  = 5 * time.Minute
-	StreamMaxLifetime  = 30 * time.Minute
+	StreamIdleTimeout = 5 * time.Minute
+	StreamMaxLifetime = 30 * time.Minute
 )
 
 type Forwarder struct {

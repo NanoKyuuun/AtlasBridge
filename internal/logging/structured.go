@@ -34,11 +34,11 @@ type StructuredEntry struct {
 }
 
 type StructuredLogger struct {
-	mu                  sync.Mutex
-	out                 io.Writer
-	maxEntries          int
-	entries             []StructuredEntry
-	retentionDays       int
+	mu                   sync.Mutex
+	out                  io.Writer
+	maxEntries           int
+	entries              []StructuredEntry
+	retentionDays        int
 	promptLoggingEnabled bool
 }
 

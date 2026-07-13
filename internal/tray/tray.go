@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/getlantern/systray"
 	"github.com/atlasbridge/atlasbridge/internal/config"
 	appruntime "github.com/atlasbridge/atlasbridge/internal/runtime"
+	"github.com/getlantern/systray"
 )
 
 type Tray struct {
@@ -22,21 +22,21 @@ type Tray struct {
 	nineDashURL string
 	iconData    []byte
 
-	titleItem     *systray.MenuItem
-	statusItem    *systray.MenuItem
-	endpointItem  *systray.MenuItem
-	openDashItem  *systray.MenuItem
-	startItem     *systray.MenuItem
-	stopItem      *systray.MenuItem
-	restartItem   *systray.MenuItem
-	runAtStartup  *systray.MenuItem
-	alwaysOnMode  *systray.MenuItem
-	manualMode    *systray.MenuItem
-	disabledMode  *systray.MenuItem
-	openNineDash  *systray.MenuItem
-	openLogsItem  *systray.MenuItem
-	copyEndpoint  *systray.MenuItem
-	quitItem      *systray.MenuItem
+	titleItem    *systray.MenuItem
+	statusItem   *systray.MenuItem
+	endpointItem *systray.MenuItem
+	openDashItem *systray.MenuItem
+	startItem    *systray.MenuItem
+	stopItem     *systray.MenuItem
+	restartItem  *systray.MenuItem
+	runAtStartup *systray.MenuItem
+	alwaysOnMode *systray.MenuItem
+	manualMode   *systray.MenuItem
+	disabledMode *systray.MenuItem
+	openNineDash *systray.MenuItem
+	openLogsItem *systray.MenuItem
+	copyEndpoint *systray.MenuItem
+	quitItem     *systray.MenuItem
 }
 
 func New(cfg *config.Config, state *appruntime.State) *Tray {

@@ -15,13 +15,13 @@ var hopByHopHeaders = map[string]bool{
 }
 
 var allowedDownstreamHeaders = map[string]bool{
-	"Content-Type":   true,
-	"X-Request-ID":   true,
-	"X-RateLimit-*":  true,
-	"Retry-After":    true,
-	"Cache-Control":  true,
-	"ETag":           true,
-	"Date":           true,
+	"Content-Type":  true,
+	"X-Request-ID":  true,
+	"X-RateLimit-*": true,
+	"Retry-After":   true,
+	"Cache-Control": true,
+	"ETag":          true,
+	"Date":          true,
 }
 
 func isAllowedHeader(key string) bool {

@@ -8,12 +8,12 @@ import (
 func TestRedactLogStripsSensitiveKeys(t *testing.T) {
 	r := NewDefault()
 	fields := map[string]any{
-		"method":       "POST",
-		"path":         "/v1/chat/completions",
+		"method":        "POST",
+		"path":          "/v1/chat/completions",
 		"authorization": "Bearer sk-test1234567890abcdef",
-		"prompt":       "What is the meaning of life?",
-		"api_key":      "secret-key-value",
-		"status":       200,
+		"prompt":        "What is the meaning of life?",
+		"api_key":       "secret-key-value",
+		"status":        200,
 	}
 
 	result := r.RedactLog(fields)

@@ -25,7 +25,7 @@ type mockChatRequest struct {
 type comboTestRequest struct {
 	Model     string            `json:"model"`
 	Messages  []mockChatMessage `json:"messages"`
-	MaxTokens int              `json:"max_tokens"`
+	MaxTokens int               `json:"max_tokens"`
 }
 
 func buildMockChatBody(model, prompt string) ([]byte, error) {

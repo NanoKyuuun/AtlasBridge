@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/atlasbridge/atlasbridge/internal/analyzer"
 	"github.com/atlasbridge/atlasbridge/internal/classifier"
 	"github.com/atlasbridge/atlasbridge/internal/config"
@@ -23,6 +21,8 @@ import (
 	"github.com/atlasbridge/atlasbridge/internal/routing"
 	runtimemod "github.com/atlasbridge/atlasbridge/internal/runtime"
 	"github.com/atlasbridge/atlasbridge/internal/security"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 var Version = "0.1.0"
@@ -84,7 +84,7 @@ func New(deps *ServerDeps) *http.Server {
 			}))
 			r.Use(HostGuard(snap.Config.Server.Host, snap.Config.Server.Port))
 			r.Use(RequireJSON)
-			r.Use(SameOriginAdmin("http://"+fmt.Sprintf("%s:%d", snap.Config.Server.Host, snap.Config.Server.Port)))
+			r.Use(SameOriginAdmin("http://" + fmt.Sprintf("%s:%d", snap.Config.Server.Host, snap.Config.Server.Port)))
 			r.Get("/status", statusHandler(deps.Store, deps.RuntimeState, deps.Bulkhead))
 
 			adminDeps := &AdminDeps{
@@ -170,18 +170,18 @@ func statusHandler(store *StateStore, runtimeState *runtimemod.State, bulkhead *
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":     runtimeStatus,
-			"version":    Version,
-			"uptime":     runtimeUptime,
-			"port":       cfg.Server.Port,
-			"host":       cfg.Server.Host,
-			"downstream": cfg.Downstream.BaseURL,
-			"mode":       runtimeMode,
-			"privacy":    cfg.Logging.PrivacyMode,
-			"go_version": runtime.Version(),
-			"pid":        os.Getpid(),
+			"status":         runtimeStatus,
+			"version":        Version,
+			"uptime":         runtimeUptime,
+			"port":           cfg.Server.Port,
+			"host":           cfg.Server.Host,
+			"downstream":     cfg.Downstream.BaseURL,
+			"mode":           runtimeMode,
+			"privacy":        cfg.Logging.PrivacyMode,
+			"go_version":     runtime.Version(),
+			"pid":            os.Getpid(),
 			"config_version": snap.Version,
-			"bulkhead":   bulkheadStats,
+			"bulkhead":       bulkheadStats,
 		})
 	}
 }

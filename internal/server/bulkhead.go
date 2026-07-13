@@ -16,14 +16,14 @@ const (
 )
 
 type WeightedBulkhead struct {
-	mu         sync.Mutex
-	cond       *sync.Cond
-	inFlight   int
-	capacity   int
-	waitQueue  int
-	maxWait    time.Duration
-	TotalIn    int64
-	TotalWait  int64
+	mu          sync.Mutex
+	cond        *sync.Cond
+	inFlight    int
+	capacity    int
+	waitQueue   int
+	maxWait     time.Duration
+	TotalIn     int64
+	TotalWait   int64
 	TotalReject int64
 }
 

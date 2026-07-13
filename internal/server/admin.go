@@ -490,11 +490,11 @@ func comboTestHandler(deps *AdminDeps) http.HandlerFunc {
 		json.Unmarshal(result.Body, &parsed)
 
 		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"model":         req.Model,
+			"model":          req.Model,
 			"resolved_model": parsed.Model,
-			"success":       result.StatusCode >= 200 && result.StatusCode < 300,
-			"status_code":   result.StatusCode,
-			"latency":       latency.Milliseconds(),
+			"success":        result.StatusCode >= 200 && result.StatusCode < 300,
+			"status_code":    result.StatusCode,
+			"latency":        latency.Milliseconds(),
 		})
 	}
 }

@@ -27,13 +27,13 @@ const (
 )
 
 type State struct {
-	mu          sync.RWMutex
-	mode        Mode
-	status      Status
-	errorMsg    string
-	startedAt   time.Time
-	lastAction  string
-	lastError   error
+	mu         sync.RWMutex
+	mode       Mode
+	status     Status
+	errorMsg   string
+	startedAt  time.Time
+	lastAction string
+	lastError  error
 }
 
 func NewState(initialMode Mode) *State {

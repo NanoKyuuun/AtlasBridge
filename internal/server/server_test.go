@@ -903,6 +903,44 @@ func TestRoutingPipelineSmartAutoBackendClassification(t *testing.T) {
 	}
 }
 
+func TestRoutingPipelineSmartAutoLowConfidence(t *testing.T) {
+	var receivedModel string
+
+	downstream := mockDownstream(t, func(w http.ResponseWriter, r *http.Request) {
+		var parsed map[string]interface{}
+		json.NewDecoder(r.Body).Decode(&parsed)
+		receivedModel = parsed["model"].(string)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"id":     "chatcmpl-low-conf-test",
+			"object": "chat.completion",
+			"choices": []map[string]interface{}{
+				{"index": 0, "message": map[string]string{"role": "assistant", "content": "low confidence response"}},
+			},
+		})
+	})
+	defer downstream.Close()
+
+	ts := newTestServerWithDownstream(t, downstream.URL+"/v1")
+	defer ts.Close()
+
+	body := `{"model":"smart-auto","messages":[{"role":"user","content":"hello"}]}`
+	resp, err := http.Post(ts.URL+"/v1/chat/completions", "application/json", strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status 200, got %d", resp.StatusCode)
+	}
+	if receivedModel != "combo.low_cost" {
+		t.Errorf("expected model combo.low_cost (lightweight/low-confidence fallback) forwarded, got %s", receivedModel)
+	}
+}
+
 func TestRoutingPipelineManualModelPassthrough(t *testing.T) {
 	var receivedModel string
 
@@ -1132,10 +1170,53 @@ func TestAdminPutConfig(t *testing.T) {
 		t.Errorf("expected status 200, got %d", resp.StatusCode)
 	}
 
-	var result map[string]string
+	var result map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&result)
 	if result["status"] != "ok" {
 		t.Errorf("expected status ok, got %s", result["status"])
+	}
+
+	restartRequired, exists := result["restart_required"]
+	if !exists {
+		t.Fatal("expected restart_required in PUT config response")
+	}
+	if rr, ok := restartRequired.(bool); ok && rr {
+		t.Error("expected restart_required=false when port unchanged (default config matches runtime)")
+	}
+}
+
+func TestAdminPutConfigRestartRequiredOnPortChange(t *testing.T) {
+	ts := newTestServerNoAuth(t)
+	defer ts.Close()
+
+	cfg := config.DefaultConfig()
+	cfg.Server.Port = 9999
+	body, _ := json.Marshal(cfg)
+
+	req, _ := http.NewRequest("PUT", ts.URL+"/admin/api/config", strings.NewReader(string(body)))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected status 200, got %d", resp.StatusCode)
+	}
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+	if result["status"] != "ok" {
+		t.Errorf("expected status ok, got %s", result["status"])
+	}
+
+	restartRequired, exists := result["restart_required"]
+	if !exists {
+		t.Fatal("expected restart_required in PUT config response")
+	}
+	if rr, ok := restartRequired.(bool); ok && !rr {
+		t.Error("expected restart_required=true when port changes")
 	}
 }
 

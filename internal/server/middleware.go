@@ -152,11 +152,11 @@ func HostGuard(expectedHost string, expectedPort int) func(http.Handler) http.Ha
 			}
 
 			allowedHosts := map[string]bool{
-				expectedHost:     true,
-				"localhost":      true,
-				"127.0.0.1":      true,
-				"[::1]":          true,
-				"0.0.0.0":        true,
+				expectedHost: true,
+				"localhost":  true,
+				"127.0.0.1":  true,
+				"[::1]":      true,
+				"0.0.0.0":    true,
 			}
 
 			if !allowedHosts[hostname] {
