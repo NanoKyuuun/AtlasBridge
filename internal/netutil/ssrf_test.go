@@ -99,6 +99,45 @@ func TestIsAllowedIP_BlocksMulticast(t *testing.T) {
 	}
 }
 
+func TestIsAllowedIP_BlocksIPv6UniqueLocal(t *testing.T) {
+	ips := []string{"fc00::1", "fd00::1", "fdff::ffff:ffff:ffff:ffff"}
+	for _, raw := range ips {
+		ip := net.ParseIP(raw)
+		if ip == nil {
+			t.Fatalf("failed to parse %q", raw)
+		}
+		if IsAllowedIP(ip) {
+			t.Errorf("expected IPv6 unique local %s to be blocked", raw)
+		}
+	}
+}
+
+func TestIsAllowedIP_BlocksIPv6LinkLocal(t *testing.T) {
+	ips := []string{"fe80::1", "fe80::abcd:1234"}
+	for _, raw := range ips {
+		ip := net.ParseIP(raw)
+		if ip == nil {
+			t.Fatalf("failed to parse %q", raw)
+		}
+		if IsAllowedIP(ip) {
+			t.Errorf("expected IPv6 link-local %s to be blocked", raw)
+		}
+	}
+}
+
+func TestIsAllowedIP_AllowsIPv6Global(t *testing.T) {
+	ips := []string{"2001:4860:4860::8888", "2606:4700:4700::1111"}
+	for _, raw := range ips {
+		ip := net.ParseIP(raw)
+		if ip == nil {
+			t.Fatalf("failed to parse %q", raw)
+		}
+		if !IsAllowedIP(ip) {
+			t.Errorf("expected IPv6 global %s to be allowed", raw)
+		}
+	}
+}
+
 // --- ValidateDownstreamURL IP blocking tests ---
 
 func TestValidateDownstreamURL_BlocksPrivateIP(t *testing.T) {

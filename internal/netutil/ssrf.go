@@ -43,7 +43,8 @@ func ValidateDownstreamURL(rawURL string) error {
 }
 
 // IsAllowedIP checks whether an IP address is safe for outbound connections.
-// It blocks link-local, multicast, and RFC 1918 private ranges.
+// It blocks link-local, multicast, RFC 1918 private ranges, and RFC 4193
+// IPv6 unique local addresses (fc00::/7).
 func IsAllowedIP(ip net.IP) bool {
 	if ip.IsLoopback() {
 		return true
@@ -54,24 +55,33 @@ func IsAllowedIP(ip net.IP) bool {
 	if ip.IsMulticast() {
 		return false
 	}
-	privateRanges := []struct {
-		start net.IP
-		end   net.IP
-	}{
-		{net.ParseIP("10.0.0.0"), net.ParseIP("10.255.255.255")},
-		{net.ParseIP("172.16.0.0"), net.ParseIP("172.31.255.255")},
-		{net.ParseIP("192.168.0.0"), net.ParseIP("192.168.255.255")},
-		{net.ParseIP("169.254.0.0"), net.ParseIP("169.254.255.255")},
-		{net.ParseIP("100.64.0.0"), net.ParseIP("100.127.255.255")},
-	}
-	for _, r := range privateRanges {
-		if bytesCompare(ip.To4(), r.start.To4()) >= 0 && bytesCompare(ip.To4(), r.end.To4()) <= 0 {
+	// Block RFC 4193 IPv6 unique local addresses (fc00::/7)
+	if ip.To4() == nil && len(ip) == net.IPv6len {
+		if ip[0] == 0xfc || ip[0] == 0xfd {
 			return false
 		}
 	}
-	metadataIPv4 := net.ParseIP("169.254.169.254")
-	if ip.Equal(metadataIPv4) {
-		return false
+	// Check IPv4 private ranges only for IPv4 addresses
+	if ipv4 := ip.To4(); ipv4 != nil {
+		privateRanges := []struct {
+			start net.IP
+			end   net.IP
+		}{
+			{net.ParseIP("10.0.0.0"), net.ParseIP("10.255.255.255")},
+			{net.ParseIP("172.16.0.0"), net.ParseIP("172.31.255.255")},
+			{net.ParseIP("192.168.0.0"), net.ParseIP("192.168.255.255")},
+			{net.ParseIP("169.254.0.0"), net.ParseIP("169.254.255.255")},
+			{net.ParseIP("100.64.0.0"), net.ParseIP("100.127.255.255")},
+		}
+		for _, r := range privateRanges {
+			if bytesCompare(ipv4, r.start.To4()) >= 0 && bytesCompare(ipv4, r.end.To4()) <= 0 {
+				return false
+			}
+		}
+		metadataIPv4 := net.ParseIP("169.254.169.254")
+		if ip.Equal(metadataIPv4) {
+			return false
+		}
 	}
 	return true
 }

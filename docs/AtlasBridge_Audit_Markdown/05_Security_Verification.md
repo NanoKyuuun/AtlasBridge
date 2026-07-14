@@ -22,7 +22,7 @@
 | SEC-07 | LAN tanpa data-plane token | Ditolak | NOT RUN |
 | SEC-08 | LAN dengan token valid | Diterima | NOT RUN |
 | SEC-09 | Token client dicabut | Ditolak | NOT RUN |
-| SEC-10 | Banyak request satu client | Rate limit bekerja | NOT RUN |
+| SEC-10 | Banyak request satu client | Concurrency limit bekerja (WeightedBulkhead) | NOT RUN |
 | SEC-11 | Banyak stream satu client | Concurrency limit bekerja | NOT RUN |
 
 ## C. SSRF dan outbound policy
@@ -32,10 +32,11 @@
 | SEC-12 | Loopback 9Router yang diizinkan | Diterima | NOT RUN |
 | SEC-13 | Metadata IP | Ditolak | NOT RUN |
 | SEC-14 | IPv4 private tidak diizinkan | Ditolak | NOT RUN |
-| SEC-15 | IPv6 loopback/private | Ditolak sesuai policy | NOT RUN |
+| SEC-15 | IPv6 loopback | Diterima (loopback diizinkan) | NOT RUN |
+| SEC-15b | IPv6 link-local/unique local | Ditolak sesuai policy (`fe80::/10`, `fc00::/7`) | NOT RUN |
 | SEC-16 | IPv6 global yang diizinkan | Diterima sesuai policy | NOT RUN |
 | SEC-17 | Redirect ke blocked IP | Ditolak | NOT RUN |
-| SEC-18 | Host dengan beberapa A/AAAA record | Semua hasil resolusi divalidasi | NOT RUN |
+| SEC-18 | Host dengan beberapa A/AAAA record | ⚠️ Partial: `ResolveAndValidateIP` ada tapi belum dipanggil saat forwarding | NOT RUN |
 | SEC-19 | DNS re-resolution/rebinding | Tidak melewati policy | NOT RUN |
 | SEC-20 | Credential/query/fragment pada URL | Ditolak | NOT RUN |
 
@@ -47,7 +48,7 @@
 | SEC-22 | Admin HTML | `nosniff` tersedia | NOT RUN |
 | SEC-23 | Admin HTML | frame protection tersedia | NOT RUN |
 | SEC-24 | Admin HTML | `Referrer-Policy` tersedia | NOT RUN |
-| SEC-25 | Admin HTML | noindex tersedia | NOT RUN |
+| SEC-25 | Admin HTML | ❌ NOT IMPLEMENTED: X-Robots-Tag belum tersedia | NOT RUN |
 | SEC-26 | Token di browser | Tidak muncul di URL/log | NOT RUN |
 
 ## Kriteria lulus
@@ -59,6 +60,10 @@ Security verification dinyatakan `PASS` apabila:
 - redirect dan DNS tidak dapat melewati policy;
 - LAN tidak dapat digunakan tanpa credential;
 - tidak ada critical/high finding terbuka.
+
+**Catatan known gaps:**
+- SEC-18: `ResolveAndValidateIP` belum dipanggil saat forwarding (DNS validation hanya di URL construction)
+- SEC-25: X-Robots-Tag/noindex belum diimplementasi (medium risk, hanya admin UI)
 
 ## Keputusan per deployment
 
