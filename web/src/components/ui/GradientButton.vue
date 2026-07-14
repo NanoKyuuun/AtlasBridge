@@ -2,7 +2,7 @@
   <button
     type="button"
     :disabled="disabled"
-    class="gradient-button inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+    class="btn btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
     v-bind="$attrs"
   >
     <slot />

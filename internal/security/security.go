@@ -29,6 +29,16 @@ func VerifyToken(token, hash string) bool {
 	return subtle.ConstantTimeCompare([]byte(HashToken(token)), []byte(hash)) == 1
 }
 
+// HashPassword hashes a plain-text password with SHA-256 (same algo as tokens).
+func HashPassword(password string) string {
+	return HashToken(password)
+}
+
+// VerifyPassword checks a plain-text password against a stored hash.
+func VerifyPassword(password, hash string) bool {
+	return VerifyToken(password, hash)
+}
+
 // EnsureToken checks whether a token hash exists. If not, it generates a
 // new secure random token, writes its hash into *hashPtr, and returns the
 // raw token. If a hash already exists, returns empty string (no-op).

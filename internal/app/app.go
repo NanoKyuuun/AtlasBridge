@@ -128,13 +128,13 @@ func (a *App) Run() error {
 		}
 	}
 
-	a.tray = tray.New(a.cfg, a.state)
-
-	go a.tray.Run(func() {
-		a.state.SetStatus(runtime.StatusStopped)
-		a.Shutdown()
-		close(a.quitCh)
-	})
+	// a.tray = tray.New(a.cfg, a.state)
+	//
+	// go a.tray.Run(func() {
+	// 	a.state.SetStatus(runtime.StatusStopped)
+	// 	a.Shutdown()
+	// 	close(a.quitCh)
+	// })
 
 	shouldAutoStart := a.cfg.App.Mode == string(runtime.ModeAlwaysOn) && a.cfg.Startup.StartProxyOnAppLaunch
 	if shouldAutoStart {
@@ -155,7 +155,7 @@ func (a *App) Run() error {
 
 	if err := a.server.Serve(a.listener); err != nil && err != http.ErrServerClosed {
 		a.state.SetError(err.Error())
-		a.tray.Update()
+		// a.tray.Update()
 		a.errCh <- fmt.Errorf("server error: %w", err)
 	}
 	return nil

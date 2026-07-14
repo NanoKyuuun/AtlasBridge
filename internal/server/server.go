@@ -78,14 +78,6 @@ func New(deps *ServerDeps) *http.Server {
 		r.Use(SecurityHeaders)
 		r.Route("/api", func(r chi.Router) {
 			store := deps.Store
-			r.Use(security.AdminAuth(func() (bool, string) {
-				s := store.Load()
-				return s.Config.Security.AdminAuthEnabled, s.Config.Security.AdminTokenHash
-			}))
-			r.Use(HostGuard(snap.Config.Server.Host, snap.Config.Server.Port))
-			r.Use(RequireJSON)
-			r.Use(SameOriginAdmin("http://" + fmt.Sprintf("%s:%d", snap.Config.Server.Host, snap.Config.Server.Port)))
-			r.Get("/status", statusHandler(deps.Store, deps.RuntimeState, deps.Bulkhead))
 
 			adminDeps := &AdminDeps{
 				Store:         deps.Store,
@@ -94,38 +86,56 @@ func New(deps *ServerDeps) *http.Server {
 				RuntimeState:  deps.RuntimeState,
 			}
 
-			r.Get("/config", getConfigHandler(adminDeps))
-			r.Put("/config", limitBody(putConfigHandler(adminDeps), MaxAdminBody))
+			// PUBLIC: no auth required — this is the password login endpoint
+			r.With(RequireJSON).Post("/auth/login", loginWithPasswordHandler(adminDeps))
 
-			r.Get("/routes", getRoutesHandler(adminDeps))
-			r.Put("/routes", limitBody(putRoutesHandler(adminDeps), MaxAdminBody))
+			// PROTECTED: all routes below require Bearer token
+			r.Group(func(r chi.Router) {
+				r.Use(security.AdminAuth(func() (bool, string) {
+					s := store.Load()
+					return s.Config.Security.AdminAuthEnabled, s.Config.Security.AdminTokenHash
+				}))
+				r.Use(HostGuard(snap.Config.Server.Host, snap.Config.Server.Port))
+				r.Use(RequireJSON)
+				r.Use(SameOriginAdmin("http://" + fmt.Sprintf("%s:%d", snap.Config.Server.Host, snap.Config.Server.Port)))
 
-			r.Get("/profiles", getProfilesHandler(adminDeps))
-			r.Put("/profiles", limitBody(putProfilesHandler(adminDeps), MaxAdminBody))
+				r.Get("/status", statusHandler(deps.Store, deps.RuntimeState, deps.Bulkhead))
 
-			r.Get("/security", getSecurityHandler(adminDeps))
-			r.Post("/security/token/rotate", rotateTokenHandler(adminDeps))
+				r.Get("/config", getConfigHandler(adminDeps))
+				r.Put("/config", limitBody(putConfigHandler(adminDeps), MaxAdminBody))
 
-			r.Post("/runtime/start", runtimeStartHandler(adminDeps))
-			r.Post("/runtime/stop", runtimeStopHandler(adminDeps))
-			r.Post("/runtime/restart", runtimeRestartHandler(adminDeps))
+				r.Get("/routes", getRoutesHandler(adminDeps))
+				r.Put("/routes", limitBody(putRoutesHandler(adminDeps), MaxAdminBody))
 
-			r.Get("/startup", getStartupHandler(adminDeps))
-			r.Put("/startup", limitBody(putStartupHandler(adminDeps), MaxAdminBody))
+				r.Get("/profiles", getProfilesHandler(adminDeps))
+				r.Put("/profiles", limitBody(putProfilesHandler(adminDeps), MaxAdminBody))
 
-			r.Get("/downstream/health", downstreamHealthHandler(adminDeps))
+				r.Get("/security", getSecurityHandler(adminDeps))
+				r.Post("/security/token/rotate", rotateTokenHandler(adminDeps))
 
-			r.Get("/logs", logsHandler(adminDeps))
-			r.Post("/logs/clear", logsClearHandler(adminDeps))
-			r.Post("/diagnostics/export", diagnosticsExportHandler(adminDeps))
+				r.Post("/runtime/start", runtimeStartHandler(adminDeps))
+				r.Post("/runtime/stop", runtimeStopHandler(adminDeps))
+				r.Post("/runtime/restart", runtimeRestartHandler(adminDeps))
 
-			r.Post("/routing/dry-run", limitBody(dryRunHandler(adminDeps), MaxAdminBody))
+				r.Get("/startup", getStartupHandler(adminDeps))
+				r.Put("/startup", limitBody(putStartupHandler(adminDeps), MaxAdminBody))
 
-			r.Post("/combo/test", limitBody(comboTestHandler(adminDeps), MaxAdminBody))
+				r.Get("/downstream/health", downstreamHealthHandler(adminDeps))
 
-			r.Post("/config/import", limitBody(configImportHandler(adminDeps), MaxImportBody))
-			r.Get("/config/export", configExportHandler(adminDeps))
-			r.Post("/config/reset", configResetHandler(adminDeps))
+				r.Get("/logs", logsHandler(adminDeps))
+				r.Post("/logs/clear", logsClearHandler(adminDeps))
+				r.Post("/diagnostics/export", diagnosticsExportHandler(adminDeps))
+
+				r.Post("/routing/dry-run", limitBody(dryRunHandler(adminDeps), MaxAdminBody))
+				r.Post("/combo/test", limitBody(comboTestHandler(adminDeps), MaxAdminBody))
+
+				r.Post("/config/import", limitBody(configImportHandler(adminDeps), MaxImportBody))
+				r.Get("/config/export", configExportHandler(adminDeps))
+				r.Post("/config/reset", configResetHandler(adminDeps))
+
+				// Change password (authenticated)
+				r.Post("/auth/change-password", limitBody(changePasswordHandler(adminDeps), MaxAdminBody))
+			})
 		})
 
 		r.Get("/", adminUIHandler())
@@ -309,7 +319,6 @@ func chatCompletionsHandler(deps *ServerDeps) http.HandlerFunc {
 		}
 
 		reqID, _ := r.Context().Value(RequestIDKey).(string)
-		reqID = validateRequestID(reqID)
 
 		if snap.Forwarder == nil {
 			cw.Header().Set("Content-Type", "application/json")

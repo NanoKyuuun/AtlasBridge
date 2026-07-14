@@ -1,30 +1,22 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-const STORAGE_KEY = "atlasbridge_admin_token";
+const TOKEN_KEY = "atlasbridge_token";
 
 export const useAuthStore = defineStore("auth", () => {
-  const token = ref<string | null>(sessionStorage.getItem(STORAGE_KEY));
+  const token = ref<string | null>(localStorage.getItem(TOKEN_KEY));
   const authRequired = ref(false);
 
   function setToken(t: string) {
     token.value = t;
-    authRequired.value = true;
-    try {
-      sessionStorage.setItem(STORAGE_KEY, t);
-    } catch {
-      // storage unavailable
-    }
+    authRequired.value = false;
+    localStorage.setItem(TOKEN_KEY, t);
   }
 
   function clearToken() {
     token.value = null;
     authRequired.value = false;
-    try {
-      sessionStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // storage unavailable
-    }
+    localStorage.removeItem(TOKEN_KEY);
   }
 
   return { token, authRequired, setToken, clearToken };

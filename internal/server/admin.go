@@ -19,6 +19,7 @@ import (
 	"github.com/atlasbridge/atlasbridge/internal/observability"
 	"github.com/atlasbridge/atlasbridge/internal/routing"
 	runtimemod "github.com/atlasbridge/atlasbridge/internal/runtime"
+	"github.com/atlasbridge/atlasbridge/internal/security"
 	"github.com/atlasbridge/atlasbridge/internal/startup"
 )
 
@@ -551,6 +552,123 @@ func configResetHandler(deps *AdminDeps) http.HandlerFunc {
 
 		log.Printf("ADMIN: config reset to defaults")
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "config reset to defaults"})
+	}
+}
+
+// loginWithPasswordHandler verifies the admin password and — if valid — issues
+// a fresh session token. The new token's hash is persisted into config so the
+// AdminAuth middleware will accept it immediately.
+// This endpoint is intentionally UNAUTHENTICATED (no Bearer token required).
+// It is registered outside the admin auth middleware in server.go.
+func loginWithPasswordHandler(deps *AdminDeps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Password string `json:"password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Password == "" {
+			writeError(w, http.StatusBadRequest, "password is required")
+			return
+		}
+
+		snap := deps.Store.Load()
+		sec := snap.Config.Security
+
+		if !sec.AdminAuthEnabled {
+			// Auth disabled — issue a dummy token that always works
+			writeJSON(w, http.StatusOK, map[string]string{"token": "noauth"})
+			return
+		}
+
+		// Verify password against stored hash
+		passwordOK := false
+		if sec.AdminPasswordHash != "" && security.VerifyPassword(body.Password, sec.AdminPasswordHash) {
+			passwordOK = true
+		} else if sec.AdminTokenHash != "" && security.VerifyToken(body.Password, sec.AdminTokenHash) {
+			// Legacy fallback: accept the raw token itself as the password
+			passwordOK = true
+		}
+
+		if !passwordOK {
+			writeError(w, http.StatusUnauthorized, "invalid password")
+			return
+		}
+
+		// Generate a fresh session token and update the stored hash so the
+		// AdminAuth middleware accepts it on the very next request.
+		rawToken, tokenHash, err := security.GenerateToken()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "could not generate session token")
+			return
+		}
+
+		// Persist the new token hash into the in-memory store and config file.
+		updated := snap.Clone()
+		updated.Config.Security.AdminTokenHash = tokenHash
+		deps.Store.Swap(updated)
+
+		if err := config.Save(&updated.Config); err != nil {
+			log.Printf("WARN: failed to persist token hash: %v", err)
+		}
+
+		// Also write raw token to the token file (used by CLI / other tooling).
+		if err := os.WriteFile(config.TokenFilePath(), []byte(rawToken), 0600); err != nil {
+			log.Printf("WARN: failed to write token file: %v", err)
+		}
+
+		log.Printf("ADMIN: new session token issued via password login")
+		writeJSON(w, http.StatusOK, map[string]string{"token": rawToken})
+	}
+}
+
+// changePasswordHandler allows authenticated admins to update their login password.
+func changePasswordHandler(deps *AdminDeps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			CurrentPassword string `json:"current_password"`
+			NewPassword     string `json:"new_password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid request body")
+			return
+		}
+		if body.NewPassword == "" {
+			writeError(w, http.StatusBadRequest, "new_password is required")
+			return
+		}
+		if len(body.NewPassword) < 6 {
+			writeError(w, http.StatusBadRequest, "password must be at least 6 characters")
+			return
+		}
+
+		snap := deps.Store.Load()
+		sec := snap.Config.Security
+
+		// Verify current password (or legacy token)
+		validCurrent := false
+		if sec.AdminPasswordHash != "" && security.VerifyPassword(body.CurrentPassword, sec.AdminPasswordHash) {
+			validCurrent = true
+		} else if sec.AdminTokenHash != "" && security.VerifyToken(body.CurrentPassword, sec.AdminTokenHash) {
+			validCurrent = true
+		}
+
+		if !validCurrent {
+			writeError(w, http.StatusUnauthorized, "current password is incorrect")
+			return
+		}
+
+		// Hash the new password and persist it
+		newHash := security.HashPassword(body.NewPassword)
+		update := snap.Clone()
+		update.Config.Security.AdminPasswordHash = newHash
+		deps.Store.Swap(update)
+
+		if err := config.Save(&update.Config); err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to save new password: "+err.Error())
+			return
+		}
+
+		log.Printf("ADMIN: password updated successfully")
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "message": "password updated"})
 	}
 }
 

@@ -36,6 +36,22 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+// loginWithPassword calls the PUBLIC /auth/login endpoint (no Bearer token needed).
+export async function loginWithPassword(
+  password: string
+): Promise<{ token: string }> {
+  const res = await fetch(`${BASE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body?.error?.message || `HTTP ${res.status}`);
+  }
+  return body;
+}
+
 export class AuthError extends Error {
   constructor(msg: string) {
     super(msg);
@@ -196,5 +212,18 @@ export const api = {
     request<ComboTestResult>("/combo/test", {
       method: "POST",
       body: JSON.stringify({ model }),
+    }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ status: string; message: string }>("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    }),
+  saveConfig: (partial: Record<string, unknown>) =>
+    request<{ status: string }>("/config", {
+      method: "PUT",
+      body: JSON.stringify(partial),
     }),
 };

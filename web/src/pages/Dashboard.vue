@@ -1,488 +1,353 @@
 <template>
-  <div class="space-y-8 lg:space-y-10">
-    <PageHeader
-      eyebrow="Dashboard"
-      title="AtlasBridge Control Center"
-      description="Route every AI coding task to the right model path."
-    >
-      <template #actions>
-        <GradientButton :disabled="status?.status === 'running'" @click="startProxy">
-          Start Proxy
-        </GradientButton>
-        <GhostButton @click="openRoutingSettings">
-          Open Routing Settings
-        </GhostButton>
-      </template>
-    </PageHeader>
-
-    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard
-        label="Proxy Status"
-        :value="statusText"
-        :description="status?.uptime ? `Uptime ${status.uptime}` : 'Waiting for status signal'"
-        :tone="statusTone"
-      >
-        <template #icon>
-          <StatusBadge :status="statusStatus" :label="statusStatus" />
-        </template>
-      </StatCard>
-
-      <MetricCard
-        label="OpenAI-compatible endpoint"
-        :value="openAiEndpoint"
-        description="Base URL used by coding assistants."
-      />
-
-      <MetricCard
-        label="Downstream 9Router endpoint"
-        :value="downstreamEndpoint"
-        :description="downstreamStatusLabel"
-      />
-
-      <MetricCard
-        label="Startup mode"
-        :value="startupMode"
-        :description="startupDescription"
-        :delta="startupDelta"
-        :tone="startupTone"
-      />
-
-      <StatCard
-        label="Default route"
-        :value="defaultRoute"
-        description="Fallback route used when no override applies."
-      >
-        <template #icon>
-          <span class="text-cyan-300">↪</span>
-        </template>
-      </StatCard>
-
-      <MetricCard
-        label="Request count today"
-        :value="requestCountToday"
-        description="Derived from currently available dashboard state."
-      />
-
-      <MetricCard
-        label="Most used task type"
-        :value="mostUsedTaskType"
-        description="Best available task classification view."
-      />
-
-      <MetricCard
-        label="Most used route profile"
-        :value="mostUsedRouteProfile"
-        description="Top profile based on current configuration data."
-      />
-    </section>
-
-    <section class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-      <GlassCard class="relative overflow-hidden">
-        <div class="relative z-10 space-y-5">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h2 class="text-lg font-semibold text-white">Architecture Flow</h2>
-              <p class="mt-1 text-sm text-slate-400">
-                OpenCode / AI Coding Assistant → AtlasBridge → 9Router → AI Providers
-              </p>
-            </div>
-            <StatusBadge :status="statusStatus" :label="statusStatus" />
+  <div>
+      <!-- Stats Grid -->
+    <div class="grid grid-cols-4 gap-4 mb-6">
+      <!-- Total Requests -->
+      <div class="card stat-card p-5 glow-bg">
+        <div class="flex items-start justify-between mb-3">
+          <div class="stat-icon" style="background: rgba(52, 211, 153, .12);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </div>
-
-          <div class="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] md:items-center">
-            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-center shadow-[0_0_22px_rgba(47,128,255,0.08)]">
-              <div class="text-sm font-medium text-white">OpenCode / AI Assistant</div>
-              <div class="mt-2 text-xs text-slate-400">Request source</div>
-            </div>
-            <div class="hidden justify-center text-cyan-300 md:flex">→</div>
-
-            <div class="rounded-2xl border border-blue-400/25 bg-gradient-to-br from-blue-500/18 via-violet-500/18 to-cyan-400/12 px-5 py-5 text-center shadow-[0_0_30px_rgba(47,128,255,0.14)]">
-              <div class="text-sm font-semibold text-white">AtlasBridge</div>
-              <div class="mt-2 text-xs text-slate-300">Routing core</div>
-              <div class="mt-3 flex items-center justify-center gap-2">
-                <span class="neon-dot"></span>
-                <span class="text-[11px] uppercase tracking-[0.22em] text-slate-400">Center</span>
-              </div>
-            </div>
-            <div class="hidden justify-center text-cyan-300 md:flex">→</div>
-
-            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-center shadow-[0_0_22px_rgba(124,58,237,0.08)]">
-              <div class="text-sm font-medium text-white">9Router</div>
-              <div class="mt-2 text-xs text-slate-400">Policy + alias routing</div>
-            </div>
-            <div class="hidden justify-center text-cyan-300 md:flex">→</div>
-
-            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-center shadow-[0_0_22px_rgba(53,215,242,0.08)] md:col-span-1 col-span-full">
-              <div class="text-sm font-medium text-white">AI Providers</div>
-              <div class="mt-2 text-xs text-slate-400">Final model execution</div>
-            </div>
-          </div>
+          <span class="badge badge-green">Live</span>
         </div>
-      </GlassCard>
+        <div class="text-[11px] text-[var(--text-mute)] uppercase tracking-wider font-semibold">Total Requests</div>
+        <div class="text-[26px] font-bold mt-1">{{ totalRequests }}</div>
+        <div class="text-[11px] text-[var(--text-dim)] mt-1">Log entries tersimpan</div>
+      </div>
 
-      <GlassCard>
-        <div class="space-y-4">
+      <!-- Avg Latency -->
+      <div class="card stat-card p-5">
+        <div class="flex items-start justify-between mb-3">
+          <div class="stat-icon" style="background: rgba(124, 92, 255, .12);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <span class="badge badge-purple">Runtime</span>
+        </div>
+        <div class="text-[11px] text-[var(--text-mute)] uppercase tracking-wider font-semibold">Uptime</div>
+        <div class="text-[22px] font-bold mt-1 mono">{{ uptime }}</div>
+        <div class="text-[11px] text-[var(--text-dim)] mt-1">Sejak start terakhir</div>
+      </div>
+
+      <!-- Mode -->
+      <div class="card stat-card p-5">
+        <div class="flex items-start justify-between mb-3">
+          <div class="stat-icon" style="background: rgba(79, 140, 255, .12);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f8cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <span class="badge badge-blue">Auto</span>
+        </div>
+        <div class="text-[11px] text-[var(--text-mute)] uppercase tracking-wider font-semibold">Mode</div>
+        <div class="text-[22px] font-bold mt-1">{{ startupMode }}</div>
+        <div class="text-[11px] text-[var(--text-dim)] mt-1">Routing mode</div>
+      </div>
+
+      <!-- Version -->
+      <div class="card stat-card p-5">
+        <div class="flex items-start justify-between mb-3">
+          <div class="stat-icon" style="background: rgba(251, 191, 36, .12);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <span class="badge badge-yellow">Info</span>
+        </div>
+        <div class="text-[11px] text-[var(--text-mute)] uppercase tracking-wider font-semibold">Version</div>
+        <div class="text-[22px] font-bold mt-1">{{ version }}</div>
+        <div class="text-[11px] text-[var(--text-dim)] mt-1">AtlasBridge</div>
+      </div>
+    </div>
+
+    <!-- Endpoints + Proxy Control -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <!-- Endpoint Config -->
+      <div class="card p-5 col-span-2">
+        <div class="flex items-center justify-between mb-4">
           <div>
-            <h2 class="text-lg font-semibold text-white">Quick Actions</h2>
-            <p class="mt-1 text-sm text-slate-400">Common runtime actions and routing shortcuts.</p>
+            <div class="text-[14px] font-semibold">Endpoint Configuration</div>
+            <div class="text-[11.5px] text-[var(--text-mute)]">Konfigurasi proxy dan downstream 9Router</div>
           </div>
-          <div class="flex flex-wrap gap-3">
-            <GradientButton @click="startProxy" :disabled="status?.status === 'running'">
-              Start Proxy
-            </GradientButton>
-            <GhostButton @click="stopProxy" :disabled="status?.status !== 'running'">
-              Stop Proxy
-            </GhostButton>
-            <GhostButton @click="restartProxy">Restart Proxy</GhostButton>
+          <router-link to="/advanced" class="btn btn-ghost">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4"/></svg>
+            Edit
+          </router-link>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="card-soft p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="status-dot" :class="statusClass"></span>
+              <span class="text-[11px] text-[var(--text-mute)] uppercase tracking-wider font-semibold">Proxy Endpoint</span>
+            </div>
+            <div class="code-tag text-[13px]">{{ openAiEndpoint }}</div>
+            <div class="text-[11.5px] text-[var(--text-dim)] mt-2">OpenAI-compatible · Model: <span class="code-tag">smart-auto</span></div>
           </div>
-
-          <div class="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div class="flex items-center justify-between gap-3 text-sm">
-              <span class="text-slate-400">OpenAI-compatible endpoint</span>
-              <button class="text-cyan-300 transition hover:text-cyan-200" @click="copyEndpoint">
-                Copy
-              </button>
+          <div class="card-soft p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="status-dot" :class="downstreamHealthy ? 'running' : 'error'"></span>
+              <span class="text-[11px] text-[var(--text-mute)] uppercase tracking-wider font-semibold">Downstream 9Router</span>
             </div>
-            <div class="font-mono text-sm text-white break-all">{{ openAiEndpoint }}</div>
-            <div class="flex items-center justify-between gap-3 text-sm">
-              <span class="text-slate-400">Downstream endpoint</span>
-              <button class="text-cyan-300 transition hover:text-cyan-200" @click="copyDownstreamUrl">
-                Copy
-              </button>
-            </div>
-            <div class="font-mono text-sm text-white break-all">{{ downstreamEndpoint }}</div>
+            <div class="code-tag text-[13px]">{{ downstreamEndpoint }}</div>
+            <div class="text-[11.5px] text-[var(--text-dim)] mt-2">Status: <span :style="{ color: downstreamHealthy ? 'var(--green)' : 'var(--red)' }">{{ downstreamHealthy ? 'Connected' : 'Disconnected' }}</span></div>
           </div>
         </div>
-      </GlassCard>
-    </section>
-
-    <section class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-      <GlassCard>
-        <div class="space-y-4">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h2 class="text-lg font-semibold text-white">Model Aliases</h2>
-              <p class="mt-1 text-sm text-slate-400">Reference aliases currently exposed through the dashboard.</p>
-            </div>
-            <StatusBadge status="active" label="ready" />
-          </div>
-
-          <div class="overflow-hidden rounded-2xl border border-white/10">
-            <div class="grid grid-cols-[1.1fr_1.6fr_1fr] gap-3 border-b border-white/10 bg-white/5 px-4 py-3 text-[11px] uppercase tracking-[0.22em] text-slate-500">
-              <span>Alias</span>
-              <span>Purpose</span>
-              <span>Route</span>
-            </div>
-            <div v-for="alias in smartAliases" :key="alias.id" class="grid grid-cols-[1.1fr_1.6fr_1fr] gap-3 border-b border-white/5 px-4 py-3 text-sm last:border-b-0">
-              <span class="font-mono text-slate-100">{{ alias.id }}</span>
-              <span class="text-slate-400">{{ alias.description }}</span>
-              <span class="text-cyan-200">{{ alias.route }}</span>
-            </div>
-          </div>
-        </div>
-      </GlassCard>
-
-      <GlassCard>
-        <div class="space-y-4">
+        <div class="divider"></div>
+        <div class="grid grid-cols-3 gap-4 text-[12.5px]">
           <div>
-            <h2 class="text-lg font-semibold text-white">Combo Tester</h2>
-            <p class="mt-1 text-sm text-slate-400">
-              Test model combos through 9Router. Enter a model name or select from the list.
-            </p>
+            <div class="text-[var(--text-mute)] text-[11px] uppercase tracking-wider mb-1">Default Route</div>
+            <div class="font-medium"><span class="code-tag">{{ defaultRoute }}</span></div>
           </div>
-
-          <FormField label="Model name" forId="combo-model" hint="Examples: combo.default, COding, atlas-auto">
-            <input
-              id="combo-model"
-              v-model="comboModel"
-              type="text"
-              placeholder="Model name (e.g. combo.default, COding)"
-              class="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-            />
-          </FormField>
-
-          <div class="flex flex-wrap gap-2">
-            <GhostButton
-              v-for="m in comboPresets"
-              :key="m"
-              :class="comboModel === m ? 'border-cyan-400/35 bg-cyan-400/10 text-cyan-100' : ''"
-              @click="comboModel = m"
-            >
-              {{ m }}
-            </GhostButton>
+          <div>
+            <div class="text-[var(--text-mute)] text-[11px] uppercase tracking-wider mb-1">Startup Mode</div>
+            <div class="font-medium"><span class="badge badge-green">{{ startupMode }}</span></div>
           </div>
-
-          <div class="flex flex-wrap gap-3">
-            <GradientButton :disabled="!comboModel || comboLoading" @click="testCombo">
-              Test Combo
-            </GradientButton>
+          <div>
+            <div class="text-[var(--text-mute)] text-[11px] uppercase tracking-wider mb-1">Privacy Mode</div>
+            <div class="font-medium"><span class="badge badge-blue">Standard</span></div>
           </div>
+        </div>
+      </div>
 
-          <div v-if="comboResult" class="rounded-2xl border px-4 py-3 text-sm" :class="comboResult.success ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-100' : 'border-rose-400/20 bg-rose-400/10 text-rose-100'">
-            <div v-if="comboResult.success">
-              <span class="font-mono font-semibold">{{ comboResult.model }}</span>
-              <span v-if="comboResult.resolved_model && comboResult.resolved_model !== comboResult.model">
-                → <span class="font-mono">{{ comboResult.resolved_model }}</span>
-              </span>
-              <span class="ml-2 text-white/70">{{ comboResult.latency }}ms</span>
+      <!-- Proxy Control -->
+      <div class="card p-5">
+        <div class="text-[14px] font-semibold mb-1">Proxy Control</div>
+        <div class="text-[11.5px] text-[var(--text-mute)] mb-4">Runtime management</div>
+        <div class="flex flex-col gap-2">
+          <button class="btn btn-success w-full justify-center" @click="handleStart">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Start
+          </button>
+          <button class="btn btn-danger w-full justify-center" @click="handleStop">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"/></svg>
+            Stop
+          </button>
+          <button class="btn btn-secondary w-full justify-center" @click="handleRestart">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Restart
+          </button>
+        </div>
+        <div class="divider"></div>
+        <div class="text-[12px]">
+          <div class="flex justify-between py-1.5"><span class="text-[var(--text-mute)]">Uptime</span><span class="font-medium mono">{{ uptime }}</span></div>
+          <div class="flex justify-between py-1.5"><span class="text-[var(--text-mute)]">Version</span><span class="font-medium mono">{{ version }}</span></div>
+          <div class="flex justify-between py-1.5"><span class="text-[var(--text-mute)]">PID</span><span class="font-medium mono">{{ pid }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts + Top Profiles -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <!-- Request Distribution Chart -->
+      <div class="card p-5 col-span-2">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-[14px] font-semibold">Request Distribution</div>
+            <div class="text-[11.5px] text-[var(--text-mute)]">Distribusi task type 24 jam terakhir</div>
+          </div>
+          <div class="flex gap-1 bg-[var(--bg-2)] p-1 rounded-lg">
+            <div class="tab active">24h</div>
+            <div class="tab">7d</div>
+            <div class="tab">30d</div>
+          </div>
+        </div>
+        <div class="flex items-end gap-2 h-[180px] pt-4">
+          <div v-for="bar in chartBars" :key="bar.label" class="flex-1 flex flex-col items-center gap-2">
+            <div class="w-full flex items-end justify-center h-[140px]">
+              <div class="chart-bar w-full" :style="{ height: bar.height + '%', background: bar.color }" :data-value="bar.value"></div>
             </div>
-            <div v-else>
-              <span class="font-mono">{{ comboResult.model }}</span> failed:
-              <span class="font-mono">{{ comboResult.error }}</span>
+            <div class="text-[10.5px] text-[var(--text-mute)] text-center">{{ bar.label }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Route Profiles -->
+      <div class="card p-5">
+        <div class="text-[14px] font-semibold mb-1">Top Route Profiles</div>
+        <div class="text-[11.5px] text-[var(--text-mute)] mb-4">Paling sering digunakan</div>
+        <div v-if="topProfiles.length === 0" class="text-[12.5px] text-[var(--text-mute)] py-4 text-center">Belum ada data routing</div>
+        <div v-else class="space-y-3">
+          <div v-for="profile in topProfiles" :key="profile.name">
+            <div class="flex justify-between mb-1.5 text-[12.5px]">
+              <span class="font-medium">{{ profile.name }}</span>
+              <span class="text-[var(--text-mute)] mono">{{ profile.count }}</span>
+            </div>
+            <div class="h-1.5 bg-[var(--bg-3)] rounded-full overflow-hidden">
+              <div class="h-full rounded-full" :style="{ width: profile.pct + '%', background: profile.color }"></div>
             </div>
           </div>
         </div>
-      </GlassCard>
-    </section>
+      </div>
+    </div>
+
+    <!-- Recent Routing Activity -->
+    <div class="card">
+      <div class="flex items-center justify-between p-5 border-b border-[var(--border)]">
+        <div>
+          <div class="text-[14px] font-semibold">Recent Routing Activity</div>
+          <div class="text-[11.5px] text-[var(--text-mute)]">Log metadata routing terbaru (tanpa prompt penuh)</div>
+        </div>
+        <router-link to="/observability" class="btn btn-ghost">View all →</router-link>
+      </div>
+      <!-- Header row -->
+      <div class="log-row" style="padding: 10px 20px; background: var(--bg-2); color: var(--text-mute); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em;">
+        <div>Timestamp</div>
+        <div>Request ID</div>
+        <div>Task Type</div>
+        <div>Route</div>
+        <div>Latency</div>
+        <div>Status</div>
+      </div>
+      <!-- Rows -->
+      <div v-if="recentLogs.length === 0" class="p-8 text-center text-[var(--text-mute)] text-[13px]">Belum ada log routing</div>
+      <div v-for="log in recentLogs" :key="log.id" class="log-row">
+        <div class="text-[var(--text-dim)]">{{ log.time }}</div>
+        <div class="mono text-[var(--text)]">{{ log.id }}</div>
+        <div><span class="badge badge-blue">{{ log.taskType || '-' }}</span></div>
+        <div><span class="code-tag">{{ log.route }}</span></div>
+        <div class="mono">{{ log.latency }}</div>
+        <div><span class="badge" :class="log.status === '200' || log.status === 'success' ? 'badge-green' : 'badge-red'">{{ log.status }}</span></div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted } from "vue";
 import { useAppStore } from "../stores/app";
 import { useConfigStore } from "../stores/config";
-import { api, type ComboTestResult } from "../api/client";
-import GlassCard from "../components/ui/GlassCard.vue";
-import PageHeader from "../components/ui/PageHeader.vue";
-import StatCard from "../components/ui/StatCard.vue";
-import MetricCard from "../components/ui/MetricCard.vue";
-import StatusBadge from "../components/ui/StatusBadge.vue";
-import GradientButton from "../components/ui/GradientButton.vue";
-import GhostButton from "../components/ui/GhostButton.vue";
-import FormField from "../components/ui/FormField.vue";
+import { useToast } from "../composables/useToast";
+import { api } from "../api/client";
 
 const appStore = useAppStore();
 const configStore = useConfigStore();
-const router = useRouter();
+const { showToast } = useToast();
 
 const status = computed(() => appStore.status);
-const config = computed(() => configStore.config);
-const routes = computed(() => configStore.routes);
-const profiles = computed(() => configStore.profiles);
-const downstreamStatus = computed(
-  () => appStore.downstreamHealth?.status || "unknown",
-);
-
-const statusStatus = computed(() => status.value?.status || "inactive");
-
-const statusTone = computed(() => {
-  const s = statusStatus.value;
-  if (s === "running") return "success";
-  if (s === "stopped") return "warning";
+const statusClass = computed(() => {
+  const s = status.value?.status;
+  if (s === "running") return "running";
+  if (s === "stopped") return "stopped";
   if (s === "error") return "error";
-  return "default";
+  return "disabled";
 });
-
-const statusText = computed(() => status.value?.status || "Loading...");
 
 const openAiEndpoint = computed(() => {
-  const host = status.value?.host || "127.0.0.1";
-  const port = status.value?.port || 20127;
-  return `http://${host}:${port}/v1`;
+  if (configStore.config?.server) {
+    return `http://${configStore.config.server.host}:${configStore.config.server.port}/v1`;
+  }
+  return "http://localhost:20127/v1";
 });
 
-const downstreamEndpoint = computed(() => status.value?.downstream || "http://127.0.0.1:20128/v1");
+const downstreamEndpoint = computed(() =>
+  configStore.config?.downstream?.base_url || "—"
+);
 
-const downstreamStatusLabel = computed(() => {
-  const state = downstreamStatus.value;
-  if (state === "connected") return "Connected and ready";
-  if (state === "unavailable") return "Downstream health unavailable";
-  return `Status: ${state}`;
-});
+const downstreamHealthy = computed(() => appStore.downstreamHealth?.status === "ok");
 
-const startupMode = computed(() => config.value?.startup?.run_at_login ? "Auto start" : "Manual start");
-const startupDescription = computed(() => config.value?.startup?.run_at_login ? "Proxy starts with the system." : "Proxy starts manually from the dashboard.");
-const startupDelta = computed(() => config.value?.startup?.start_proxy_on_app_launch ? "App launch enabled" : "App launch disabled");
-const startupTone = computed(() => config.value?.startup?.run_at_login ? "success" : "warning");
+const defaultRoute = computed(() =>
+  configStore.config?.routing?.default_route || "—"
+);
 
-const defaultRoute = computed(() => config.value?.routing?.default_route || "route.default");
+const startupMode = computed(() =>
+  configStore.config?.app?.mode || "—"
+);
 
-const requestCountToday = computed(() => "Unavailable");
+const uptime = computed(() => status.value?.uptime || "—");
+const version = computed(() => status.value?.version || "—");
+const pid = computed(() => status.value?.pid ? String(status.value.pid) : "—");
 
-const mostUsedTaskType = computed(() => {
-  const taskRouteCount = Object.keys(routes.value?.task_routes || {}).length;
-  return taskRouteCount > 0 ? "Derived routing map" : "Unavailable";
-});
+// Recent logs from real backend
+const rawLogs = ref<any[]>([]);
 
-const mostUsedRouteProfile = computed(() => {
-  const profileEntries = Object.entries(profiles.value?.route_profiles || {});
-  if (!profileEntries.length) return "Unavailable";
-  const [name, profile] = profileEntries[0];
-  return profile.label || name;
-});
+const recentLogs = computed(() =>
+  rawLogs.value.slice(0, 8).map((l: any) => ({
+    id: l.request_id ? l.request_id.substring(0, 12) : "—",
+    time: l.timestamp ? new Date(l.timestamp).toLocaleTimeString() : "—",
+    taskType: l.task_type || "-",
+    route: l.route_key || l.selected_route || "—",
+    latency: l.latency_ms != null ? `${l.latency_ms}ms` : "—",
+    status: l.status || "—",
+  }))
+);
 
-const smartAliases = [
-  {
-    id: "atlas-auto",
-    description: "Auto-route based on request analysis",
-    route: "auto",
-  },
-  {
-    id: "atlas-debug",
-    description: "Force debugging route",
-    route: "route.debugging",
-  },
-  {
-    id: "atlas-cheap",
-    description: "Force low-cost route",
-    route: "route.low_cost",
-  },
-  {
-    id: "atlas-docs",
-    description: "Force documentation route",
-    route: "route.documentation",
-  },
-  {
-    id: "atlas-architect",
-    description: "Force architecture route",
-    route: "route.architect",
-  },
-  {
-    id: "atlas-fast",
-    description: "Force low-latency optimized route",
-    route: "route.low_cost",
-  },
-  {
-    id: "atlas-long-context",
-    description: "Force long context analysis route",
-    route: "route.long_context",
-  },
-  {
-    id: "smart-auto",
-    description: "Auto-route based on request analysis",
-    route: "auto",
-  },
-  {
-    id: "smart-debug",
-    description: "Force debugging route",
-    route: "route.debugging",
-  },
-  {
-    id: "smart-cheap",
-    description: "Force low-cost route",
-    route: "route.low_cost",
-  },
-  {
-    id: "smart-docs",
-    description: "Force documentation route",
-    route: "route.documentation",
-  },
-  {
-    id: "smart-architect",
-    description: "Force architecture route",
-    route: "route.architect",
-  },
-  {
-    id: "smart-code",
-    description: "Force code/engineering route",
-    route: "route.backend",
-  },
-  {
-    id: "smart-fast",
-    description: "Force low-latency optimized route",
-    route: "route.low_cost",
-  },
-  {
-    id: "smart-long-context",
-    description: "Force long context analysis route",
-    route: "route.long_context",
-  },
+// totalRequests from log count
+const totalRequests = computed(() =>
+  rawLogs.value.length > 0 ? String(rawLogs.value.length) : "—"
+);
+
+// topProfiles derived from actual log data
+const profileColors = [
+  "linear-gradient(90deg, #7c5cff, #4f8cff)",
+  "linear-gradient(90deg, #f59e0b, #ef4444)",
+  "linear-gradient(90deg, #34d399, #22d3ee)",
+  "linear-gradient(90deg, #a78bfa, #7c5cff)",
+  "linear-gradient(90deg, #22d3ee, #4f8cff)",
+  "linear-gradient(90deg, #8b91a7, #5a6077)",
 ];
 
-async function copyEndpoint() {
-  await navigator.clipboard.writeText(openAiEndpoint.value);
+const topProfiles = computed(() => {
+  const counts: Record<string, number> = {};
+  for (const l of rawLogs.value) {
+    const key = l.route_key || l.selected_route;
+    if (key) counts[key] = (counts[key] || 0) + 1;
+  }
+  const total = rawLogs.value.length || 1;
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([name, count], i) => ({
+      name,
+      count,
+      pct: Math.round((count / total) * 100),
+      color: profileColors[i % profileColors.length],
+    }));
+});
+
+// Chart bars derived from topProfiles
+const chartBars = computed(() => {
+  if (topProfiles.value.length === 0) return [];
+  const max = topProfiles.value[0]?.count || 1;
+  return topProfiles.value.map((p, i) => ({
+    label: p.name.replace("route.", ""),
+    height: Math.round((p.count / max) * 90),
+    value: p.count,
+    color: profileColors[i % profileColors.length],
+  }));
+});
+
+async function loadLogs() {
+  try {
+    const data = await api.getLogs();
+    rawLogs.value = data.logs || [];
+  } catch {
+    rawLogs.value = [];
+  }
 }
 
-async function copyDownstreamUrl() {
-  await navigator.clipboard.writeText(downstreamEndpoint.value);
-}
-
-function openRoutingSettings() {
-  router.push("/routing");
-}
-
-async function startProxy() {
+// Proxy control — calls real API
+async function handleStart() {
   try {
     await api.runtimeStart();
+    showToast("Proxy started", "success");
     await appStore.fetchStatus();
   } catch (e: any) {
-    console.error("Failed to start proxy:", e.message);
+    showToast(`Failed to start: ${e.message}`, "error");
   }
 }
-
-async function stopProxy() {
+async function handleStop() {
   try {
     await api.runtimeStop();
+    showToast("Proxy stopped", "warning");
     await appStore.fetchStatus();
   } catch (e: any) {
-    console.error("Failed to stop proxy:", e.message);
+    showToast(`Failed to stop: ${e.message}`, "error");
   }
 }
-
-async function restartProxy() {
+async function handleRestart() {
   try {
     await api.runtimeRestart();
+    showToast("Proxy restarted", "success");
     await appStore.fetchStatus();
   } catch (e: any) {
-    console.error("Failed to restart proxy:", e.message);
+    showToast(`Failed to restart: ${e.message}`, "error");
   }
 }
 
-// Data is fetched by Layout.vue on mount - no duplicate fetch needed
-
-const comboModel = ref("");
-const comboLoading = ref(false);
-const comboResult = ref<ComboTestResult | null>(null);
-
-const comboPresets = [
-  "combo.default",
-  "combo.backend",
-  "combo.frontend",
-  "combo.fullstack",
-  "combo.debugging",
-  "combo.refactor",
-  "combo.test_generation",
-  "combo.documentation",
-  "combo.deep_reasoning",
-  "combo.design",
-  "combo.security_review",
-  "combo.long_context",
-  "combo.low_cost",
-  "COding",
-  "opencode",
-  "atlas-auto",
-  "atlas-debug",
-  "atlas-cheap",
-  "atlas-docs",
-  "atlas-architect",
-  "atlas-fast",
-  "atlas-long-context",
-  "smart-auto",
-  "smart-debug",
-  "smart-cheap",
-  "smart-docs",
-  "smart-architect",
-  "smart-fast",
-  "smart-long-context",
-  "smart-code",
-];
-
-async function testCombo() {
-  if (!comboModel.value) return;
-  comboLoading.value = true;
-  comboResult.value = null;
-  try {
-    comboResult.value = await api.testCombo(comboModel.value);
-  } catch (e: any) {
-    comboResult.value = {
-      model: comboModel.value,
-      success: false,
-      error: e.message,
-      latency: 0,
-    };
-  } finally {
-    comboLoading.value = false;
-  }
-}
+onMounted(loadLogs);
 </script>

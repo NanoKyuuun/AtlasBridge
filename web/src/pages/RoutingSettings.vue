@@ -1,224 +1,134 @@
 <template>
-  <div class="space-y-6 lg:space-y-8">
-    <PageHeader
-      eyebrow="Routing"
-      title="Task-to-Route Mapping"
-      description="Map detected task types to route profiles. Changes take effect on the next request."
-    />
-
-    <div v-if="validationError" class="rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
-      <span>{{ validationError }}</span>
+  <div>
+    <!-- Error Banner -->
+    <div v-if="validationError" class="mb-4 p-4 rounded-lg border border-[var(--red)] bg-[rgba(248,113,113,.1)] text-[var(--red)] text-[13px]">
+      {{ validationError }}
     </div>
 
-    <GlassCard>
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <!-- Task-to-Route Mapping Table -->
+    <div class="card mb-6">
+      <div class="p-5 border-b border-[var(--border)] flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-semibold text-white">Auto-routing</h2>
-          <p class="mt-1 text-sm text-slate-400">
-            Control whether task classification routes automatically or falls back to manual overrides.
-          </p>
+          <div class="text-[14px] font-semibold">Task-to-Route Mapping</div>
+          <div class="text-[11.5px] text-[var(--text-mute)]">Atur route profile untuk setiap kategori task yang terdeteksi</div>
         </div>
-
-        <label class="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-          <div class="space-y-1">
-            <div class="text-sm font-medium text-white">Automatic task routing</div>
-            <div class="text-xs text-slate-400">Enable model-path selection based on detected task type.</div>
-          </div>
-          <input
-            type="checkbox"
-            class="toggle toggle-primary toggle-lg border-white/20 bg-slate-800/80 checked:border-cyan-300 checked:bg-gradient-to-r checked:from-blue-500 checked:to-violet-500"
-            v-model="routingConfig.auto_routing"
-            @change="markDirty"
-          />
-        </label>
-      </div>
-    </GlassCard>
-
-    <GlassCard>
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h2 class="text-lg font-semibold text-white">Task-to-Route Mapping</h2>
-          <p class="mt-1 text-sm text-slate-400">
-            Each task category can be mapped to a specific route profile.
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-2 text-xs text-slate-400">
-          <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">{{ orderedTaskRoutes.length }} tasks</span>
-          <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1">{{ enabledProfileNames.length }} enabled profiles</span>
+        <div class="flex gap-2">
+          <button class="btn btn-secondary" @click="resetAll">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Reset Default
+          </button>
+          <button class="btn btn-primary" :disabled="!dirty" @click="save">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Changes
+          </button>
         </div>
       </div>
 
-      <div v-if="isLoading" class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-slate-400">
+      <!-- Table Header -->
+      <div class="route-row" style="background: var(--bg-2); color: var(--text-mute); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em;">
+        <div>Task Category</div>
+        <div>Route Profile</div>
+        <div>Status</div>
+        <div>Actions</div>
+      </div>
+
+      <!-- Loading -->
+      <div v-if="isLoading" class="p-8 text-center text-[var(--text-mute)] text-[13px]">
         Loading routing configuration...
       </div>
 
-      <div v-else-if="taskRoutesEmpty" class="mt-5">
-        <EmptyState
-          title="No task mappings available"
-          description="Load routing settings to view and edit the task-to-route mapping list."
-        >
-          <template #icon>
-            <span class="text-xl text-cyan-300">↗</span>
-          </template>
-        </EmptyState>
+      <!-- Empty State -->
+      <div v-else-if="taskRoutesEmpty" class="p-8 text-center text-[var(--text-mute)] text-[13px]">
+        No task mappings available. Load routing settings to view and edit the task-to-route mapping list.
       </div>
 
-      <div v-else class="mt-5 overflow-hidden rounded-3xl border border-white/10 bg-white/5">
-        <div class="grid grid-cols-12 gap-3 border-b border-white/10 bg-white/5 px-4 py-3 text-[11px] uppercase tracking-[0.22em] text-slate-500">
-          <div class="col-span-12 md:col-span-4">Task Category</div>
-          <div class="col-span-12 md:col-span-4">Route Profile</div>
-          <div class="col-span-12 md:col-span-3">Status</div>
-          <div class="col-span-12 md:col-span-1 text-right">Reset</div>
-        </div>
-
-        <div
-          v-for="task in orderedTaskRoutes"
-          :key="task"
-          class="grid grid-cols-12 gap-3 border-b border-white/5 px-4 py-4 last:border-b-0"
-        >
-          <div class="col-span-12 md:col-span-4">
-            <div class="flex items-start gap-3">
-              <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" :class="taskIndicatorClass(task)"></span>
-              <div>
-                <div class="font-mono text-sm text-white">{{ task }}</div>
-                <div class="mt-1 text-xs leading-5 text-slate-400">
-                  {{ taskDescriptions[task] || 'Task classification route mapping.' }}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-span-12 md:col-span-4">
-            <label class="block">
-              <span class="sr-only">Route profile for {{ task }}</span>
-              <select
-                class="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2.5 text-sm text-slate-100 outline-none transition-all duration-200 focus:border-cyan-400/40 focus:ring-2 focus:ring-cyan-400/20"
-                v-model="taskRoutes[task]"
-                @change="markDirty"
-              >
-                <option
-                  v-for="profile in profileNames"
-                  :key="profile"
-                  :value="profile"
-                >
-                  {{ profile }}
-                </option>
-              </select>
-            </label>
-          </div>
-
-          <div class="col-span-12 md:col-span-3 flex items-center">
-            <div class="flex items-center gap-2 text-sm">
-              <span class="h-2 w-2 rounded-full" :class="routeStatusDot(task)"></span>
-              <span class="text-slate-300">{{ routeStatusLabel(task) }}</span>
-            </div>
-          </div>
-
-          <div class="col-span-12 md:col-span-1 flex items-center justify-end">
-            <button class="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-200 transition hover:border-cyan-400/25 hover:bg-white/10" @click="resetTask(task)">
-              Reset
-            </button>
-          </div>
-        </div>
-      </div>
-    </GlassCard>
-
-    <GlassCard>
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div class="space-y-4">
+      <!-- Rows -->
+      <template v-else>
+        <div v-for="task in orderedTaskRoutes" :key="task" class="route-row">
           <div>
-            <h2 class="text-lg font-semibold text-white">Routing Defaults</h2>
-            <p class="mt-1 text-sm text-slate-400">
-              Set the fallback route and confidence thresholds used by the classifier.
-            </p>
-          </div>
-
-          <FormField
-            label="Default Route"
-            hint="Used when no specific task route is selected."
-            :error="!isProfileEnabled(routingConfig.default_route) ? 'Selected profile is disabled' : ''"
-          >
-            <select
-              class="w-full bg-transparent text-sm text-white outline-none"
-              v-model="routingConfig.default_route"
-              @change="markDirty"
-            >
-              <option v-for="p in enabledProfileNames" :key="p" :value="p">
-                {{ p }}
-              </option>
-            </select>
-          </FormField>
-
-          <FormField
-            label="Low Confidence Route"
-            hint="Applied when task detection confidence is below the threshold."
-            :error="!isProfileEnabled(routingConfig.low_confidence_route) ? 'Selected profile is disabled' : ''"
-          >
-            <select
-              class="w-full bg-transparent text-sm text-white outline-none"
-              v-model="routingConfig.low_confidence_route"
-              @change="markDirty"
-            >
-              <option v-for="p in enabledProfileNames" :key="p" :value="p">
-                {{ p }}
-              </option>
-            </select>
-          </FormField>
-        </div>
-
-        <div class="space-y-4">
-          <div>
-            <h3 class="text-base font-semibold text-white">Confidence Threshold</h3>
-            <p class="mt-1 text-sm text-slate-400">
-              Tune how aggressively AtlasBridge auto-routes uncertain tasks.
-            </p>
-          </div>
-
-          <FormField label="Threshold" hint="Range: 0 to 1">
-            <input
-              type="number"
-              class="w-full bg-transparent text-sm text-white outline-none"
-              v-model.number="routingConfig.confidence_threshold"
-              min="0"
-              max="1"
-              step="0.05"
-              @change="markDirty"
-            />
-          </FormField>
-
-          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <div class="text-sm font-medium text-white">Current routing mode</div>
-                <div class="mt-1 text-xs text-slate-400">
-                  {{ routingConfig.auto_routing ? 'Auto-routing enabled' : 'Manual routing preferred' }}
-                </div>
-              </div>
-              <span class="rounded-full border px-3 py-1 text-xs" :class="routingConfig.auto_routing ? 'border-cyan-400/20 bg-cyan-400/10 text-cyan-200' : 'border-slate-500/20 bg-slate-500/10 text-slate-300'">
-                {{ routingConfig.auto_routing ? 'active' : 'inactive' }}
-              </span>
+            <div class="font-medium flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full" :class="taskIndicatorClass(task)"></span>
+              {{ formatTaskName(task) }}
             </div>
+            <div class="text-[11.5px] text-[var(--text-mute)] mt-0.5">{{ taskDescriptions[task] || task }}</div>
+          </div>
+          <select
+            class="select"
+            :value="taskRoutes[task]"
+            @change="(e) => { taskRoutes[task] = (e.target as HTMLSelectElement).value; markDirty(); }"
+          >
+            <option v-for="profile in enabledProfileNames" :key="profile" :value="profile">{{ profile }}</option>
+            <option v-if="!enabledProfileNames.includes(taskRoutes[task])" :value="taskRoutes[task]">{{ taskRoutes[task] }}</option>
+          </select>
+          <div>
+            <span class="badge" :class="routeStatusLabel(task) === 'Ready' ? 'badge-green' : routeStatusLabel(task) === 'Disabled profile' ? 'badge-yellow' : 'badge-red'">
+              {{ routeStatusLabel(task) }}
+            </span>
+          </div>
+          <div>
+            <button class="btn btn-ghost" style="padding: 4px 10px; font-size: 12px;" @click="resetTask(task)">Reset</button>
           </div>
         </div>
-      </div>
-    </GlassCard>
-
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-      <GradientButton class="sm:min-w-40" @click="save" :disabled="!dirty">
-        Save Changes
-      </GradientButton>
-      <GhostButton class="sm:min-w-32" @click="load" :disabled="!dirty">
-        Discard
-      </GhostButton>
-      <button
-        class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-200 transition-all duration-200 hover:border-rose-400/25 hover:bg-rose-400/10 hover:text-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-        @click="resetAll"
-      >
-        Reset to Default
-      </button>
+      </template>
     </div>
 
-    <div v-if="configStore.error" class="rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+    <!-- Default Route + Routing Behavior -->
+    <div class="grid grid-cols-2 gap-4">
+      <!-- Default Route -->
+      <div class="card p-5">
+        <div class="text-[14px] font-semibold mb-1">Default Route</div>
+        <div class="text-[11.5px] text-[var(--text-mute)] mb-4">Digunakan saat task tidak dikenali</div>
+        <select
+          class="select"
+          v-model="routingConfig.default_route"
+          @change="markDirty"
+        >
+          <option v-for="profile in enabledProfileNames" :key="profile" :value="profile">{{ profile }}</option>
+        </select>
+        <div class="divider"></div>
+        <div class="text-[12px] text-[var(--text-dim)]">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-1"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Safe passthrough akan aktif jika classifier gagal
+        </div>
+      </div>
+
+      <!-- Routing Behavior -->
+      <div class="card p-5">
+        <div class="text-[14px] font-semibold mb-1">Routing Behavior</div>
+        <div class="text-[11.5px] text-[var(--text-mute)] mb-4">Kontrol perilaku routing otomatis</div>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[13px] font-medium">Auto-routing</div>
+              <div class="text-[11.5px] text-[var(--text-mute)]">Klasifikasi otomatis setiap request</div>
+            </div>
+            <div
+              class="toggle"
+              :class="{ on: routingConfig.auto_routing }"
+              @click="routingConfig.auto_routing = !routingConfig.auto_routing; markDirty()"
+            ></div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[13px] font-medium">Confidence Threshold</div>
+              <div class="text-[11.5px] text-[var(--text-mute)]">Minimum confidence untuk auto-route</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <input
+                type="range" min="0" max="100"
+                :value="Math.round(routingConfig.confidence_threshold * 100)"
+                class="w-24"
+                @input="(e) => { routingConfig.confidence_threshold = +(+(e.target as HTMLInputElement).value / 100).toFixed(2); markDirty(); }"
+              >
+              <span class="mono text-[12px] w-8">{{ routingConfig.confidence_threshold.toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config error -->
+    <div v-if="configStore.error" class="mt-4 p-4 rounded-lg border border-[var(--red)] bg-[rgba(248,113,113,.1)] text-[var(--red)] text-[13px]">
       {{ configStore.error }}
     </div>
   </div>
@@ -227,12 +137,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useConfigStore } from "../stores/config";
-import GlassCard from "../components/ui/GlassCard.vue";
-import PageHeader from "../components/ui/PageHeader.vue";
-import GradientButton from "../components/ui/GradientButton.vue";
-import GhostButton from "../components/ui/GhostButton.vue";
-import EmptyState from "../components/ui/EmptyState.vue";
-import FormField from "../components/ui/FormField.vue";
 
 const configStore = useConfigStore();
 const dirty = ref(false);
@@ -276,36 +180,26 @@ const defaultRoutingConfig = {
 
 const taskDescriptions: Record<string, string> = {
   general_chat: "General assistance and broad conversation routing.",
-  design_task: "Product, interface, and visual design work.",
-  backend_engineering: "Server-side logic, APIs, and data handling.",
-  frontend_engineering: "Client-side UI work and component updates.",
-  fullstack_engineering: "Cross-layer tasks spanning UI and server code.",
-  debugging: "Troubleshooting, tracing, and issue isolation.",
-  refactoring: "Structural cleanup and code modernization.",
-  test_generation: "Test creation, coverage, and verification tasks.",
-  documentation: "Docs, guides, and explanatory writing.",
-  architecture_design: "System design, boundaries, and long-term shape.",
-  security_review: "Security analysis, review, and hardening.",
-  long_context_analysis: "Deep analysis across large code or prompt context.",
-  lightweight_task: "Small, fast, low-cost changes.",
+  design_task: "UI/UX, visual, product design",
+  backend_engineering: "API, database, service, auth",
+  frontend_engineering: "Component, CSS, UI behavior",
+  fullstack_engineering: "Frontend + backend sekaligus",
+  debugging: "Error analysis, root cause",
+  refactoring: "Code cleanup, structure",
+  test_generation: "Unit test, integration test",
+  documentation: "README, docstring, comments",
+  architecture_design: "System design, blueprint",
+  security_review: "Risk analysis, vulnerability",
+  long_context_analysis: "Multi-file, large context",
+  lightweight_task: "Simple, short, low-complexity",
   unknown: "Fallback classification for uncategorized input.",
 };
 
 const taskOrder = [
-  "design_task",
-  "backend_engineering",
-  "frontend_engineering",
-  "fullstack_engineering",
-  "debugging",
-  "refactoring",
-  "documentation",
-  "architecture_design",
-  "lightweight_task",
-  "security_review",
-  "long_context_analysis",
-  "general_chat",
-  "test_generation",
-  "unknown",
+  "design_task", "backend_engineering", "frontend_engineering",
+  "fullstack_engineering", "debugging", "refactoring", "documentation",
+  "architecture_design", "lightweight_task", "security_review",
+  "long_context_analysis", "general_chat", "test_generation", "unknown",
 ];
 
 const profileNames = computed(() => {
@@ -321,16 +215,16 @@ const enabledProfileNames = computed(() => {
 });
 
 const orderedTaskRoutes = computed(() => {
-  const keys = new Set<string>([
-    ...taskOrder,
-    ...Object.keys(taskRoutes.value || {}),
-  ]);
+  const keys = new Set<string>([...taskOrder, ...Object.keys(taskRoutes.value || {})]);
   return Array.from(keys).filter((task) => taskRoutes.value[task] !== undefined);
 });
 
 const taskRoutesEmpty = computed(() => orderedTaskRoutes.value.length === 0);
-
 const isLoading = computed(() => configStore.loading);
+
+function formatTaskName(task: string) {
+  return task.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function isProfileEnabled(profileName: string): boolean {
   if (!configStore.profiles) return true;
@@ -347,27 +241,17 @@ function validate(): string | null {
   if (routingConfig.value.default_route && !enabledProfileNames.value.includes(routingConfig.value.default_route)) {
     return `Default route "${routingConfig.value.default_route}" is disabled or does not exist`;
   }
-  if (routingConfig.value.low_confidence_route && !enabledProfileNames.value.includes(routingConfig.value.low_confidence_route)) {
-    return `Low confidence route "${routingConfig.value.low_confidence_route}" is disabled or does not exist`;
-  }
   return null;
 }
 
 function load() {
-  if (configStore.routes) {
-    taskRoutes.value = { ...configStore.routes.task_routes };
-  }
-  if (configStore.config) {
-    routingConfig.value = { ...configStore.config.routing };
-  }
+  if (configStore.routes) taskRoutes.value = { ...configStore.routes.task_routes };
+  if (configStore.config) routingConfig.value = { ...configStore.config.routing };
   validationError.value = null;
   dirty.value = false;
 }
 
-function markDirty() {
-  dirty.value = true;
-  validationError.value = null;
-}
+function markDirty() { dirty.value = true; validationError.value = null; }
 
 function resetTask(task: string) {
   taskRoutes.value[task] = defaultRoutes[task] || "route.default";
@@ -382,10 +266,7 @@ function resetAll() {
 
 async function save() {
   const error = validate();
-  if (error) {
-    validationError.value = error;
-    return;
-  }
+  if (error) { validationError.value = error; return; }
   try {
     await configStore.saveRoutes({ task_routes: taskRoutes.value });
     await configStore.saveConfig({ routing: routingConfig.value });
@@ -398,11 +279,11 @@ async function save() {
 
 function taskIndicatorClass(task: string) {
   const route = taskRoutes.value[task];
-  if (!route) return "bg-slate-500/80 shadow-[0_0_10px_rgba(148,163,184,0.35)]";
-  if (route.includes("security")) return "bg-emerald-400 shadow-[0_0_10px_rgba(34,197,94,0.4)]";
-  if (route.includes("debug")) return "bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.45)]";
-  if (route.includes("long_context")) return "bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.45)]";
-  return "bg-cyan-400 shadow-[0_0_10px_rgba(53,215,242,0.45)]";
+  if (!route) return "bg-slate-500";
+  if (route.includes("security")) return "bg-emerald-400";
+  if (route.includes("debug")) return "bg-amber-400";
+  if (route.includes("long_context")) return "bg-violet-400";
+  return "bg-cyan-400";
 }
 
 function routeStatusLabel(task: string) {
@@ -411,14 +292,6 @@ function routeStatusLabel(task: string) {
   if (!profileNames.value.includes(route)) return "Profile missing";
   if (!isProfileEnabled(route)) return "Disabled profile";
   return "Ready";
-}
-
-function routeStatusDot(task: string) {
-  const label = routeStatusLabel(task);
-  if (label === "Ready") return "bg-emerald-400 shadow-[0_0_10px_rgba(34,197,94,0.45)]";
-  if (label === "Disabled profile") return "bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.45)]";
-  if (label === "Profile missing") return "bg-rose-400 shadow-[0_0_10px_rgba(239,68,68,0.45)]";
-  return "bg-slate-400 shadow-[0_0_10px_rgba(148,163,184,0.35)]";
 }
 
 onMounted(load);

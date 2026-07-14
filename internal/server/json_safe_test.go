@@ -87,30 +87,6 @@ func TestBuildComboTestBody_EscapesQuotes(t *testing.T) {
 	}
 }
 
-func TestValidateRequestID_Truncates(t *testing.T) {
-	long := strings.Repeat("a", 200)
-	result := validateRequestID(long)
-	if len(result) != MaxRequestIDLen {
-		t.Errorf("expected length %d, got %d", MaxRequestIDLen, len(result))
-	}
-}
-
-func TestValidateRequestID_Preserves(t *testing.T) {
-	short := "req-123"
-	result := validateRequestID(short)
-	if result != short {
-		t.Errorf("expected %q, got %q", short, result)
-	}
-}
-
-func TestValidateRouteKey_Truncates(t *testing.T) {
-	long := strings.Repeat("r", 200)
-	result := validateRouteKey(long)
-	if len(result) != MaxRouteKeyLen {
-		t.Errorf("expected length %d, got %d", MaxRouteKeyLen, len(result))
-	}
-}
-
 func TestSanitizModelName_Truncates(t *testing.T) {
 	long := strings.Repeat("m", 300)
 	result := sanitizeModelName(long)

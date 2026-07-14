@@ -46,10 +46,11 @@ type DownstreamConfig struct {
 }
 
 type SecurityConfig struct {
-	AdminAuthEnabled  bool   `yaml:"admin_auth_enabled" json:"admin_auth_enabled"`
-	AdminTokenHash    string `yaml:"admin_token_hash,omitempty" json:"admin_token_hash,omitempty"`
-	BindLocalhostOnly bool   `yaml:"bind_localhost_only" json:"bind_localhost_only"`
-	AllowLANAccess    bool   `yaml:"allow_lan_access" json:"allow_lan_access"`
+	AdminAuthEnabled   bool   `yaml:"admin_auth_enabled" json:"admin_auth_enabled"`
+	AdminTokenHash     string `yaml:"admin_token_hash,omitempty" json:"admin_token_hash,omitempty"`
+	AdminPasswordHash  string `yaml:"admin_password_hash,omitempty" json:"admin_password_hash,omitempty"`
+	BindLocalhostOnly  bool   `yaml:"bind_localhost_only" json:"bind_localhost_only"`
+	AllowLANAccess     bool   `yaml:"allow_lan_access" json:"allow_lan_access"`
 }
 
 type StartupConfig struct {
@@ -234,8 +235,9 @@ func Validate(cfg *Config) error {
 	if cfg.Security.AllowLANAccess && !cfg.Security.AdminAuthEnabled {
 		return fmt.Errorf("admin auth must be enabled when LAN access is allowed")
 	}
-	if cfg.Security.AdminAuthEnabled && cfg.Security.AdminTokenHash == "" {
-		return fmt.Errorf("admin token hash must be set when admin auth is enabled")
+	// Auth must have at least one credential: token hash or password hash
+	if cfg.Security.AdminAuthEnabled && cfg.Security.AdminTokenHash == "" && cfg.Security.AdminPasswordHash == "" {
+		return fmt.Errorf("admin token hash or password hash must be set when admin auth is enabled")
 	}
 	return nil
 }

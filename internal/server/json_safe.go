@@ -5,11 +5,9 @@ import (
 )
 
 const (
-	MaxMessages     = 128
-	MaxMessageLen   = 32 << 10
-	MaxModelName    = 256
-	MaxRequestIDLen = 128
-	MaxRouteKeyLen  = 128
+	MaxMessages   = 128
+	MaxMessageLen = 32 << 10
+	MaxModelName  = 256
 )
 
 type mockChatMessage struct {
@@ -47,20 +45,6 @@ func buildComboTestBody(model string) ([]byte, error) {
 		MaxTokens: 5,
 	}
 	return json.Marshal(req)
-}
-
-func validateRequestID(id string) string {
-	if len(id) > MaxRequestIDLen {
-		return id[:MaxRequestIDLen]
-	}
-	return id
-}
-
-func validateRouteKey(key string) string {
-	if len(key) > MaxRouteKeyLen {
-		return key[:MaxRouteKeyLen]
-	}
-	return key
 }
 
 func sanitizeModelName(model string) string {

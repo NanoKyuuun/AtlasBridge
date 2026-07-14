@@ -1,235 +1,219 @@
 <template>
-  <div class="min-h-screen relative overflow-hidden text-slate-100">
-    <div class="app-bg-noise"></div>
-    <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(47,128,255,0.12),transparent_30%),radial-gradient(circle_at_top_right,rgba(124,58,237,0.10),transparent_28%),radial-gradient(circle_at_bottom_center,rgba(53,215,242,0.08),transparent_32%)]"></div>
-
-    <div class="relative z-10 flex min-h-screen">
-      <aside
-        class="hidden lg:flex w-[260px] shrink-0 flex-col border-r border-white/10 glass-card bg-[rgba(6,10,20,0.82)]"
-      >
-        <div class="px-5 pt-6 pb-5 border-b border-white/10">
-          <div class="flex items-center gap-3">
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-cyan-400 shadow-[0_0_24px_rgba(59,130,246,0.35)]"
-              aria-hidden="true"
-            >
-              <span class="text-xl font-black text-white">A</span>
-            </div>
-            <div class="min-w-0">
-              <h1 class="text-lg font-semibold tracking-wide text-white">
-                AtlasBridge
-              </h1>
-              <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400">
-                Intelligent Routing. Maximum Potential.
-              </p>
-            </div>
-          </div>
-
-          <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-            <div class="flex items-center gap-2">
-              <span class="neon-dot"></span>
-              <span class="text-sm font-medium text-slate-100">{{ statusText }}</span>
-            </div>
-            <p class="mt-1 text-xs text-slate-400">
-              {{ status?.mode || "unknown" }} · v{{ version }}
-            </p>
-          </div>
+  <div class="flex min-h-screen">
+    <!-- SIDEBAR -->
+    <aside class="w-[260px] flex-shrink-0 border-r border-[var(--border)] bg-[var(--bg-1)] flex flex-col">
+      <!-- Logo -->
+      <div class="px-5 py-5 border-b border-[var(--border)] flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #7c5cff, #4f8cff); box-shadow: 0 4px 12px rgba(124,92,255,.3);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
         </div>
-
-        <nav class="flex-1 px-3 py-4 overflow-y-auto">
-          <div class="mb-3 px-3 text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500">
-            Navigation
-          </div>
-          <router-link
-            v-for="item in navItems"
-            :key="item.path"
-            :to="item.path"
-            class="group mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-all duration-200"
-            :class="isActive(item.path) ? 'bg-gradient-to-r from-blue-500/20 via-violet-500/18 to-cyan-400/12 text-white shadow-[0_0_24px_rgba(47,128,255,0.14)] border border-blue-400/20' : 'text-slate-300 hover:bg-white/5 hover:text-white border border-transparent'"
-          >
-            <span
-              class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-base transition-all duration-200 group-hover:bg-white/10"
-              :class="isActive(item.path) ? 'bg-white/10 shadow-[0_0_18px_rgba(53,215,242,0.16)]' : ''"
-            >
-              {{ item.icon }}
-            </span>
-            <span class="font-medium">{{ item.label }}</span>
-          </router-link>
-        </nav>
-
-        <div class="px-5 pb-5 pt-3 border-t border-white/10">
-          <div class="rounded-2xl border border-cyan-400/15 bg-white/5 px-4 py-3">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="text-[11px] uppercase tracking-[0.22em] text-slate-500">
-                  Connection
-                </p>
-                <p class="mt-1 text-sm text-slate-100">{{ currentPageTitle }}</p>
-              </div>
-              <div class="badge badge-sm border-0 bg-white/10 text-slate-100" :class="statusBadgeClass">
-                {{ statusText }}
-              </div>
-            </div>
-          </div>
+        <div>
+          <div class="font-bold text-[15px]">AtlasBridge</div>
+          <div class="text-[11px] text-[var(--text-mute)]">v1.1 · Intelligent Proxy</div>
         </div>
-      </aside>
+      </div>
 
-      <div class="flex min-w-0 flex-1 flex-col">
-        <header class="sticky top-0 z-20 border-b border-white/10 bg-[rgba(5,7,13,0.72)] backdrop-blur-xl">
-          <div class="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-            <div class="flex min-w-0 items-center gap-3">
-              <button
-                class="btn btn-ghost btn-sm lg:hidden border border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"
-                type="button"
-                @click="mobileNavOpen = !mobileNavOpen"
-                aria-label="Open navigation menu"
-              >
-                ☰
-              </button>
-              <div class="min-w-0">
-                <h2 class="truncate text-lg font-semibold text-white sm:text-xl">
-                  {{ currentPageTitle }}
-                </h2>
-                <p class="truncate text-xs text-slate-400 sm:text-sm">
-                  AtlasBridge control surface
-                </p>
-              </div>
-            </div>
+      <!-- Navigation -->
+      <nav class="flex-1 p-3 overflow-y-auto">
+        <div class="section-title">Overview</div>
+        <router-link
+          to="/"
+          class="nav-item"
+          :class="{ active: route.path === '/' }"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+          Dashboard
+        </router-link>
+        <router-link
+          to="/routing"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/routing') }"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="20" y2="20"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+          Routing Settings
+        </router-link>
+        <router-link
+          to="/profiles"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/profiles') }"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+          Route Profiles
+        </router-link>
 
-            <div class="flex items-center gap-2 sm:gap-3">
-              <span
-                v-if="saveMessage"
-                class="hidden rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200 sm:inline-flex"
-              >
-                {{ saveMessage }}
-              </span>
-              <span
-                v-if="error"
-                class="hidden rounded-full border border-rose-400/20 bg-rose-400/10 px-3 py-1 text-xs text-rose-200 sm:inline-flex"
-              >
-                {{ error }}
-              </span>
-              <div class="hidden md:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2">
-                <span class="neon-dot scale-75"></span>
-                <span class="text-xs text-slate-300">{{ status?.mode || 'unknown' }}</span>
-              </div>
-            </div>
-          </div>
-        </header>
+        <div class="section-title mt-5">System</div>
+        <router-link
+          to="/startup"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/startup') || route.path.startsWith('/runtime') }"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+          Startup &amp; Runtime
+        </router-link>
+        <router-link
+          to="/logs"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/logs') || route.path.startsWith('/privacy') }"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Privacy &amp; Logs
+        </router-link>
+        <router-link
+          to="/advanced"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/advanced') || route.path.startsWith('/downstream') }"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Advanced Settings
+        </router-link>
 
-        <div class="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10">
-          <div class="mx-auto max-w-[1600px]">
-            <div class="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-[rgba(8,12,22,0.38)] p-4 sm:p-6 lg:p-8 shadow-[0_24px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl">
-              <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(53,215,242,0.08),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(124,58,237,0.08),transparent_30%)]"></div>
-              <div class="relative z-10">
-                <slot />
-              </div>
-            </div>
+        <div class="section-title mt-5">Insights</div>
+        <router-link
+          to="/observability"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/observability') }"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Observability
+        </router-link>
+      </nav>
+
+      <!-- Footer / Endpoint Info -->
+      <div class="p-3 border-t border-[var(--border)]">
+        <div class="card-soft p-3 flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">AB</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[12.5px] font-medium truncate">AtlasBridge</div>
+            <div class="text-[11px] text-[var(--text-mute)] truncate">{{ proxyEndpoint }}</div>
           </div>
         </div>
       </div>
-    </div>
+    </aside>
 
-    <div v-if="mobileNavOpen" class="fixed inset-0 z-30 lg:hidden">
-      <button
-        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        type="button"
-        aria-label="Close navigation menu"
-        @click="mobileNavOpen = false"
-      ></button>
-      <aside
-        class="absolute left-0 top-0 flex h-full w-[min(86vw,320px)] flex-col border-r border-white/10 glass-card bg-[rgba(6,10,20,0.96)]"
-      >
-        <div class="px-5 pt-6 pb-5 border-b border-white/10">
-          <div class="flex items-center gap-3">
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-violet-500 to-cyan-400 shadow-[0_0_24px_rgba(59,130,246,0.35)]"
-              aria-hidden="true"
-            >
-              <span class="text-xl font-black text-white">A</span>
-            </div>
-            <div>
-              <h1 class="text-lg font-semibold text-white">AtlasBridge</h1>
-              <p class="text-[11px] uppercase tracking-[0.24em] text-slate-400">
-                Intelligent Routing. Maximum Potential.
-              </p>
-            </div>
+    <!-- MAIN -->
+    <main class="flex-1 flex flex-col min-w-0">
+      <!-- Top Bar / Header -->
+      <header class="h-[64px] border-b border-[var(--border)] bg-[var(--bg-1)] flex items-center justify-between px-6 flex-shrink-0">
+        <div class="flex items-center gap-4">
+          <div>
+            <h1 class="text-[16px] font-semibold">{{ currentPageTitle }}</h1>
+            <p class="text-[11.5px] text-[var(--text-mute)]">{{ currentPageSubtitle }}</p>
           </div>
         </div>
-
-        <nav class="flex-1 px-3 py-4 overflow-y-auto">
-          <router-link
-            v-for="item in navItems"
-            :key="item.path"
-            :to="item.path"
-            class="group mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-all duration-200"
-            :class="isActive(item.path) ? 'bg-gradient-to-r from-blue-500/20 via-violet-500/18 to-cyan-400/12 text-white border border-blue-400/20' : 'text-slate-300 hover:bg-white/5 hover:text-white border border-transparent'"
-            @click="mobileNavOpen = false"
+        <div class="flex items-center gap-3">
+          <!-- Global Status Indicator -->
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-2)] border border-[var(--border)]">
+            <span class="status-dot" :class="statusClass"></span>
+            <span class="text-[12px] font-medium">{{ statusText }}</span>
+          </div>
+          <!-- Refresh -->
+          <button class="btn btn-ghost" @click="refreshAll">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Refresh
+          </button>
+          <!-- Stop / Start Proxy -->
+          <button
+            class="btn"
+            :class="proxyRunning ? 'btn-secondary' : 'btn-success'"
+            @click="toggleProxy"
           >
-            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-base">
-              {{ item.icon }}
-            </span>
-            <span class="font-medium">{{ item.label }}</span>
-          </router-link>
-        </nav>
-      </aside>
-    </div>
+            <svg v-if="proxyRunning" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            {{ proxyRunning ? 'Stop Proxy' : 'Start Proxy' }}
+          </button>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <slot />
+      </div>
+    </main>
+
+    <!-- Toast Notifications -->
+    <Toast />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAppStore } from "../stores/app";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
+import { useToast } from "../composables/useToast";
+import Toast from "./ui/Toast.vue";
 
 const route = useRoute();
 const router = useRouter();
 const appStore = useAppStore();
 const configStore = useConfigStore();
 const authStore = useAuthStore();
-const mobileNavOpen = ref(false);
+const { showToast } = useToast();
 
-const navItems = [
-  { path: "/", label: "Dashboard", icon: "📊" },
-  { path: "/routing", label: "Routing Settings", icon: "🔀" },
-  { path: "/profiles", label: "Route Profiles", icon: "📋" },
-  { path: "/runtime", label: "Runtime", icon: "⚙️" },
-  { path: "/startup", label: "Startup", icon: "🚀" },
-  { path: "/downstream", label: "9Router", icon: "🔗" },
-  { path: "/logs", label: "Logs", icon: "📝" },
-  { path: "/privacy", label: "Privacy", icon: "🔒" },
-  { path: "/advanced", label: "Advanced", icon: "🛠️" },
-];
+const proxyRunning = ref(true);
 
-const version = computed(() => appStore.status?.version || "0.1.0");
 const status = computed(() => appStore.status);
-const saveMessage = computed(() => configStore.saveMessage);
-const error = computed(() => configStore.error);
+
+const proxyEndpoint = computed(() => {
+  if (configStore.config?.server) {
+    return `${configStore.config.server.host}:${configStore.config.server.port}`;
+  }
+  if (status.value?.host && status.value?.port) {
+    return `${status.value.host}:${status.value.port}`;
+  }
+  return "—";
+});
 
 const statusText = computed(() => {
-  if (!status.value) return "Loading...";
-  return status.value.status || "unknown";
+  if (!status.value) return "Offline";
+  const s = status.value.status || "unknown";
+  return s.charAt(0).toUpperCase() + s.slice(1);
 });
 
-const statusBadgeClass = computed(() => {
-  const s = statusText.value;
-  if (s === "running") return "badge-success";
-  if (s === "stopped") return "badge-warning";
-  if (s === "error") return "badge-error";
-  return "badge-ghost";
+const statusClass = computed(() => {
+  if (!status.value) return "stopped";
+  const s = status.value?.status;
+  if (s === "running") return "running";
+  if (s === "stopped") return "stopped";
+  if (s === "error") return "error";
+  return "disabled";
 });
 
-const currentPageTitle = computed(() => {
-  if (route.path === "/") return "AtlasBridge Dashboard";
-  const item = navItems.find((i) => i.path === route.path);
-  return item?.label || "AtlasBridge";
-});
+const pageInfo: Record<string, { title: string; subtitle: string }> = {
+  "/": { title: "Dashboard", subtitle: "Monitoring status proxy dan aktivitas routing" },
+  "/routing": { title: "Routing Settings", subtitle: "Atur task-to-route mapping dan perilaku routing" },
+  "/profiles": { title: "Route Profiles", subtitle: "Kelola abstraksi routing untuk 9Router" },
+  "/startup": { title: "Startup & Runtime", subtitle: "Konfigurasi auto-start dan kontrol runtime proxy" },
+  "/runtime": { title: "Startup & Runtime", subtitle: "Konfigurasi auto-start dan kontrol runtime proxy" },
+  "/logs": { title: "Privacy & Logs", subtitle: "Pengaturan privasi dan viewing log routing" },
+  "/privacy": { title: "Privacy & Logs", subtitle: "Pengaturan privasi dan viewing log routing" },
+  "/advanced": { title: "Advanced Settings", subtitle: "Konfigurasi teknis lanjutan" },
+  "/downstream": { title: "Advanced Settings", subtitle: "Konfigurasi teknis lanjutan" },
+  "/observability": { title: "Observability", subtitle: "Metrics, analytics, dan full request log" },
+};
 
-function isActive(path: string) {
-  if (path === "/") return route.path === "/";
-  return route.path.startsWith(path);
+const currentPageTitle = computed(() => pageInfo[route.path]?.title || "AtlasBridge");
+const currentPageSubtitle = computed(() => pageInfo[route.path]?.subtitle || "");
+
+function toggleProxy() {
+  proxyRunning.value = !proxyRunning.value;
+  if (proxyRunning.value) {
+    showToast("Proxy started", "success");
+  } else {
+    showToast("Proxy stopped", "warning");
+  }
+}
+
+function refreshAll() {
+  appStore.fetchStatus();
+  appStore.fetchDownstreamHealth();
+  configStore.fetchAll();
+  showToast("Status refreshed", "info");
 }
 
 onMounted(() => {
@@ -237,13 +221,6 @@ onMounted(() => {
   appStore.fetchDownstreamHealth();
   configStore.fetchAll();
 });
-
-watch(
-  () => route.path,
-  () => {
-    mobileNavOpen.value = false;
-  },
-);
 
 watch(
   () => authStore.authRequired,

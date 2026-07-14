@@ -1,20 +1,17 @@
 <template>
-  <div class="space-y-2">
-    <label v-if="label" :for="forId" class="flex items-center justify-between gap-3 text-sm font-medium text-slate-200">
-      <span>{{ label }}</span>
-      <span v-if="required" class="text-xs text-cyan-300">Required</span>
+  <div class="space-y-1.5">
+    <label v-if="label" :for="forId" class="text-[12px] text-[var(--text-mute)] block">
+      {{ label }}
     </label>
 
-    <div
-      class="rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 transition-all duration-200 focus-within:border-cyan-400/30 focus-within:bg-white/7 focus-within:shadow-[0_0_0_1px_rgba(53,215,242,0.12),0_0_24px_rgba(53,215,242,0.12)]"
-    >
+    <div class="input">
       <slot />
     </div>
 
-    <p v-if="hint && !error" class="text-xs text-slate-500">
+    <p v-if="hint && !error" class="text-[11.5px] text-[var(--text-dim)]">
       {{ hint }}
     </p>
-    <p v-if="error" class="text-xs text-rose-300">
+    <p v-if="error" class="text-[11.5px] text-[var(--red)]">
       {{ error }}
     </p>
   </div>

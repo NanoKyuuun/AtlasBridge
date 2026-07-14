@@ -1,141 +1,217 @@
 <template>
-  <div class="space-y-6 lg:space-y-8">
-    <PageHeader
-      eyebrow="Advanced"
-      title="Advanced Settings"
-      description="Fine-tune server, downstream, security, and configuration workflows."
-    />
-
-    <SettingsSection
-      title="Server Settings"
-      description="Control the local host and port AtlasBridge binds to, plus the downstream endpoint used for routing."
-    >
-      <div class="grid gap-4 lg:grid-cols-2">
-        <FormField label="Proxy host" hint="Hostname or IP address AtlasBridge listens on.">
-          <input
-            class="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-            v-model="server.host"
-            @input="dirty = true"
-          />
-        </FormField>
-
-        <FormField label="Proxy port" hint="Valid range: 1024 to 65535.">
-          <input
-            type="number"
-            class="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-            v-model.number="server.port"
-            @input="dirty = true"
-            min="1024"
-            max="65535"
-          />
-        </FormField>
-
-        <FormField class="lg:col-span-2" label="9Router base URL" hint="Base URL for the downstream 9Router service used by AtlasBridge.">
-          <input
-            class="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500 font-mono"
-            v-model="downstream.base_url"
-            @input="dirty = true"
-          />
-        </FormField>
-
-        <FormField label="Timeout setting" hint="Request timeout in seconds for downstream calls.">
-          <input
-            type="number"
-            class="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-            v-model.number="downstream.timeout_seconds"
-            @input="dirty = true"
-          />
-        </FormField>
-
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Authentication forwarding mode</div>
-          <div class="mt-2 text-sm text-white">Uses the current config shape available in this build.</div>
-          <div class="mt-2 text-xs leading-5 text-slate-400">
-            This UI keeps the existing configuration fields intact. If auth forwarding is added to the config schema later, this section can be expanded without changing the layout.
+  <div>
+    <!-- Proxy Config + Downstream -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+      <!-- Proxy Configuration -->
+      <div class="card p-5">
+        <div class="text-[14px] font-semibold mb-1">Proxy Configuration</div>
+        <div class="text-[11.5px] text-[var(--text-mute)] mb-4">Pengaturan endpoint proxy lokal</div>
+        <div class="space-y-3">
+          <div>
+            <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Listen Host</label>
+            <input type="text" class="input" v-model="server.host" @input="dirty = true" placeholder="127.0.0.1">
+          </div>
+          <div>
+            <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Listen Port</label>
+            <input type="number" class="input" v-model="server.port" @input="dirty = true">
+          </div>
+          <div>
+            <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Admin Path</label>
+            <input type="text" class="input mono" v-model="server.admin_path" @input="dirty = true" placeholder="/admin">
+          </div>
+          <div class="flex items-center justify-between pt-2">
+            <div>
+              <div class="text-[13px] font-medium">Localhost only</div>
+              <div class="text-[11px] text-[var(--text-mute)]">Jangan expose ke public network</div>
+            </div>
+            <div
+              class="toggle"
+              :class="{ on: security.bind_localhost_only }"
+              @click="security.bind_localhost_only = !security.bind_localhost_only; dirty = true"
+            ></div>
           </div>
         </div>
       </div>
-    </SettingsSection>
 
-    <AdminTokenNotice
-      v-if="configStore.generatedToken"
-      :token="configStore.generatedToken"
-      @dismiss="configStore.dismissToken()"
-    />
-
-    <SettingsSection
-      title="Security"
-      description="Adjust bind behavior, admin authentication, and access scope.">
-      <div class="grid gap-4 lg:grid-cols-2">
-        <label class="flex cursor-pointer items-start gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-cyan-400/25 hover:bg-white/8">
-          <ToggleSwitch v-model="security.admin_auth_enabled" label="Admin auth" @update:model-value="dirty = true" />
+      <!-- Downstream 9Router -->
+      <div class="card p-5">
+        <div class="text-[14px] font-semibold mb-1">Downstream 9Router</div>
+        <div class="text-[11.5px] text-[var(--text-mute)] mb-4">Konfigurasi router downstream</div>
+        <div class="space-y-3">
           <div>
-            <div class="text-sm font-medium text-white">Admin authentication</div>
-            <p class="mt-1 text-xs text-slate-400">Require a bearer token for all /admin/api/* requests.</p>
+            <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Base URL</label>
+            <input type="text" class="input mono" v-model="downstream.base_url" @input="dirty = true" placeholder="https://router.internal/v1">
           </div>
-        </label>
-
-        <label class="flex cursor-pointer items-start gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-cyan-400/25 hover:bg-white/8">
-          <ToggleSwitch v-model="security.bind_localhost_only" label="Localhost only" @update:model-value="dirty = true" />
           <div>
-            <div class="text-sm font-medium text-white">Localhost only</div>
-            <p class="mt-1 text-xs text-slate-400">Bind to 127.0.0.1 only, which is recommended for most setups.</p>
+            <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Request Timeout (seconds)</label>
+            <input type="number" class="input" v-model="downstream.timeout_seconds" @input="dirty = true">
           </div>
-        </label>
-
-        <label class="flex cursor-pointer items-start gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-cyan-400/25 hover:bg-white/8">
-          <ToggleSwitch v-model="security.allow_lan_access" label="LAN access" @update:model-value="dirty = true" />
-          <div>
-            <div class="text-sm font-medium text-white">Allow LAN access</div>
-            <p class="mt-1 text-xs text-slate-400">Allow connections from other devices on your network.</p>
+          <div class="flex items-center justify-between pt-2">
+            <div>
+              <div class="text-[13px] font-medium">Streaming support</div>
+              <div class="text-[11px] text-[var(--text-mute)]">Forward streaming chunks</div>
+            </div>
+            <div class="toggle on"></div>
           </div>
-        </label>
-      </div>
-    </SettingsSection>
-
-    <SettingsSection
-      title="Debug"
-      description="Enable verbose output for troubleshooting when needed."
-    >
-      <div class="space-y-4">
-        <label class="flex cursor-pointer items-start gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 transition-all duration-200 hover:border-amber-400/25 hover:bg-white/8">
-          <ToggleSwitch v-model="debugMode" label="Debug mode" @update:model-value="dirty = true" />
-          <div>
-            <div class="text-sm font-medium text-white">Debug mode</div>
-            <p class="mt-1 text-xs text-slate-400">Enable verbose logging for troubleshooting.</p>
-          </div>
-        </label>
-        <div v-if="debugMode" class="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
-          Debug mode increases logging verbosity. Disable when troubleshooting is complete.
         </div>
       </div>
-    </SettingsSection>
+    </div>
 
-    <SettingsSection
-      title="Config Import / Export"
-      description="Move configuration in and out of AtlasBridge without changing the saved structure."
-    >
-      <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        <GhostButton @click="exportConfig">Export Config</GhostButton>
-        <GhostButton @click="triggerImport">Import Config</GhostButton>
-        <button class="inline-flex items-center justify-center rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-2.5 text-sm font-medium text-rose-100 transition-all hover:border-rose-400/30 hover:bg-rose-400/15" @click="resetConfig">
-          Reset Configuration
+    <!-- Authentication + Debug -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+      <!-- Authentication -->
+      <div class="card p-5">
+        <div class="text-[14px] font-semibold mb-1">Authentication</div>
+        <div class="text-[11.5px] text-[var(--text-mute)] mb-4">Proteksi akses proxy dan Web UI</div>
+        <div class="space-y-3">
+          <div>
+            <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Proxy Auth Mode</label>
+            <select class="select">
+              <option selected>Bearer token (OpenAI-compatible)</option>
+              <option>API key header</option>
+              <option>None</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between pt-2">
+            <div>
+              <div class="text-[13px] font-medium">Require Web UI auth</div>
+              <div class="text-[11px] text-[var(--text-mute)]">Token wajib untuk akses settings</div>
+            </div>
+            <div
+              class="toggle"
+              :class="{ on: security.admin_auth_enabled }"
+              @click="security.admin_auth_enabled = !security.admin_auth_enabled; dirty = true"
+            ></div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[13px] font-medium">Allow LAN access</div>
+              <div class="text-[11px] text-[var(--text-mute)]">Izinkan akses dari jaringan lokal</div>
+            </div>
+            <div
+              class="toggle"
+              :class="{ on: security.allow_lan_access }"
+              @click="security.allow_lan_access = !security.allow_lan_access; dirty = true"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Debug & Diagnostics -->
+      <div class="card p-5">
+        <div class="text-[14px] font-semibold mb-1">Debug &amp; Diagnostics</div>
+        <div class="text-[11.5px] text-[var(--text-mute)] mb-4">Opsi untuk troubleshooting</div>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[13px] font-medium">Debug mode</div>
+              <div class="text-[11px] text-[var(--text-mute)]">Verbose logging</div>
+            </div>
+            <div
+              class="toggle"
+              :class="{ on: debugMode }"
+              @click="debugMode = !debugMode; dirty = true"
+            ></div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[13px] font-medium">Dry-run routing</div>
+              <div class="text-[11px] text-[var(--text-mute)]">Test routing tanpa forward</div>
+            </div>
+            <div class="toggle" @click="dirty = true"></div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[13px] font-medium">Expose internal headers</div>
+              <div class="text-[11px] text-[var(--text-mute)]">X-AtlasBridge-* di response</div>
+            </div>
+            <div class="toggle" @click="dirty = true"></div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <button class="btn btn-primary w-full justify-center" :disabled="!dirty" @click="save">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save Changes
         </button>
-        <input
-          ref="fileInput"
-          type="file"
-          accept=".json"
-          class="hidden"
-          @change="importConfig"
-        />
       </div>
-      <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
-        Export generates a full configuration bundle. Import replaces the current configuration with the uploaded JSON file.
-      </div>
-    </SettingsSection>
+    </div>
 
-    <div class="flex justify-start">
-      <GradientButton @click="save" :disabled="!dirty">Save Changes</GradientButton>
+    <!-- Configuration Management -->
+    <div class="card p-5">
+      <div class="text-[14px] font-semibold mb-1">Configuration Management</div>
+      <div class="text-[11.5px] text-[var(--text-mute)] mb-4">Import, export, atau reset konfigurasi</div>
+      <div class="flex gap-3">
+        <button class="btn btn-secondary" @click="exportConfig">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Configuration
+        </button>
+        <button class="btn btn-secondary" @click="triggerImport">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import Configuration
+        </button>
+        <button class="btn btn-danger" @click="resetConfig">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          Reset to Default
+        </button>
+      </div>
+      <input ref="fileInput" type="file" accept=".json" class="hidden" @change="importConfig">
+    </div>
+
+    <!-- Security: Change Password -->
+    <div class="card p-5 mt-4">
+      <div class="text-[14px] font-semibold mb-1">Security</div>
+      <div class="text-[11.5px] text-[var(--text-mute)] mb-4">Ganti password login Admin UI</div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Password Saat Ini</label>
+          <input
+            type="password"
+            class="input w-full"
+            v-model="pwd.current"
+            placeholder="Password yang sekarang"
+            autocomplete="current-password"
+          />
+        </div>
+        <div>
+          <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Password Baru</label>
+          <input
+            type="password"
+            class="input w-full"
+            v-model="pwd.newPass"
+            placeholder="Min. 6 karakter"
+            autocomplete="new-password"
+          />
+        </div>
+        <div>
+          <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Konfirmasi Password Baru</label>
+          <input
+            type="password"
+            class="input w-full"
+            v-model="pwd.confirm"
+            placeholder="Ulangi password baru"
+            autocomplete="new-password"
+          />
+        </div>
+      </div>
+
+      <!-- Password feedback -->
+      <div v-if="pwdError" class="mt-3 p-3 rounded-lg border border-[var(--red)] bg-[rgba(248,113,113,.1)] text-[var(--red)] text-[13px]">
+        {{ pwdError }}
+      </div>
+      <div v-if="pwdSuccess" class="mt-3 p-3 rounded-lg border border-[var(--green)] bg-[rgba(52,211,153,.1)] text-[var(--green)] text-[13px]">
+        ✓ {{ pwdSuccess }}
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-[var(--border)]">
+        <button
+          class="btn btn-primary"
+          :disabled="!pwd.current || !pwd.newPass || !pwd.confirm || pwdLoading"
+          @click="changePassword"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          {{ pwdLoading ? 'Menyimpan...' : 'Update Password' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -143,34 +219,23 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useConfigStore } from "../stores/config";
+import { useToast } from "../composables/useToast";
 import { api } from "../api/client";
-import PageHeader from "../components/ui/PageHeader.vue";
-import SettingsSection from "../components/ui/SettingsSection.vue";
-import FormField from "../components/ui/FormField.vue";
-import ToggleSwitch from "../components/ui/ToggleSwitch.vue";
-import GradientButton from "../components/ui/GradientButton.vue";
-import GhostButton from "../components/ui/GhostButton.vue";
-import AdminTokenNotice from "../components/ui/AdminTokenNotice.vue";
 
 const configStore = useConfigStore();
+const { showToast } = useToast();
 const dirty = ref(false);
 const fileInput = ref<HTMLInputElement>();
 
-const server = ref({
-  host: "127.0.0.1",
-  port: 20127,
-  admin_path: "/admin",
-});
-const downstream = ref({
-  base_url: "http://127.0.0.1:20128/v1",
-  timeout_seconds: 120,
-});
-const security = ref({
-  admin_auth_enabled: false,
-  token_configured: false,
-  bind_localhost_only: true,
-  allow_lan_access: false,
-});
+// Password change state
+const pwd = ref({ current: "", newPass: "", confirm: "" });
+const pwdError = ref<string | null>(null);
+const pwdSuccess = ref<string | null>(null);
+const pwdLoading = ref(false);
+
+const server = ref({ host: "127.0.0.1", port: 20127, admin_path: "/admin" });
+const downstream = ref({ base_url: "http://127.0.0.1:20128/v1", timeout_seconds: 120 });
+const security = ref({ admin_auth_enabled: false, token_configured: false, bind_localhost_only: true, allow_lan_access: false });
 const debugMode = ref(false);
 
 function load() {
@@ -189,10 +254,7 @@ async function save() {
       server: server.value,
       downstream: downstream.value,
       security: security.value,
-      logging: {
-        ...configStore.config!.logging,
-        level: debugMode.value ? "debug" : "info",
-      },
+      logging: { ...configStore.config!.logging, level: debugMode.value ? "debug" : "info" },
     });
     load();
   } catch (e: any) {
@@ -203,9 +265,7 @@ async function save() {
 async function exportConfig() {
   try {
     const data = await api.exportConfig();
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -217,9 +277,7 @@ async function exportConfig() {
   }
 }
 
-function triggerImport() {
-  fileInput.value?.click();
-}
+function triggerImport() { fileInput.value?.click(); }
 
 async function importConfig(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0];
@@ -239,6 +297,34 @@ async function resetConfig() {
   if (confirm("Reset all settings to defaults? This cannot be undone.")) {
     await configStore.resetConfig();
     load();
+  }
+}
+
+async function changePassword() {
+  pwdError.value = null;
+  pwdSuccess.value = null;
+
+  if (pwd.value.newPass.length < 6) {
+    pwdError.value = "Password baru minimal 6 karakter.";
+    return;
+  }
+  if (pwd.value.newPass !== pwd.value.confirm) {
+    pwdError.value = "Konfirmasi password tidak cocok.";
+    return;
+  }
+
+  pwdLoading.value = true;
+  try {
+    await api.changePassword(pwd.value.current, pwd.value.newPass);
+    pwdSuccess.value = "Password berhasil diperbarui!";
+    showToast("Password berhasil diperbarui", "success");
+    pwd.value = { current: "", newPass: "", confirm: "" };
+  } catch (e: any) {
+    pwdError.value = e.message === "current password is incorrect"
+      ? "Password saat ini salah."
+      : (e.message || "Gagal memperbarui password.");
+  } finally {
+    pwdLoading.value = false;
   }
 }
 

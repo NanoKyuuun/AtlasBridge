@@ -46,7 +46,7 @@ const router = createRouter({
     {
       path: "/logs",
       name: "logs",
-      component: () => import("../pages/Logs.vue"),
+      component: () => import("../pages/PrivacySettings.vue"),
     },
     {
       path: "/privacy",
@@ -58,16 +58,22 @@ const router = createRouter({
       name: "advanced",
       component: () => import("../pages/AdvancedSettings.vue"),
     },
+    {
+      path: "/observability",
+      name: "observability",
+      component: () => import("../pages/Observability.vue"),
+    },
   ],
 });
 
 router.beforeEach(async (to) => {
-  if (to.name === "login") return true;
+  if (to.name === "login" || to.name === "setup") return true;
 
   const { useAuthStore } = await import("../stores/auth");
   const auth = useAuthStore();
 
-  if (auth.authRequired && !auth.token) {
+  // Redirect to login if no token (either first visit or session expired)
+  if (!auth.token) {
     return { name: "login" };
   }
 
