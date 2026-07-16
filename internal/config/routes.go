@@ -64,3 +64,8 @@ func SaveRoutes(cfg *RoutesConfig) error {
 	}
 	return saveWithBackup(RoutesPath(), data, 0o600)
 }
+
+// SaveRoutesAtomic writes pre-serialized routes data to disk atomically.
+func SaveRoutesAtomic(data []byte) error {
+	return saveWithBackup(RoutesPath(), data, 0o600)
+}

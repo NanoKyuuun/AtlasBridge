@@ -86,22 +86,19 @@ func putConfigHandler(deps *AdminDeps) http.HandlerFunc {
 
 		var patch map[string]json.RawMessage
 		if err := json.Unmarshal(body, &patch); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+			writeError(w, http.StatusBadRequest, "invalid JSON")
 			return
 		}
 
 		result, err := deps.ConfigService.ApplyConfigPatch(patch)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			log.Printf("ADMIN: config patch failed: %v", err)
+			writeError(w, http.StatusBadRequest, "invalid configuration")
 			return
 		}
 
 		if result.AdminToken != "" {
-			fmt.Fprint(os.Stdout, "\n")
-			fmt.Fprintf(os.Stdout, "  ADMIN TOKEN: %s\n", result.AdminToken)
-			fmt.Fprint(os.Stdout, "  This token will NOT be shown again.\n")
-			fmt.Fprint(os.Stdout, "  Store it safely before closing this window.\n")
-			fmt.Fprint(os.Stdout, "\n")
+			log.Printf("ADMIN: new token generated and written to %s", config.TokenFilePath())
 		}
 
 		resp := map[string]interface{}{
@@ -131,7 +128,8 @@ func putRoutesHandler(deps *AdminDeps) http.HandlerFunc {
 		}
 
 		if err := deps.ConfigService.ApplyRoutes(body); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			log.Printf("ADMIN: routes update failed: %v", err)
+			writeError(w, http.StatusBadRequest, "invalid routes configuration")
 			return
 		}
 
@@ -154,7 +152,8 @@ func putProfilesHandler(deps *AdminDeps) http.HandlerFunc {
 		}
 
 		if err := deps.ConfigService.ApplyProfiles(body); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			log.Printf("ADMIN: profiles update failed: %v", err)
+			writeError(w, http.StatusBadRequest, "invalid profiles configuration")
 			return
 		}
 
@@ -165,7 +164,8 @@ func putProfilesHandler(deps *AdminDeps) http.HandlerFunc {
 func runtimeStartHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := deps.ConfigService.UpdateMode("always_on"); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
+			log.Printf("ADMIN: start failed: %v", err)
+			writeError(w, http.StatusInternalServerError, "failed to start proxy")
 			return
 		}
 		if deps.RuntimeState != nil {
@@ -179,7 +179,8 @@ func runtimeStartHandler(deps *AdminDeps) http.HandlerFunc {
 func runtimeStopHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := deps.ConfigService.UpdateMode("manual"); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
+			log.Printf("ADMIN: stop failed: %v", err)
+			writeError(w, http.StatusInternalServerError, "failed to stop proxy")
 			return
 		}
 		if deps.RuntimeState != nil {
@@ -218,20 +219,22 @@ func putStartupHandler(deps *AdminDeps) http.HandlerFunc {
 
 		var updated config.StartupConfig
 		if err := json.Unmarshal(body, &updated); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+			writeError(w, http.StatusBadRequest, "invalid JSON")
 			return
 		}
 
 		snap := deps.Store.Load()
 		if updated.RunAtLogin != snap.Config.Startup.RunAtLogin {
 			if err := startup.SetRunAtLogin(updated.RunAtLogin); err != nil {
-				writeError(w, http.StatusInternalServerError, "failed to update startup registration: "+err.Error())
+				log.Printf("ADMIN: startup registration failed: %v", err)
+				writeError(w, http.StatusInternalServerError, "failed to update startup registration")
 				return
 			}
 		}
 
 		if err := deps.ConfigService.ApplyStartup(updated); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to save config: "+err.Error())
+			log.Printf("ADMIN: startup config save failed: %v", err)
+			writeError(w, http.StatusInternalServerError, "failed to save startup config")
 			return
 		}
 
@@ -255,7 +258,8 @@ func rotateTokenHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		newToken, err := deps.ConfigService.RotateToken()
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to rotate token: "+err.Error())
+			log.Printf("ADMIN: token rotation failed: %v", err)
+			writeError(w, http.StatusInternalServerError, "failed to rotate token")
 			return
 		}
 
@@ -276,7 +280,10 @@ func rotateTokenHandler(deps *AdminDeps) http.HandlerFunc {
 func downstreamHealthHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		snap := deps.Store.Load()
-		client := &http.Client{Timeout: 5 * time.Second}
+		client := &http.Client{
+			Timeout:   5 * time.Second,
+			Transport: snap.Forwarder.StreamTransport(),
+		}
 		parsed, err := url.Parse(snap.Config.Downstream.BaseURL)
 		if err != nil {
 			log.Printf("downstream health: invalid URL: %v", err)
@@ -316,7 +323,7 @@ func downstreamHealthHandler(deps *AdminDeps) http.HandlerFunc {
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"status":      status,
 			"status_code": resp.StatusCode,
-			"url":         snap.Config.Downstream.BaseURL,
+			"url":         maskURL(snap.Config.Downstream.BaseURL),
 			"message":     msg,
 		})
 	}
@@ -368,7 +375,7 @@ func diagnosticsExportHandler(deps *AdminDeps) http.HandlerFunc {
 			"config": map[string]interface{}{
 				"host":           snap.Config.Server.Host,
 				"port":           snap.Config.Server.Port,
-				"downstream_url": snap.Config.Downstream.BaseURL,
+				"downstream_url": maskURL(snap.Config.Downstream.BaseURL),
 				"mode":           snap.Config.App.Mode,
 				"privacy_mode":   snap.Config.Logging.PrivacyMode,
 				"auto_routing":   snap.Config.Routing.AutoRouting,
@@ -397,7 +404,7 @@ func dryRunHandler(deps *AdminDeps) http.HandlerFunc {
 			Model  string `json:"model"`
 		}
 		if err := json.Unmarshal(body, &req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+			writeError(w, http.StatusBadRequest, "invalid JSON")
 			return
 		}
 
@@ -408,13 +415,14 @@ func dryRunHandler(deps *AdminDeps) http.HandlerFunc {
 
 		mockBody, err := buildMockChatBody(req.Model, req.Prompt)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to build request body: "+err.Error())
+			writeError(w, http.StatusBadRequest, "failed to build request body")
 			return
 		}
 
 		analysis, err := analyzer.Analyze(bytes.NewReader(mockBody))
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "analysis failed: "+err.Error())
+			log.Printf("ADMIN: dry-run analysis failed: %v", err)
+			writeError(w, http.StatusInternalServerError, "analysis failed")
 			return
 		}
 
@@ -442,7 +450,7 @@ func comboTestHandler(deps *AdminDeps) http.HandlerFunc {
 			Model string `json:"model"`
 		}
 		if err := json.Unmarshal(body, &req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+			writeError(w, http.StatusBadRequest, "invalid JSON")
 			return
 		}
 
@@ -458,7 +466,7 @@ func comboTestHandler(deps *AdminDeps) http.HandlerFunc {
 
 		testBody, err := buildComboTestBody(req.Model)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "failed to build request body: "+err.Error())
+			writeError(w, http.StatusBadRequest, "failed to build request body")
 			return
 		}
 
@@ -466,7 +474,7 @@ func comboTestHandler(deps *AdminDeps) http.HandlerFunc {
 
 		proxyReq, err := http.NewRequestWithContext(r.Context(), "POST", "/v1/chat/completions", bytes.NewReader(testBody))
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to create request: "+err.Error())
+			writeError(w, http.StatusInternalServerError, "failed to create request")
 			return
 		}
 		proxyReq.Header.Set("Content-Type", "application/json")
@@ -476,10 +484,11 @@ func comboTestHandler(deps *AdminDeps) http.HandlerFunc {
 		latency := time.Since(start)
 
 		if err != nil {
+			log.Printf("ADMIN: combo test failed: %v", err)
 			writeJSON(w, http.StatusOK, map[string]interface{}{
 				"model":   req.Model,
 				"success": false,
-				"error":   err.Error(),
+				"error":   "downstream request failed",
 				"latency": latency.Milliseconds(),
 			})
 			return
@@ -535,7 +544,8 @@ func configImportHandler(deps *AdminDeps) http.HandlerFunc {
 		}
 
 		if err := deps.ConfigService.Import(body); err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
+			log.Printf("ADMIN: config import failed: %v", err)
+			writeError(w, http.StatusBadRequest, "invalid configuration import")
 			return
 		}
 
@@ -546,7 +556,8 @@ func configImportHandler(deps *AdminDeps) http.HandlerFunc {
 func configResetHandler(deps *AdminDeps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := deps.ConfigService.Reset(); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to reset: "+err.Error())
+			log.Printf("ADMIN: config reset failed: %v", err)
+			writeError(w, http.StatusInternalServerError, "failed to reset config")
 			return
 		}
 
@@ -560,7 +571,7 @@ func configResetHandler(deps *AdminDeps) http.HandlerFunc {
 // AdminAuth middleware will accept it immediately.
 // This endpoint is intentionally UNAUTHENTICATED (no Bearer token required).
 // It is registered outside the admin auth middleware in server.go.
-func loginWithPasswordHandler(deps *AdminDeps) http.HandlerFunc {
+func loginWithPasswordHandler(deps *AdminDeps, limiter *loginRateLimiter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
 			Password string `json:"password"`
@@ -574,8 +585,8 @@ func loginWithPasswordHandler(deps *AdminDeps) http.HandlerFunc {
 		sec := snap.Config.Security
 
 		if !sec.AdminAuthEnabled {
-			// Auth disabled — issue a dummy token that always works
-			writeJSON(w, http.StatusOK, map[string]string{"token": "noauth"})
+			// Auth disabled — reject login and ask user to enable auth first
+			writeError(w, http.StatusForbidden, "admin authentication is disabled. Enable it in Advanced Settings to log in.")
 			return
 		}
 
@@ -583,14 +594,18 @@ func loginWithPasswordHandler(deps *AdminDeps) http.HandlerFunc {
 		passwordOK := false
 		if sec.AdminPasswordHash != "" && security.VerifyPassword(body.Password, sec.AdminPasswordHash) {
 			passwordOK = true
-		} else if sec.AdminTokenHash != "" && security.VerifyToken(body.Password, sec.AdminTokenHash) {
-			// Legacy fallback: accept the raw token itself as the password
-			passwordOK = true
 		}
 
 		if !passwordOK {
+			if limiter != nil {
+				limiter.RecordFailure(extractClientIP(r))
+			}
 			writeError(w, http.StatusUnauthorized, "invalid password")
 			return
+		}
+
+		if limiter != nil {
+			limiter.RecordSuccess(extractClientIP(r))
 		}
 
 		// Generate a fresh session token and update the stored hash so the
@@ -604,6 +619,7 @@ func loginWithPasswordHandler(deps *AdminDeps) http.HandlerFunc {
 		// Persist the new token hash into the in-memory store and config file.
 		updated := snap.Clone()
 		updated.Config.Security.AdminTokenHash = tokenHash
+		updated.Config.Security.SessionExpiresAt = time.Now().Add(24 * time.Hour).Unix()
 		deps.Store.Swap(updated)
 
 		if err := config.Save(&updated.Config); err != nil {
@@ -635,19 +651,17 @@ func changePasswordHandler(deps *AdminDeps) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, "new_password is required")
 			return
 		}
-		if len(body.NewPassword) < 6 {
-			writeError(w, http.StatusBadRequest, "password must be at least 6 characters")
+		if len(body.NewPassword) < 12 {
+			writeError(w, http.StatusBadRequest, "password must be at least 12 characters")
 			return
 		}
 
 		snap := deps.Store.Load()
 		sec := snap.Config.Security
 
-		// Verify current password (or legacy token)
+		// Verify current password
 		validCurrent := false
 		if sec.AdminPasswordHash != "" && security.VerifyPassword(body.CurrentPassword, sec.AdminPasswordHash) {
-			validCurrent = true
-		} else if sec.AdminTokenHash != "" && security.VerifyToken(body.CurrentPassword, sec.AdminTokenHash) {
 			validCurrent = true
 		}
 
@@ -663,7 +677,8 @@ func changePasswordHandler(deps *AdminDeps) http.HandlerFunc {
 		deps.Store.Swap(update)
 
 		if err := config.Save(&update.Config); err != nil {
-			writeError(w, http.StatusInternalServerError, "failed to save new password: "+err.Error())
+			log.Printf("ADMIN: failed to save new password: %v", err)
+			writeError(w, http.StatusInternalServerError, "failed to save new password")
 			return
 		}
 

@@ -186,7 +186,6 @@ const config = reactive({
   server: {
     host: "127.0.0.1",
     port: 20127,
-    admin_path: "/admin",
   },
   downstream: {
     base_url: "http://127.0.0.1:20128/v1",
@@ -208,16 +207,20 @@ const config = reactive({
 });
 
 async function finish() {
+  config.app.first_run_completed = true;
   await configStore.saveConfig(config);
   router.push("/");
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await configStore.fetchAll().catch(() => {});
   if (configStore.config) {
     Object.assign(config.server, configStore.config.server);
     Object.assign(config.downstream, configStore.config.downstream);
     Object.assign(config.routing, configStore.config.routing);
     Object.assign(config.app, configStore.config.app);
   }
+  // Ensure first_run_completed is set for the save
+  config.app.first_run_completed = true;
 });
 </script>

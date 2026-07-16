@@ -1,6 +1,7 @@
 # Binaries
 /atlasbridge
 *.exe
+*.exe~
 
 # Generated release and tooling artifacts
 .playwright-mcp/
@@ -9,6 +10,7 @@ release/
 *.tsbuildinfo
 patch.diff
 stderr.txt
+nul
 
 # Go
 vendor/
@@ -16,6 +18,7 @@ vendor/
 # Node
 web/node_modules/
 web/dist/
+web/test-results/
 
 # IDE
 .vscode/
@@ -32,6 +35,9 @@ config.yaml
 routes.yaml
 profiles.yaml
 logs.jsonl
+
+# Agent tooling
+.qwen/
 
 # Temp
 *.tmp

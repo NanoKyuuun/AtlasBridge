@@ -13,7 +13,10 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/atlasbridge/atlasbridge/internal/logging"
 )
 
 const maxRequestIDLen = 128
@@ -42,6 +45,10 @@ func RequestID(next http.Handler) http.Handler {
 }
 
 func SafeLogger(next http.Handler) http.Handler {
+	return SafeLoggerWithDeps(next, nil)
+}
+
+func SafeLoggerWithDeps(next http.Handler, logger *logging.StructuredLogger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
@@ -49,14 +56,24 @@ func SafeLogger(next http.Handler) http.Handler {
 		duration := time.Since(start)
 
 		reqID, _ := r.Context().Value(RequestIDKey).(string)
+		statusCode := wrapped.statusCode
+		latencyMs := duration.Round(time.Microsecond).Milliseconds()
 
-		log.Printf("[%s] %s %s %d %v",
-			reqID,
-			r.Method,
-			r.URL.Path,
-			wrapped.statusCode,
-			duration.Round(time.Microsecond),
-		)
+		if logger != nil {
+			outcome := "ok"
+			if statusCode >= 400 {
+				outcome = "error"
+			}
+			logger.LogRequest(reqID, r.Method, r.URL.Path, statusCode, latencyMs, 0, 0, "", outcome)
+		} else {
+			log.Printf("[%s] %s %s %d %v",
+				reqID,
+				r.Method,
+				r.URL.Path,
+				statusCode,
+				duration.Round(time.Microsecond),
+			)
+		}
 	})
 }
 
@@ -128,21 +145,21 @@ func SecurityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Referrer-Policy", "no-referrer")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; frame-ancestors 'none'")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'")
 		next.ServeHTTP(w, r)
 	})
 }
 
 // HostGuard validates the Host header against the expected listener address
 // to mitigate DNS rebinding attacks. Requests with no Host header (HTTP/1.0)
-// or from allowed hosts are passed through. Loopback addresses skip port
-// verification since local connections are not vulnerable to DNS rebinding.
+// are rejected. Loopback addresses skip port verification since local
+// connections are not vulnerable to DNS rebinding.
 func HostGuard(expectedHost string, expectedPort int) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			hostHeader := r.Host
 			if hostHeader == "" {
-				next.ServeHTTP(w, r)
+				http.Error(w, `{"error":{"message":"forbidden host","type":"auth_error"}}`, http.StatusForbidden)
 				return
 			}
 
@@ -156,7 +173,6 @@ func HostGuard(expectedHost string, expectedPort int) func(http.Handler) http.Ha
 				"localhost":  true,
 				"127.0.0.1":  true,
 				"[::1]":      true,
-				"0.0.0.0":    true,
 			}
 
 			if !allowedHosts[hostname] {
@@ -165,7 +181,7 @@ func HostGuard(expectedHost string, expectedPort int) func(http.Handler) http.Ha
 			}
 
 			// Skip port check for loopback addresses — not vulnerable to DNS rebinding.
-			isLoopback := hostname == "localhost" || hostname == "127.0.0.1" || hostname == "[::1]" || hostname == "0.0.0.0"
+			isLoopback := hostname == "localhost" || hostname == "127.0.0.1" || hostname == "[::1]"
 			if !isLoopback && portStr != "" {
 				port, err := strconv.Atoi(portStr)
 				if err != nil || port != expectedPort {
@@ -177,6 +193,132 @@ func HostGuard(expectedHost string, expectedPort int) func(http.Handler) http.Ha
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// loginRateLimiter provides per-IP rate limiting and lockout for the login endpoint.
+type loginRateLimiter struct {
+	mu       sync.Mutex
+	attempts map[string]*loginAttempt
+}
+
+type loginAttempt struct {
+	count     int
+	lockout   time.Time
+	lastTry   time.Time
+}
+
+const (
+	maxLoginAttempts  = 5
+	lockoutDuration   = 15 * time.Minute
+	backoffBase       = 2 * time.Second
+)
+
+func newLoginRateLimiter() *loginRateLimiter {
+	return &loginRateLimiter{attempts: make(map[string]*loginAttempt)}
+}
+
+// Allow returns true if the IP is allowed to attempt login.
+func (rl *loginRateLimiter) Allow(ip string) (bool, time.Duration) {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	a, ok := rl.attempts[ip]
+	if !ok {
+		a = &loginAttempt{}
+		rl.attempts[ip] = a
+	}
+
+	now := time.Now()
+
+	// Check if currently locked out
+	if !a.lockout.IsZero() && now.Before(a.lockout) {
+		return false, time.Until(a.lockout)
+	}
+
+	// Reset lockout if expired
+	if !a.lockout.IsZero() && now.After(a.lockout) {
+		a.count = 0
+		a.lockout = time.Time{}
+	}
+
+	// Too many attempts — apply lockout
+	if a.count >= maxLoginAttempts {
+		a.lockout = now.Add(lockoutDuration)
+		return false, lockoutDuration
+	}
+
+	// Exponential backoff between attempts
+	if !a.lastTry.IsZero() && a.count > 0 {
+		delay := backoffBase * time.Duration(1<<(a.count-1))
+		if elapsed := now.Sub(a.lastTry); elapsed < delay {
+			return false, delay - elapsed
+		}
+	}
+
+	return true, 0
+}
+
+// RecordFailure increments the attempt counter.
+func (rl *loginRateLimiter) RecordFailure(ip string) {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	a, ok := rl.attempts[ip]
+	if !ok {
+		a = &loginAttempt{}
+		rl.attempts[ip] = a
+	}
+	a.count++
+	a.lastTry = time.Now()
+}
+
+// RecordSuccess resets the counter for the IP.
+func (rl *loginRateLimiter) RecordSuccess(ip string) {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	delete(rl.attempts, ip)
+}
+
+// LoginRateLimit returns HTTP middleware that rate-limits login attempts per IP.
+func LoginRateLimit(limiter *loginRateLimiter) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ip := extractClientIP(r)
+
+			allowed, retryAfter := limiter.Allow(ip)
+			if !allowed {
+				w.Header().Set("Retry-After", strconv.Itoa(int(retryAfter.Seconds())+1))
+				writeJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+					"error": map[string]string{
+						"message": "too many login attempts, please try again later",
+						"type":    "rate_limit_error",
+					},
+				})
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// extractClientIP returns the client IP from the request, preferring
+// X-Forwarded-For (first entry) and X-Real-IP headers.
+func extractClientIP(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		if idx := strings.IndexByte(xff, ','); idx > 0 {
+			return strings.TrimSpace(xff[:idx])
+		}
+		return strings.TrimSpace(xff)
+	}
+	if xri := r.Header.Get("X-Real-IP"); xri != "" {
+		return xri
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }
 
 // dataPlaneAuth guards the /v1 data plane when LAN access is active.

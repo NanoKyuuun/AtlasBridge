@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/atlasbridge/atlasbridge/internal/netutil"
@@ -26,8 +26,9 @@ var forwardHeaders = []string{
 const MaxResponseBody = 64 << 20 // 64 MB
 
 const (
-	StreamIdleTimeout = 5 * time.Minute
-	StreamMaxLifetime = 30 * time.Minute
+	StreamIdleTimeout    = 5 * time.Minute
+	StreamMaxLifetime    = 30 * time.Minute
+	StreamMaxBytesBudget = 256 << 20 // 256 MB default streaming byte budget
 )
 
 type Forwarder struct {
@@ -78,12 +79,31 @@ func New(baseURL string, timeoutSeconds int) (*Forwarder, error) {
 	}, nil
 }
 
+// StreamTransport returns the forwarder's stream transport for use by
+// health checks and other internal callers that need SSRF-protected HTTP.
+func (f *Forwarder) StreamTransport() http.RoundTripper {
+	return f.streamClient.Transport
+}
+
 type netDialer struct {
 	Timeout   time.Duration
 	KeepAlive time.Duration
 }
 
 func (d *netDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid address: %w", err)
+	}
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return nil, fmt.Errorf("DNS lookup failed for %s: %w", host, err)
+	}
+	for _, ip := range ips {
+		if !netutil.IsAllowedIP(ip) {
+			return nil, fmt.Errorf("blocked connection to %s (%s) — IP is in a restricted range", host, ip)
+		}
+	}
 	return (&net.Dialer{Timeout: d.Timeout, KeepAlive: d.KeepAlive}).DialContext(ctx, network, addr)
 }
 
@@ -154,6 +174,42 @@ func (f *Forwarder) Forward(ctx context.Context, req *http.Request, reqID string
 	}, nil
 }
 
+// deadlineReader wraps an io.Reader and enforces a deadline. When the deadline
+// fires, it calls cancel() and any blocking Read returns immediately.
+type deadlineReader struct {
+	r      io.Reader
+	dead   <-chan time.Time
+	cancel context.CancelFunc
+	closed chan struct{}
+	closeOnce sync.Once
+}
+
+func newDeadlineReader(r io.Reader, dead <-chan time.Time, cancel context.CancelFunc) *deadlineReader {
+	dr := &deadlineReader{r: r, dead: dead, cancel: cancel, closed: make(chan struct{})}
+	go dr.watch()
+	return dr
+}
+
+func (dr *deadlineReader) watch() {
+	select {
+	case <-dr.dead:
+		dr.cancel()
+	case <-dr.closed:
+	}
+}
+
+func (dr *deadlineReader) Read(p []byte) (int, error) {
+	return dr.r.Read(p)
+}
+
+func (dr *deadlineReader) Close() error {
+	dr.closeOnce.Do(func() { close(dr.closed) })
+	if c, ok := dr.r.(io.Closer); ok {
+		return c.Close()
+	}
+	return nil
+}
+
 type Flusher interface {
 	Flush()
 }
@@ -183,7 +239,13 @@ func (f *Forwarder) ForwardStream(ctx context.Context, req *http.Request, w http
 	}
 	defer resp.Body.Close()
 
-	w.Header().Set("Content-Type", "text/event-stream")
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		w.Header().Set("Content-Type", "text/event-stream")
+	} else if ct := resp.Header.Get("Content-Type"); ct != "" {
+		w.Header().Set("Content-Type", ct)
+	} else {
+		w.Header().Set("Content-Type", "text/event-stream")
+	}
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Request-ID", reqID)
@@ -191,15 +253,25 @@ func (f *Forwarder) ForwardStream(ctx context.Context, req *http.Request, w http
 
 	flusher, canFlush := w.(Flusher)
 
-	reader := bufio.NewReaderSize(resp.Body, 64*1024)
-
 	idleTimer := time.NewTimer(StreamIdleTimeout)
 	defer idleTimer.Stop()
 
 	chunkCount := 0
+	totalBytes := int64(0)
+	deadlineCtx, deadlineCancel := context.WithCancel(ctx)
+	defer deadlineCancel()
+	dr := newDeadlineReader(resp.Body, idleTimer.C, deadlineCancel)
+	defer dr.Close()
+	reader := bufio.NewReaderSize(dr, 64*1024)
+
 	for {
 		line, err := reader.ReadBytes('\n')
 		if len(line) > 0 {
+			totalBytes += int64(len(line))
+			if totalBytes > StreamMaxBytesBudget {
+				log.Printf("[%s] POST %s -> stream byte budget exceeded after %d chunks (%d bytes, %v)", reqID, f.base+"/chat/completions", chunkCount, totalBytes, time.Since(start).Round(time.Microsecond))
+				return fmt.Errorf("stream byte budget exceeded")
+			}
 			w.Write(line)
 			if canFlush {
 				flusher.Flush()
@@ -217,56 +289,15 @@ func (f *Forwarder) ForwardStream(ctx context.Context, req *http.Request, w http
 			if err == io.EOF {
 				break
 			}
-			if ctx.Err() == context.Canceled {
+			if deadlineCtx.Err() == context.Canceled || ctx.Err() == context.Canceled {
 				log.Printf("[%s] POST %s -> stream cancelled after %d chunks (%v)", reqID, f.base+"/chat/completions", chunkCount, time.Since(start).Round(time.Microsecond))
 				return fmt.Errorf("stream cancelled")
 			}
 			log.Printf("[%s] POST %s -> stream error after %d chunks: %v", reqID, f.base+"/chat/completions", chunkCount, err)
 			return fmt.Errorf("stream read error: %w", err)
 		}
-		select {
-		case <-idleTimer.C:
-			log.Printf("[%s] POST %s -> stream idle timeout after %d chunks (%v)", reqID, f.base+"/chat/completions", chunkCount, time.Since(start).Round(time.Microsecond))
-			return fmt.Errorf("stream idle timeout")
-		default:
-		}
 	}
 
 	log.Printf("[%s] POST %s -> %d (streamed %d chunks, %v)", reqID, f.base+"/chat/completions", resp.StatusCode, chunkCount, time.Since(start).Round(time.Microsecond))
 	return nil
-}
-
-func IsStreamRequest(req *http.Request) bool {
-	if req.Header.Get("Accept") == "text/event-stream" {
-		return true
-	}
-
-	if req.Body == nil {
-		return false
-	}
-
-	limitedReader := io.LimitReader(req.Body, 65536)
-	body, err := io.ReadAll(limitedReader)
-	if err != nil {
-		return false
-	}
-
-	rest := req.Body
-	if closer, ok := rest.(io.Closer); ok {
-		closer.Close()
-	}
-	req.Body = io.NopCloser(io.MultiReader(bytes.NewReader(body), rest))
-
-	if len(body) == 0 {
-		return false
-	}
-
-	var probe struct {
-		Stream *bool `json:"stream"`
-	}
-	if err := json.Unmarshal(body, &probe); err != nil {
-		return false
-	}
-
-	return probe.Stream != nil && *probe.Stream
 }

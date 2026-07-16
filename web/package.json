@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -18,10 +20,14 @@
     "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "^4.1.4",
     "@vitejs/plugin-vue": "^5.2.3",
+    "@vue/test-utils": "^2.4.11",
     "daisyui": "^5.0.35",
+    "happy-dom": "^20.10.6",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4.1.4",
     "typescript": "~5.8.2",
     "vite": "^6.3.1",
+    "vitest": "^4.1.10",
     "vue-tsc": "^2.2.8"
   }
 }

@@ -51,6 +51,7 @@ type SecurityConfig struct {
 	AdminPasswordHash  string `yaml:"admin_password_hash,omitempty" json:"admin_password_hash,omitempty"`
 	BindLocalhostOnly  bool   `yaml:"bind_localhost_only" json:"bind_localhost_only"`
 	AllowLANAccess     bool   `yaml:"allow_lan_access" json:"allow_lan_access"`
+	SessionExpiresAt   int64  `yaml:"session_expires_at,omitempty" json:"session_expires_at,omitempty"` // Unix timestamp; 0 = no expiry
 }
 
 type StartupConfig struct {
@@ -204,6 +205,12 @@ func Save(cfg *Config) error {
 	return saveWithBackup(ConfigPath(), data, 0o600)
 }
 
+// SaveAtomic writes pre-serialized config data to disk atomically.
+// The caller is responsible for marshaling the data before calling this.
+func SaveAtomic(data []byte) error {
+	return saveWithBackup(ConfigPath(), data, 0o600)
+}
+
 func Validate(cfg *Config) error {
 	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
 		return fmt.Errorf("invalid port: %d (must be 1-65535)", cfg.Server.Port)
@@ -244,9 +251,10 @@ func Validate(cfg *Config) error {
 
 // EnforceNetworkInvariants applies one-way security invariants to the config.
 // If LAN access is not allowed, the server host is forced to loopback
-// regardless of what BindLocalhostOnly or Host says.
+// regardless of what Host says. BindLocalhostOnly is also enforced as a
+// belt-and-suspenders check.
 func EnforceNetworkInvariants(cfg *Config) {
-	if !cfg.Security.AllowLANAccess {
+	if !cfg.Security.AllowLANAccess || cfg.Security.BindLocalhostOnly {
 		cfg.Server.Host = "127.0.0.1"
 	}
 }

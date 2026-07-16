@@ -156,3 +156,8 @@ func SaveProfiles(cfg *ProfilesConfig) error {
 	}
 	return saveWithBackup(ProfilesPath(), data, 0o600)
 }
+
+// SaveProfilesAtomic writes pre-serialized profiles data to disk atomically.
+func SaveProfilesAtomic(data []byte) error {
+	return saveWithBackup(ProfilesPath(), data, 0o600)
+}

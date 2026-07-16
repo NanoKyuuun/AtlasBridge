@@ -116,11 +116,7 @@ func (a *App) Run() error {
 			if err := os.WriteFile(tokenPath, []byte(rawToken), 0o600); err != nil {
 				log.Printf("WARNING: failed to write token file for CLI access: %v", err)
 			}
-			fmt.Fprint(os.Stdout, "\n")
-			fmt.Fprintf(os.Stdout, "  ADMIN TOKEN: %s\n", rawToken)
-			fmt.Fprint(os.Stdout, "  This token will NOT be shown again.\n")
-			fmt.Fprint(os.Stdout, "  Store it safely before closing this window.\n")
-			fmt.Fprint(os.Stdout, "\n")
+			log.Printf("ADMIN: first-run token written to %s", tokenPath)
 
 			next := a.store.Load().Clone()
 			next.Config.Security.AdminTokenHash = a.cfg.Security.AdminTokenHash
@@ -148,6 +144,9 @@ func (a *App) Run() error {
 	log.Printf("Listening on http://%s", addr)
 	log.Printf("API endpoint: http://%s/v1", addr)
 	log.Printf("Admin UI:     http://%s%s", addr, a.cfg.Server.AdminPath)
+	if a.cfg.Server.AdminPath != "/admin" {
+		log.Printf("WARNING: admin_path is %q but the admin route is hardcoded to /admin", a.cfg.Server.AdminPath)
+	}
 	log.Printf("Health check: http://%s/health", addr)
 	log.Printf("Downstream:   %s", a.cfg.Downstream.BaseURL)
 	log.Printf("Privacy mode: %s", a.cfg.Logging.PrivacyMode)

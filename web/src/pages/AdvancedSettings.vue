@@ -15,10 +15,6 @@
             <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Listen Port</label>
             <input type="number" class="input" v-model="server.port" @input="dirty = true">
           </div>
-          <div>
-            <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Admin Path</label>
-            <input type="text" class="input mono" v-model="server.admin_path" @input="dirty = true" placeholder="/admin">
-          </div>
           <div class="flex items-center justify-between pt-2">
             <div>
               <div class="text-[13px] font-medium">Localhost only</div>
@@ -46,13 +42,6 @@
             <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Request Timeout (seconds)</label>
             <input type="number" class="input" v-model="downstream.timeout_seconds" @input="dirty = true">
           </div>
-          <div class="flex items-center justify-between pt-2">
-            <div>
-              <div class="text-[13px] font-medium">Streaming support</div>
-              <div class="text-[11px] text-[var(--text-mute)]">Forward streaming chunks</div>
-            </div>
-            <div class="toggle on"></div>
-          </div>
         </div>
       </div>
     </div>
@@ -64,14 +53,6 @@
         <div class="text-[14px] font-semibold mb-1">Authentication</div>
         <div class="text-[11.5px] text-[var(--text-mute)] mb-4">Proteksi akses proxy dan Web UI</div>
         <div class="space-y-3">
-          <div>
-            <label class="text-[12px] text-[var(--text-mute)] mb-1.5 block">Proxy Auth Mode</label>
-            <select class="select">
-              <option selected>Bearer token (OpenAI-compatible)</option>
-              <option>API key header</option>
-              <option>None</option>
-            </select>
-          </div>
           <div class="flex items-center justify-between pt-2">
             <div>
               <div class="text-[13px] font-medium">Require Web UI auth</div>
@@ -112,20 +93,6 @@
               :class="{ on: debugMode }"
               @click="debugMode = !debugMode; dirty = true"
             ></div>
-          </div>
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-[13px] font-medium">Dry-run routing</div>
-              <div class="text-[11px] text-[var(--text-mute)]">Test routing tanpa forward</div>
-            </div>
-            <div class="toggle" @click="dirty = true"></div>
-          </div>
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-[13px] font-medium">Expose internal headers</div>
-              <div class="text-[11px] text-[var(--text-mute)]">X-AtlasBridge-* di response</div>
-            </div>
-            <div class="toggle" @click="dirty = true"></div>
           </div>
         </div>
         <div class="divider"></div>
@@ -233,7 +200,7 @@ const pwdError = ref<string | null>(null);
 const pwdSuccess = ref<string | null>(null);
 const pwdLoading = ref(false);
 
-const server = ref({ host: "127.0.0.1", port: 20127, admin_path: "/admin" });
+const server = ref({ host: "127.0.0.1", port: 20127 });
 const downstream = ref({ base_url: "http://127.0.0.1:20128/v1", timeout_seconds: 120 });
 const security = ref({ admin_auth_enabled: false, token_configured: false, bind_localhost_only: true, allow_lan_access: false });
 const debugMode = ref(false);

@@ -1,16 +1,20 @@
 <template>
   <div class="flex min-h-screen">
+    <!-- MOBILE OVERLAY -->
+    <div
+      v-if="sidebarOpen"
+      class="sidebar-mobile-overlay fixed inset-0 z-40 bg-black/50 lg:hidden"
+      @click="sidebarOpen = false"
+    ></div>
+
     <!-- SIDEBAR -->
-    <aside class="w-[260px] flex-shrink-0 border-r border-[var(--border)] bg-[var(--bg-1)] flex flex-col">
+    <aside
+      class="sidebar-desktop w-[260px] flex-shrink-0 border-r border-[var(--border)] bg-[var(--bg-1)] flex flex-col fixed inset-y-0 left-0 z-50 lg:relative lg:translate-x-0 transition-transform"
+      :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+    >
       <!-- Logo -->
       <div class="px-5 py-5 border-b border-[var(--border)] flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #7c5cff, #4f8cff); box-shadow: 0 4px 12px rgba(124,92,255,.3);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
-        </div>
+        <img src="/atlasbridge-logo-mark-256.png" alt="AtlasBridge" class="w-9 h-9 rounded-xl" />
         <div>
           <div class="font-bold text-[15px]">AtlasBridge</div>
           <div class="text-[11px] text-[var(--text-mute)]">v1.1 · Intelligent Proxy</div>
@@ -49,10 +53,18 @@
         <router-link
           to="/startup"
           class="nav-item"
-          :class="{ active: route.path.startsWith('/startup') || route.path.startsWith('/runtime') }"
+          :class="{ active: route.path.startsWith('/startup') }"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
-          Startup &amp; Runtime
+          Startup
+        </router-link>
+        <router-link
+          to="/runtime"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/runtime') }"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Runtime Control
         </router-link>
         <router-link
           to="/logs"
@@ -99,6 +111,10 @@
       <!-- Top Bar / Header -->
       <header class="h-[64px] border-b border-[var(--border)] bg-[var(--bg-1)] flex items-center justify-between px-6 flex-shrink-0">
         <div class="flex items-center gap-4">
+          <!-- Mobile hamburger -->
+          <button class="mobile-menu-btn btn btn-ghost p-2" @click="sidebarOpen = !sidebarOpen">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
           <div>
             <h1 class="text-[16px] font-semibold">{{ currentPageTitle }}</h1>
             <p class="text-[11.5px] text-[var(--text-mute)]">{{ currentPageSubtitle }}</p>
@@ -119,11 +135,13 @@
           <button
             class="btn"
             :class="proxyRunning ? 'btn-secondary' : 'btn-success'"
+            :disabled="proxyToggling"
             @click="toggleProxy"
           >
-            <svg v-if="proxyRunning" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            <svg v-if="proxyToggling" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            <svg v-else-if="proxyRunning" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
             <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            {{ proxyRunning ? 'Stop Proxy' : 'Start Proxy' }}
+            {{ proxyRunning ? 'Stop' : 'Start' }}
           </button>
         </div>
       </header>
@@ -146,6 +164,7 @@ import { useAppStore } from "../stores/app";
 import { useConfigStore } from "../stores/config";
 import { useAuthStore } from "../stores/auth";
 import { useToast } from "../composables/useToast";
+import { api } from "../api/client";
 import Toast from "./ui/Toast.vue";
 
 const route = useRoute();
@@ -155,9 +174,15 @@ const configStore = useConfigStore();
 const authStore = useAuthStore();
 const { showToast } = useToast();
 
-const proxyRunning = ref(true);
+const sidebarOpen = ref(false);
+const proxyToggling = ref(false);
 
 const status = computed(() => appStore.status);
+
+const proxyRunning = computed(() => {
+  const s = status.value?.status;
+  return s === "running";
+});
 
 const proxyEndpoint = computed(() => {
   if (configStore.config?.server) {
@@ -188,8 +213,8 @@ const pageInfo: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Dashboard", subtitle: "Monitoring status proxy dan aktivitas routing" },
   "/routing": { title: "Routing Settings", subtitle: "Atur task-to-route mapping dan perilaku routing" },
   "/profiles": { title: "Route Profiles", subtitle: "Kelola abstraksi routing untuk 9Router" },
-  "/startup": { title: "Startup & Runtime", subtitle: "Konfigurasi auto-start dan kontrol runtime proxy" },
-  "/runtime": { title: "Startup & Runtime", subtitle: "Konfigurasi auto-start dan kontrol runtime proxy" },
+  "/startup": { title: "Startup", subtitle: "Konfigurasi auto-start dan perilaku startup" },
+  "/runtime": { title: "Runtime Control", subtitle: "Kontrol start/stop/restart proxy" },
   "/logs": { title: "Privacy & Logs", subtitle: "Pengaturan privasi dan viewing log routing" },
   "/privacy": { title: "Privacy & Logs", subtitle: "Pengaturan privasi dan viewing log routing" },
   "/advanced": { title: "Advanced Settings", subtitle: "Konfigurasi teknis lanjutan" },
@@ -200,12 +225,21 @@ const pageInfo: Record<string, { title: string; subtitle: string }> = {
 const currentPageTitle = computed(() => pageInfo[route.path]?.title || "AtlasBridge");
 const currentPageSubtitle = computed(() => pageInfo[route.path]?.subtitle || "");
 
-function toggleProxy() {
-  proxyRunning.value = !proxyRunning.value;
-  if (proxyRunning.value) {
-    showToast("Proxy started", "success");
-  } else {
-    showToast("Proxy stopped", "warning");
+async function toggleProxy() {
+  proxyToggling.value = true;
+  try {
+    if (proxyRunning.value) {
+      await api.runtimeStop();
+      showToast("Proxy stopped", "warning");
+    } else {
+      await api.runtimeStart();
+      showToast("Proxy started", "success");
+    }
+    await appStore.fetchStatus();
+  } catch (e: any) {
+    showToast(`Failed: ${e.message}`, "error");
+  } finally {
+    proxyToggling.value = false;
   }
 }
 
@@ -221,6 +255,11 @@ onMounted(() => {
   appStore.fetchDownstreamHealth();
   configStore.fetchAll();
 });
+
+watch(
+  () => route.path,
+  () => { sidebarOpen.value = false; }
+);
 
 watch(
   () => authStore.authRequired,

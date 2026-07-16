@@ -27,7 +27,11 @@ func main() {
 	signal.Notify(sigQuit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		_ = application.Run()
+		if err := application.Run(); err != nil {
+			application.Shutdown()
+			fmt.Fprintf(os.Stderr, "application error: %v\n", err)
+			os.Exit(1)
+		}
 	}()
 
 	select {

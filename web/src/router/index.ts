@@ -46,7 +46,7 @@ const router = createRouter({
     {
       path: "/logs",
       name: "logs",
-      component: () => import("../pages/PrivacySettings.vue"),
+      component: () => import("../pages/Logs.vue"),
     },
     {
       path: "/privacy",
@@ -71,6 +71,16 @@ router.beforeEach(async (to) => {
 
   const { useAuthStore } = await import("../stores/auth");
   const auth = useAuthStore();
+
+  // Allow setup wizard when first-run is not completed (no token yet)
+  if (!auth.token && to.name === "setup") {
+    const { useConfigStore } = await import("../stores/config");
+    const cfg = useConfigStore();
+    await cfg.fetchAll().catch(() => {});
+    if (cfg.config && !cfg.config.app.first_run_completed) {
+      return true;
+    }
+  }
 
   // Redirect to login if no token (either first visit or session expired)
   if (!auth.token) {

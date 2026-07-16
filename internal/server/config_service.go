@@ -8,6 +8,7 @@ import (
 	"github.com/atlasbridge/atlasbridge/internal/config"
 	"github.com/atlasbridge/atlasbridge/internal/forwarder"
 	"github.com/atlasbridge/atlasbridge/internal/security"
+	"gopkg.in/yaml.v3"
 )
 
 // ConfigUpdateResult is returned by config mutation methods to communicate
@@ -97,6 +98,8 @@ func (cs *ConfigService) ApplyConfigPatch(patch map[string]json.RawMessage) (*Co
 	if err := config.Validate(&merged); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
+
+	config.EnforceNetworkInvariants(&merged)
 
 	restartRequired := merged.Server.Host != current.Config.Server.Host ||
 		merged.Server.Port != current.Config.Server.Port
@@ -263,8 +266,8 @@ func (cs *ConfigService) ApplyStartup(startupCfg config.StartupConfig) error {
 }
 
 // Reset restores all config, routes, and profiles to defaults atomically.
-// All three files are persisted before the snapshot is swapped.
-// The current admin token hash is preserved to prevent lockout.
+// All three files are validated, serialized, and persisted before the snapshot
+// is swapped. The current admin token hash is preserved to prevent lockout.
 func (cs *ConfigService) Reset() error {
 	cs.store.persistMu.Lock()
 	defer cs.store.persistMu.Unlock()
@@ -281,13 +284,27 @@ func (cs *ConfigService) Reset() error {
 		return fmt.Errorf("create forwarder: %w", err)
 	}
 
-	if err := config.Save(cfg); err != nil {
+	// Marshal all data before writing to ensure consistency.
+	cfgData, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+	routesData, err := yaml.Marshal(routes)
+	if err != nil {
+		return fmt.Errorf("marshal routes: %w", err)
+	}
+	profilesData, err := yaml.Marshal(profiles)
+	if err != nil {
+		return fmt.Errorf("marshal profiles: %w", err)
+	}
+
+	if err := config.SaveAtomic(cfgData); err != nil {
 		return fmt.Errorf("save config: %w", err)
 	}
-	if err := config.SaveRoutes(routes); err != nil {
+	if err := config.SaveRoutesAtomic(routesData); err != nil {
 		return fmt.Errorf("save routes: %w", err)
 	}
-	if err := config.SaveProfiles(profiles); err != nil {
+	if err := config.SaveProfilesAtomic(profilesData); err != nil {
 		return fmt.Errorf("save profiles: %w", err)
 	}
 
@@ -357,13 +374,27 @@ func (cs *ConfigService) Import(body []byte) error {
 		fwd = newFwd
 	}
 
-	if err := config.Save(&cfg); err != nil {
+	// Marshal all data before writing to ensure consistency.
+	cfgData, err := yaml.Marshal(&cfg)
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+	routesData, err := yaml.Marshal(&routes)
+	if err != nil {
+		return fmt.Errorf("marshal routes: %w", err)
+	}
+	profilesData, err := yaml.Marshal(&profiles)
+	if err != nil {
+		return fmt.Errorf("marshal profiles: %w", err)
+	}
+
+	if err := config.SaveAtomic(cfgData); err != nil {
 		return fmt.Errorf("save config: %w", err)
 	}
-	if err := config.SaveRoutes(&routes); err != nil {
+	if err := config.SaveRoutesAtomic(routesData); err != nil {
 		return fmt.Errorf("save routes: %w", err)
 	}
-	if err := config.SaveProfiles(&profiles); err != nil {
+	if err := config.SaveProfilesAtomic(profilesData); err != nil {
 		return fmt.Errorf("save profiles: %w", err)
 	}
 

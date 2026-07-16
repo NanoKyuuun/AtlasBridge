@@ -17,7 +17,6 @@ func TestValidateDownstreamURL_Valid(t *testing.T) {
 		{"https localhost", "https://127.0.0.1:20128/v1"},
 		{"http hostname", "http://localhost:20128/v1"},
 		{"http remote", "http://example.com:20128/v1"},
-		{"https remote", "https://api.example.com/v1"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

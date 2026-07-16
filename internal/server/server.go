@@ -8,6 +8,7 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -86,14 +87,16 @@ func New(deps *ServerDeps) *http.Server {
 				RuntimeState:  deps.RuntimeState,
 			}
 
+			loginLimiter := newLoginRateLimiter()
+
 			// PUBLIC: no auth required — this is the password login endpoint
-			r.With(RequireJSON).Post("/auth/login", loginWithPasswordHandler(adminDeps))
+			r.With(RequireJSON, LoginRateLimit(loginLimiter), HostGuard(snap.Config.Server.Host, snap.Config.Server.Port), SameOriginAdmin("http://"+fmt.Sprintf("%s:%d", snap.Config.Server.Host, snap.Config.Server.Port))).Post("/auth/login", loginWithPasswordHandler(adminDeps, loginLimiter))
 
 			// PROTECTED: all routes below require Bearer token
 			r.Group(func(r chi.Router) {
-				r.Use(security.AdminAuth(func() (bool, string) {
+				r.Use(security.AdminAuth(func() (bool, string, int64) {
 					s := store.Load()
-					return s.Config.Security.AdminAuthEnabled, s.Config.Security.AdminTokenHash
+					return s.Config.Security.AdminAuthEnabled, s.Config.Security.AdminTokenHash, s.Config.Security.SessionExpiresAt
 				}))
 				r.Use(HostGuard(snap.Config.Server.Host, snap.Config.Server.Port))
 				r.Use(RequireJSON)
@@ -185,7 +188,7 @@ func statusHandler(store *StateStore, runtimeState *runtimemod.State, bulkhead *
 			"uptime":         runtimeUptime,
 			"port":           cfg.Server.Port,
 			"host":           cfg.Server.Host,
-			"downstream":     cfg.Downstream.BaseURL,
+			"downstream":     maskURL(cfg.Downstream.BaseURL),
 			"mode":           runtimeMode,
 			"privacy":        cfg.Logging.PrivacyMode,
 			"go_version":     runtime.Version(),
@@ -565,22 +568,6 @@ func min(a, b int) int {
 	return b
 }
 
-func adminPlaceholder(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AtlasBridge Admin</title>
-<style>body{font-family:system-ui,-apple-system,sans-serif;max-width:600px;margin:40px auto;padding:0 20px;color:#333}
-h1{color:#1a1a2e}p{color:#666}</style></head>
-<body>
-<h1>AtlasBridge Dashboard</h1>
-<p>Web UI will be available in Phase 3.</p>
-<p>Health: <a href="/health">/health</a></p>
-<p>Status: <a href="/admin/api/status">/admin/api/status</a></p>
-</body></html>`)
-}
-
 type closerReader struct {
 	*bytes.Reader
 }
@@ -591,6 +578,18 @@ func (c *closerReader) Close() error {
 
 func newCloserReader(r *bytes.Reader) *closerReader {
 	return &closerReader{r}
+}
+
+// maskURL hides the hostname and path of a URL, returning only the scheme and "[redacted]".
+func maskURL(raw string) string {
+	if raw == "" {
+		return ""
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return "[redacted]"
+	}
+	return parsed.Scheme + "://[redacted]"
 }
 
 func mimeContentType(path string) string {

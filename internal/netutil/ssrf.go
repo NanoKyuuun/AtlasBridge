@@ -35,9 +35,22 @@ func ValidateDownstreamURL(rawURL string) error {
 	if host == "" {
 		return fmt.Errorf("hostname cannot be empty")
 	}
+	// Check IP literal first
 	ip := net.ParseIP(host)
 	if ip != nil && !IsAllowedIP(ip) {
 		return fmt.Errorf("resolved address %s is in a blocked range (link-local/private/metadata)", ip)
+	}
+	// DNS-aware: resolve hostname and check all resolved IPs
+	if ip == nil {
+		ips, err := net.LookupIP(host)
+		if err != nil {
+			return fmt.Errorf("DNS lookup failed for %s: %v", host, err)
+		}
+		for _, resolved := range ips {
+			if !IsAllowedIP(resolved) {
+				return fmt.Errorf("resolved address %s for %s is in a blocked range (link-local/private/metadata)", resolved, host)
+			}
+		}
 	}
 	return nil
 }
@@ -46,6 +59,8 @@ func ValidateDownstreamURL(rawURL string) error {
 // It blocks link-local, multicast, RFC 1918 private ranges, and RFC 4193
 // IPv6 unique local addresses (fc00::/7).
 func IsAllowedIP(ip net.IP) bool {
+	// Loopback is allowed — the proxy legitimately connects to local services.
+	// SSRF protection targets private/link-local ranges, not localhost.
 	if ip.IsLoopback() {
 		return true
 	}
@@ -87,7 +102,7 @@ func IsAllowedIP(ip net.IP) bool {
 }
 
 // SafeRedirectPolicy returns a redirect policy that validates each redirect
-// target against SSRF rules and caps redirects at 5.
+// target against SSRF rules (including DNS resolution) and caps redirects at 5.
 func SafeRedirectPolicy() func(req *http.Request, via []*http.Request) error {
 	return func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 5 {
@@ -95,6 +110,19 @@ func SafeRedirectPolicy() func(req *http.Request, via []*http.Request) error {
 		}
 		if err := ValidateDownstreamURL(req.URL.String()); err != nil {
 			return fmt.Errorf("redirect blocked: %v", err)
+		}
+		// DNS-aware: resolve hostname and check all IPs
+		host := req.URL.Hostname()
+		if host != "" {
+			ips, err := net.LookupIP(host)
+			if err != nil {
+				return fmt.Errorf("redirect blocked: DNS lookup failed for %s: %v", host, err)
+			}
+			for _, ip := range ips {
+				if !IsAllowedIP(ip) {
+					return fmt.Errorf("redirect blocked: resolved address %s for %s is in a blocked range", ip, host)
+				}
+			}
 		}
 		return nil
 	}

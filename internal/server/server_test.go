@@ -176,8 +176,8 @@ func TestStatusEndpoint(t *testing.T) {
 	if body["host"] != "127.0.0.1" {
 		t.Errorf("expected host 127.0.0.1, got %v", body["host"])
 	}
-	if body["downstream"] != "http://127.0.0.1:20128/v1" {
-		t.Errorf("expected downstream http://127.0.0.1:20128/v1, got %v", body["downstream"])
+	if body["downstream"] != "http://[redacted]" {
+		t.Errorf("expected downstream http://[redacted], got %v", body["downstream"])
 	}
 	if body["mode"] != "manual" {
 		t.Errorf("expected mode manual, got %v", body["mode"])
@@ -2468,7 +2468,7 @@ func TestConfigServiceAtomicSwap(t *testing.T) {
 		t.Errorf("expected initial version 1, got %d", initialSnap.Version)
 	}
 
-	patchJSON := `{"downstream":{"base_url":"http://new-downstream:9999/v1","timeout_seconds":30}}`
+	patchJSON := `{"downstream":{"base_url":"http://127.0.0.1:9999/v1","timeout_seconds":30}}`
 	var patch map[string]json.RawMessage
 	json.Unmarshal([]byte(patchJSON), &patch)
 
@@ -2482,8 +2482,8 @@ func TestConfigServiceAtomicSwap(t *testing.T) {
 	if afterSnap.Version != 2 {
 		t.Errorf("expected version 2 after patch, got %d", afterSnap.Version)
 	}
-	if afterSnap.Config.Downstream.BaseURL != "http://new-downstream:9999/v1" {
-		t.Errorf("expected downstream URL http://new-downstream:9999/v1, got %s", afterSnap.Config.Downstream.BaseURL)
+	if afterSnap.Config.Downstream.BaseURL != "http://127.0.0.1:9999/v1" {
+		t.Errorf("expected downstream URL http://127.0.0.1:9999/v1, got %s", afterSnap.Config.Downstream.BaseURL)
 	}
 }
 

@@ -177,6 +177,34 @@ Config is stored locally per platform:
 
 See `configs/` for example configuration files.
 
+## Security Deployment Guide
+
+### Localhost Mode (Default)
+
+Default configuration is secure for local use:
+
+- Binds to `127.0.0.1` only
+- Admin auth enabled by default (bcrypt password)
+- No prompt/API key logging
+- Session tokens expire after 24 hours
+- Login rate limiting with lockout
+
+### LAN Mode
+
+If you need to access AtlasBridge from other machines on your network:
+
+1. **Enable LAN access** in Advanced Settings (requires admin auth)
+2. **Set up TLS** — AtlasBridge runs plain HTTP; use a reverse proxy (nginx/Caddy) with TLS termination in front
+3. **Enable admin auth** — mandatory when LAN is active
+4. **Set strong password** (12+ characters)
+5. **Restrict network** — use firewall to limit which IPs can connect
+
+⚠️ **Never expose AtlasBridge to the internet.** It is designed as a local proxy only.
+
+### Data Plane Authentication
+
+When LAN access is enabled, the `/v1` data plane requires Bearer token authentication. The token is the same admin session token used for the Web UI.
+
 ## Trust Boundary
 
 AtlasBridge operates as a **local proxy**. Key trust boundaries:

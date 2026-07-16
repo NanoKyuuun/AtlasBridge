@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func GenerateToken() (string, string, error) {
@@ -29,14 +32,25 @@ func VerifyToken(token, hash string) bool {
 	return subtle.ConstantTimeCompare([]byte(HashToken(token)), []byte(hash)) == 1
 }
 
-// HashPassword hashes a plain-text password with SHA-256 (same algo as tokens).
+// HashPassword hashes a plain-text password using bcrypt with default cost.
 func HashPassword(password string) string {
-	return HashToken(password)
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		// bcrypt failure is extremely rare; fall back to SHA-256 to avoid data loss
+		h := sha256.Sum256([]byte(password))
+		return "sha256:" + hex.EncodeToString(h[:])
+	}
+	return string(hash)
 }
 
 // VerifyPassword checks a plain-text password against a stored hash.
+// Supports both bcrypt hashes and legacy SHA-256 hashes (prefixed "sha256:").
 func VerifyPassword(password, hash string) bool {
-	return VerifyToken(password, hash)
+	if strings.HasPrefix(hash, "sha256:") {
+		h := sha256.Sum256([]byte(password))
+		return subtle.ConstantTimeCompare([]byte(hash), []byte("sha256:"+hex.EncodeToString(h[:]))) == 1
+	}
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }
 
 // EnsureToken checks whether a token hash exists. If not, it generates a
@@ -57,14 +71,21 @@ func EnsureToken(hashPtr *string) (string, error) {
 // AdminAuth returns HTTP middleware that guards routes using Bearer token
 // authentication. It accepts a getter function that is called on every request,
 // so the enabled flag and hash can be updated dynamically at runtime.
-type AuthGetter func() (enabled bool, tokenHash string)
+// If expiresAt is non-zero and in the past, the session is considered expired.
+type AuthGetter func() (enabled bool, tokenHash string, expiresAt int64)
 
 func AdminAuth(getter AuthGetter) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			enabled, tokenHash := getter()
+			enabled, tokenHash, expiresAt := getter()
 			if !enabled {
 				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Check session expiry
+			if expiresAt > 0 && time.Now().Unix() > expiresAt {
+				http.Error(w, `{"error":{"message":"session expired, please login again","type":"auth_error"}}`, http.StatusUnauthorized)
 				return
 			}
 

@@ -238,7 +238,10 @@ const downstreamEndpoint = computed(() =>
   configStore.config?.downstream?.base_url || "—"
 );
 
-const downstreamHealthy = computed(() => appStore.downstreamHealth?.status === "ok");
+const downstreamHealthy = computed(() => {
+  const s = appStore.downstreamHealth?.status;
+  return s === "ok" || s === "connected";
+});
 
 const defaultRoute = computed(() =>
   configStore.config?.routing?.default_route || "—"

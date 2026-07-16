@@ -123,6 +123,9 @@
         <div>Status</div>
         <div></div>
       </div>
+      <div v-if="runtimeHistory.length === 0" class="p-8 text-center text-[var(--text-mute)] text-[13px]">
+        Belum ada event runtime
+      </div>
       <div v-for="entry in runtimeHistory" :key="entry.ts" class="log-row">
         <div class="text-[var(--text-dim)]">{{ entry.ts }}</div>
         <div><span class="badge" :class="entry.eventBadge">{{ entry.event }}</span></div>
@@ -169,12 +172,7 @@ async function save() {
   }
 }
 
-const runtimeHistory = [
-  { ts: "2025-01-15 09:12:03", event: "Started", eventBadge: "badge-green", mode: "Always On", duration: "—", status: "Success" },
-  { ts: "2025-01-15 08:45:21", event: "Restarted", eventBadge: "badge-yellow", mode: "Manual", duration: "04:23:17", status: "Success" },
-  { ts: "2025-01-14 22:10:44", event: "Stopped", eventBadge: "badge-red", mode: "Manual", duration: "12:45:02", status: "Clean" },
-  { ts: "2025-01-14 09:25:42", event: "Started", eventBadge: "badge-green", mode: "Always On", duration: "—", status: "Success" },
-];
+const runtimeHistory = ref<Array<{ ts: string; event: string; eventBadge: string; mode: string; duration: string; status: string }>>([]);
 
 onMounted(load);
 </script>

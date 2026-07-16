@@ -346,45 +346,6 @@ func TestForwardStreamPreservesFields(t *testing.T) {
 	}
 }
 
-func TestIsStreamRequestWithStreamTrue(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(`{"stream":true}`))
-	req.Header.Set("Content-Type", "application/json")
-	if !IsStreamRequest(req) {
-		t.Error("expected stream true")
-	}
-}
-
-func TestIsStreamRequestWithStreamFalse(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(`{"stream":false}`))
-	req.Header.Set("Content-Type", "application/json")
-	if IsStreamRequest(req) {
-		t.Error("expected stream false")
-	}
-}
-
-func TestIsStreamRequestWithNoStream(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(`{"model":"gpt-4"}`))
-	req.Header.Set("Content-Type", "application/json")
-	if IsStreamRequest(req) {
-		t.Error("expected no stream")
-	}
-}
-
-func TestIsStreamRequestWithAcceptHeader(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(`{}`))
-	req.Header.Set("Accept", "text/event-stream")
-	if !IsStreamRequest(req) {
-		t.Error("expected stream via Accept header")
-	}
-}
-
-func TestIsStreamRequestEmptyBody(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(``))
-	if IsStreamRequest(req) {
-		t.Error("expected no stream for empty body")
-	}
-}
-
 func TestForwardStreamContextCancelled(t *testing.T) {
 	mock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")

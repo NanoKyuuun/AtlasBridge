@@ -388,6 +388,7 @@ func TestEnforceNetworkInvariantsPreservesHostWhenLANAllowed(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Server.Host = "0.0.0.0"
 	cfg.Security.AllowLANAccess = true
+	cfg.Security.BindLocalhostOnly = false
 
 	EnforceNetworkInvariants(cfg)
 

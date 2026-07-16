@@ -1,6 +1,9 @@
 package server
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 var hopByHopHeaders = map[string]bool{
 	"Connection":          true,
@@ -30,6 +33,11 @@ func isAllowedHeader(key string) bool {
 	}
 	if allowedDownstreamHeaders[key] {
 		return true
+	}
+	for allowed := range allowedDownstreamHeaders {
+		if strings.HasSuffix(allowed, "*") && strings.HasPrefix(key, strings.TrimSuffix(allowed, "*")) {
+			return true
+		}
 	}
 	return false
 }

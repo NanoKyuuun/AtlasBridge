@@ -3,10 +3,8 @@
     <div class="card w-full max-w-[400px] p-8 mx-4">
       <!-- Logo + Title -->
       <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--purple)] to-[var(--blue)] shadow-lg mb-4">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4">
+          <img src="/atlasbridge-logo-mark-256.png" alt="AtlasBridge" class="w-14 h-14 rounded-2xl" />
         </div>
         <h1 class="text-[20px] font-bold mb-1">AtlasBridge</h1>
         <p class="text-[12.5px] text-[var(--text-mute)]">Masukkan password untuk mengakses Admin UI</p>

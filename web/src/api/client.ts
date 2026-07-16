@@ -64,7 +64,7 @@ export interface AppConfig {
   server: {
     host: string;
     port: number;
-    admin_path: string;
+    admin_path?: string;
   };
   downstream: { base_url: string; timeout_seconds: number };
   security: {
