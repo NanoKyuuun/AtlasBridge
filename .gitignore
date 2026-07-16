@@ -38,13 +38,11 @@ logs.jsonl
 
 # Agent tooling
 .qwen/
-
-# Temp
-*.tmp
-*.log
-
-# Agent tooling
 .serena/
 .opencode/
 .opencode.json
 opencode.json
+
+# Temp
+*.tmp
+*.log
