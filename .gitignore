@@ -42,3 +42,9 @@ logs.jsonl
 # Temp
 *.tmp
 *.log
+
+# Agent tooling
+.serena/
+.opencode/
+.opencode.json
+opencode.json
